@@ -1,0 +1,8 @@
+{
+  "firestore": {
+    "databaseId": "ai-studio-banglaai-4ffb7b18-0f38-4756-a5d4-24f821b26ea0",
+    "rules": "firestore.rules",
+    "edition": "ENTERPRISE",
+    "dataAccessMode": "FIRESTORE_NATIVE"
+  }
+}
