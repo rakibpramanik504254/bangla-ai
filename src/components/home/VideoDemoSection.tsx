@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Play, Volume2, VolumeX, Sparkles, ExternalLink } from 'lucide-react';
+import { Play, Sparkles, ExternalLink } from 'lucide-react';
 
 interface VideoDemoSectionProps {
   videoId?: string;
@@ -10,8 +10,6 @@ export const VideoDemoSection: React.FC<VideoDemoSectionProps> = ({
 }) => {
   const containerRef = useRef<HTMLDivElement>(null);
   const [isInView, setIsInView] = useState(false);
-  const [isMuted, setIsMuted] = useState(true);
-  const [hasStartedPlaying, setHasStartedPlaying] = useState(false);
 
   // Setup intersection observer to autoplay when user scrolls near the video
   useEffect(() => {
@@ -20,13 +18,12 @@ export const VideoDemoSection: React.FC<VideoDemoSectionProps> = ({
         entries.forEach((entry) => {
           if (entry.isIntersecting) {
             setIsInView(true);
-            setHasStartedPlaying(true);
           }
         });
       },
       {
-        threshold: 0.25, // Trigger when 25% of the video section is visible
-        rootMargin: '0px 0px -50px 0px'
+        threshold: 0.2, // Trigger when 20% of the video section is visible
+        rootMargin: '50px 0px 50px 0px'
       }
     );
 
@@ -39,12 +36,15 @@ export const VideoDemoSection: React.FC<VideoDemoSectionProps> = ({
     };
   }, []);
 
-  // Construct YouTube Embed URL with autoplay parameters
-  // Browsers require mute=1 for autoplay to start without user interaction
+  // Construct YouTube Embed URL:
+  // - autoplay=1: autoplays when loaded
+  // - mute=1: muted so it plays continuously across all browsers
+  // - controls=1: shows native YouTube playback controls (play, pause, seek, volume, fullscreen)
+  // - loop=1&playlist=${videoId}: continuously loops and keeps playing
+  // - playsinline=1: inline playback on mobile
+  // - rel=0: related videos from same channel
   const embedUrl = isInView
-    ? `https://www.youtube-nocookie.com/embed/${videoId}?autoplay=1&mute=${
-        isMuted ? '1' : '0'
-      }&playsinline=1&controls=1&rel=0&modestbranding=1&enablejsapi=1`
+    ? `https://www.youtube-nocookie.com/embed/${videoId}?autoplay=1&mute=1&controls=1&loop=1&playlist=${videoId}&playsinline=1&rel=0&modestbranding=0&enablejsapi=1`
     : '';
 
   return (
@@ -63,7 +63,7 @@ export const VideoDemoSection: React.FC<VideoDemoSectionProps> = ({
         </p>
       </div>
 
-      {/* Video Frame with Ambient Glow (Inspired by Minimal Spatial UI) */}
+      {/* Video Frame with Ambient Glow (Clean, Unobstructed Native Controls) */}
       <div
         ref={containerRef}
         className="relative group rounded-3xl p-2 sm:p-3.5 bg-gradient-to-b from-blue-500/20 via-indigo-500/10 to-transparent dark:from-blue-500/30 dark:via-indigo-500/15 dark:to-transparent border border-blue-500/25 dark:border-blue-400/30 shadow-2xl transition-all duration-500"
@@ -75,15 +75,14 @@ export const VideoDemoSection: React.FC<VideoDemoSectionProps> = ({
               title="Bangla AI Product Walkthrough"
               allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
               allowFullScreen
-              className="w-full h-full border-0 absolute inset-0"
+              className="w-full h-full border-0 absolute inset-0 z-0"
             />
           ) : (
             /* High-res poster preview while waiting for scroll */
-            <div className="w-full h-full flex flex-col items-center justify-center relative cursor-pointer group"
-                 onClick={() => {
-                   setIsInView(true);
-                   setHasStartedPlaying(true);
-                 }}>
+            <div
+              className="w-full h-full flex flex-col items-center justify-center relative cursor-pointer group"
+              onClick={() => setIsInView(true)}
+            >
               <img
                 src={`https://img.youtube.com/vi/${videoId}/maxresdefault.jpg`}
                 alt="Bangla AI Demo Video"
@@ -96,51 +95,23 @@ export const VideoDemoSection: React.FC<VideoDemoSectionProps> = ({
               </div>
             </div>
           )}
-
-          {/* Quick Audio & External Controls Overlay */}
-          {hasStartedPlaying && (
-            <div className="absolute top-3 right-3 z-10 flex items-center gap-2">
-              <button
-                type="button"
-                onClick={() => setIsMuted(!isMuted)}
-                className="px-3 py-1.5 rounded-full bg-black/75 hover:bg-black text-white text-[11px] font-medium backdrop-blur-md border border-white/20 flex items-center gap-1.5 shadow-md transition-colors cursor-pointer"
-                title={isMuted ? 'Click to Unmute Sound' : 'Mute Sound'}
-              >
-                {isMuted ? (
-                  <>
-                    <VolumeX className="w-3.5 h-3.5 text-amber-400" />
-                    <span>Unmute</span>
-                  </>
-                ) : (
-                  <>
-                    <Volume2 className="w-3.5 h-3.5 text-emerald-400" />
-                    <span>Sound On</span>
-                  </>
-                )}
-              </button>
-
-              <a
-                href={`https://youtu.be/${videoId}`}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="p-1.5 rounded-full bg-black/75 hover:bg-black text-white backdrop-blur-md border border-white/20 transition-colors shadow-md hidden sm:flex"
-                title="Watch on YouTube"
-              >
-                <ExternalLink className="w-3.5 h-3.5" />
-              </a>
-            </div>
-          )}
         </div>
 
         {/* Caption bar underneath video */}
         <div className="mt-3 px-3 py-1 flex items-center justify-between text-[11px] text-gray-500 font-mono">
           <div className="flex items-center gap-2">
             <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-            <span>Interactive Demo • Autoplays on Scroll</span>
+            <span>Looping Muted with Controls • Unmute anytime via player controls</span>
           </div>
-          <span className="text-gray-400 hidden sm:inline">
-            10 Models • Unified Workspace • bKash / Nagad / Rocket
-          </span>
+          <a
+            href={`https://youtu.be/${videoId}`}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-gray-400 hover:text-black dark:hover:text-white transition-colors flex items-center gap-1"
+          >
+            <span>Open in YouTube</span>
+            <ExternalLink className="w-3 h-3" />
+          </a>
         </div>
       </div>
     </section>

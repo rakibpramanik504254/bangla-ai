@@ -22,6 +22,7 @@ import {
 import { useAuth } from '../../context/AuthContext.tsx';
 import { PLANS, formatBDT } from '../../utils/billing.ts';
 import { VideoDemoSection } from '../home/VideoDemoSection.tsx';
+import { SmarterWorkflowsSection } from '../home/SmarterWorkflowsSection.tsx';
 
 interface HomePageProps {
   onStartChat: () => void;
@@ -572,6 +573,9 @@ export const HomePage: React.FC<HomePageProps> = ({ onStartChat }) => {
 
       {/* Product Video Walkthrough Section (Autoplays on scroll) */}
       <VideoDemoSection videoId="HkkLswEAv8I" />
+
+      {/* Smarter Workflows • One AI Platform Section */}
+      <SmarterWorkflowsSection />
 
       {/* Interactive Multi-Model Output Showcase */}
       <section className="max-w-5xl mx-auto px-4 sm:px-6">
