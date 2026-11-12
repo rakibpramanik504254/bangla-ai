@@ -53,7 +53,7 @@ export const AccountPage: React.FC = () => {
   const sub = user.subscription;
   const active = user.role === 'admin' || isSubscriptionActive(sub);
   const remainingTokens = Math.max(0, user.usage_limit - user.current_usage);
-  const usagePercent = Math.min(100, Math.round((user.current_usage / Math.max(1, user.usage_limit)) * 100));
+  const usagePercent = user.usage_limit > 0 ? Math.min(100, Math.round((user.current_usage / user.usage_limit) * 100)) : 0;
 
   return (
     <div className="max-w-5xl mx-auto px-4 sm:px-6 py-14 space-y-10 animate-in fade-in">
@@ -172,9 +172,17 @@ export const AccountPage: React.FC = () => {
             {/* Usage Progress Bar */}
             <div className="mt-6 space-y-2">
               <div className="flex justify-between text-xs">
-                <span className="text-gray-500">Token Consumption:</span>
+                <span className="text-gray-500">Token Quota:</span>
                 <span className="font-mono text-black dark:text-white">
-                  <strong>{remainingTokens.toLocaleString()}</strong> / {user.usage_limit.toLocaleString()} tokens ({usagePercent}% used)
+                  {user.usage_limit > 0 ? (
+                    <>
+                      <strong>{remainingTokens.toLocaleString()}</strong> / {user.usage_limit.toLocaleString()} tokens ({usagePercent}% used)
+                    </>
+                  ) : (
+                    <span className="text-amber-600 dark:text-amber-400 font-sans font-medium text-xs">
+                      0 tokens • Subscribe to activate 50,000 tokens
+                    </span>
+                  )}
                 </span>
               </div>
               <div className="w-full h-2 rounded-full bg-black/[0.06] dark:bg-white/[0.08] overflow-hidden">
@@ -189,19 +197,21 @@ export const AccountPage: React.FC = () => {
           </div>
 
           <div className="mt-6 pt-5 border-t border-black/[0.08] dark:border-white/[0.08] flex flex-wrap items-center justify-between gap-3 text-xs">
-            <span className="text-gray-500">Need more quota or want to renew early?</span>
+            <span className="text-gray-500">
+              {!active ? 'Subscribe to activate your 50,000 token quota:' : 'Need more quota or want to renew early?'}
+            </span>
             <div className="flex items-center gap-2">
               <button
                 onClick={() => openPaymentModal('monthly')}
                 className="h-9 px-4 rounded-full text-xs font-semibold border border-black/[0.12] dark:border-white/[0.15] hover:border-black/30 dark:hover:border-white/30 text-black dark:text-white transition-colors cursor-pointer"
               >
-                Renew Monthly (৳1,299)
+                {!active ? 'Subscribe Monthly (৳1,299)' : 'Renew Monthly (৳1,299)'}
               </button>
               <button
                 onClick={() => openPaymentModal('yearly')}
                 className="h-9 px-4 rounded-full text-xs font-semibold bg-black hover:bg-black/90 dark:bg-white dark:hover:bg-white/90 text-white dark:text-black transition-all cursor-pointer shadow-xs"
               >
-                Upgrade Yearly (৳9,999)
+                {!active ? 'Subscribe Yearly (৳9,999)' : 'Upgrade Yearly (৳9,999)'}
               </button>
             </div>
           </div>

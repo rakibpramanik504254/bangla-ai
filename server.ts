@@ -168,7 +168,8 @@ app.post('/api/auth/google', (req: Request, res: Response) => {
 app.get('/api/auth/me', authenticate, (req: AuthenticatedRequest, res: Response) => {
   const user = req.user!;
   const sub = db.getSubscriptionByUserId(user.id);
-  const usageStats = calculateUsageStats(user.usage_limit || 50000, user.current_usage || 0);
+  const usageLimit = user.usage_limit !== undefined ? user.usage_limit : 0;
+  const usageStats = calculateUsageStats(usageLimit, user.current_usage || 0);
 
   res.json({
     id: user.id,
@@ -427,7 +428,8 @@ app.post('/api/chat/stream', authenticate, async (req: AuthenticatedRequest, res
         const usageRecord = db.recordUsage(user.id, targetChat!.id, model.id, promptTokens, completionTokens);
 
         const updatedUser = db.getUserById(user.id);
-        const usageStats = calculateUsageStats(updatedUser?.usage_limit || 50000, updatedUser?.current_usage || 0);
+        const usageLimit = updatedUser?.usage_limit !== undefined ? updatedUser.usage_limit : 0;
+        const usageStats = calculateUsageStats(usageLimit, updatedUser?.current_usage || 0);
 
         res.write(`data: ${JSON.stringify({
           type: 'done',

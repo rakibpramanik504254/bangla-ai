@@ -203,6 +203,23 @@ class Database {
           }
         }
 
+        // Ensure users without an active subscription have 0 tokens
+        if (Array.isArray(parsed.users)) {
+          const nowMs = Date.now();
+          parsed.users.forEach((u: any) => {
+            if (u.role !== 'admin') {
+              const activeSub = parsed.subscriptions?.find(
+                (s: any) => s.user_id === u.id && s.status === 'active' && new Date(s.expires_at).getTime() > nowMs
+              );
+              if (!activeSub) {
+                u.usage_limit = 0;
+              } else if (!u.usage_limit || u.usage_limit === 0) {
+                u.usage_limit = activeSub.plan_id === 'yearly' ? 750000 : 50000;
+              }
+            }
+          });
+        }
+
         return parsed;
       } catch (err) {
         console.warn('Corrupted database file, reseeding initial data:', err);
@@ -271,7 +288,7 @@ class Database {
         phone: '+8801911223344',
         role: 'user',
         status: 'active',
-        usage_limit: 50000,
+        usage_limit: 0,
         current_usage: 0,
         created_at: now,
         updated_at: now
@@ -681,7 +698,7 @@ class Database {
       phone: '',
       role: isAdminUser ? 'admin' : 'user',
       status: 'active',
-      usage_limit: isAdminUser ? 1000000 : (this.data.settings.global_usage_limit || 50000),
+      usage_limit: isAdminUser ? 1000000 : 0,
       current_usage: 0,
       firebase_uid: googleData.uid,
       avatar_url: googleData.avatar_url || '',
@@ -732,7 +749,7 @@ class Database {
       phone: userData.phone || '',
       role: userData.role || 'user',
       status: 'active',
-      usage_limit: this.data.settings.global_usage_limit || 50000,
+      usage_limit: userData.role === 'admin' ? 1000000 : 0,
       current_usage: 0,
       created_at: now,
       updated_at: now

@@ -623,7 +623,7 @@ export const ChatInterface: React.FC = () => {
             <div className="flex items-center gap-2 text-xs font-mono">
               <span className="text-gray-500 hidden sm:inline">Tokens:</span>
               <span className="font-semibold text-black dark:text-white">
-                {(user.usage_limit - user.current_usage).toLocaleString()}
+                {Math.max(0, (user.usage_limit || 0) - (user.current_usage || 0)).toLocaleString()}
               </span>
             </div>
           )}

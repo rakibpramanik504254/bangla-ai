@@ -31,7 +31,14 @@ export class AiService {
       };
     }
 
-    const limit = user.usage_limit || 50000;
+    const limit = user.usage_limit !== undefined ? user.usage_limit : 0;
+    if (limit <= 0) {
+      return {
+        allowed: false,
+        reason: 'You have 0 available tokens. Please subscribe to Monthly (50,000 tokens) or Yearly (750,000 tokens) plan to start chatting.',
+        statusCode: 403
+      };
+    }
     if (user.current_usage >= limit) {
       return {
         allowed: false,

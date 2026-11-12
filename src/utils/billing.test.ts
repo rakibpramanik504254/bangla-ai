@@ -55,6 +55,14 @@ test('calculateUsageStats calculates remaining tokens and limits properly', () =
   assert.equal(limitReached.isLimitReached, true);
   assert.equal(limitReached.remaining, 0);
   assert.equal(limitReached.percentage, 100);
+
+  // New unsubscribed account with 0 tokens
+  const zeroStats = calculateUsageStats(0, 0);
+  assert.equal(zeroStats.limit, 0);
+  assert.equal(zeroStats.used, 0);
+  assert.equal(zeroStats.remaining, 0);
+  assert.equal(zeroStats.percentage, 0);
+  assert.equal(zeroStats.isLimitReached, true);
 });
 
 test('estimateTokens calculates realistic token approximations', () => {

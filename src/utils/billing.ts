@@ -97,14 +97,15 @@ export function calculateExpiryDate(
  * Calculates remaining usage stats and percentage
  */
 export function calculateUsageStats(limit: number, currentUsage: number) {
-  const safeLimit = Math.max(1, limit);
-  const remaining = Math.max(0, safeLimit - currentUsage);
-  const percentage = Math.min(100, Math.round((currentUsage / safeLimit) * 100));
-  const isLimitReached = currentUsage >= safeLimit;
+  const safeLimit = Math.max(0, limit);
+  const safeUsage = Math.max(0, currentUsage);
+  const remaining = Math.max(0, safeLimit - safeUsage);
+  const percentage = safeLimit > 0 ? Math.min(100, Math.round((safeUsage / safeLimit) * 100)) : 0;
+  const isLimitReached = safeLimit === 0 || safeUsage >= safeLimit;
 
   return {
     limit: safeLimit,
-    used: currentUsage,
+    used: safeUsage,
     remaining,
     percentage,
     isLimitReached
