@@ -35,7 +35,7 @@ export interface Payment {
   subscription_id?: string;
   amount: number;
   currency: 'BDT';
-  gateway: 'bkash' | 'nagad' | 'rocket' | 'sslcommerz';
+  gateway: 'bkash' | 'nagad' | 'rocket';
   trx_id: string;
   sender_number: string;
   status: 'completed' | 'pending' | 'failed';
@@ -68,7 +68,7 @@ export interface AiModel {
   model_name: string;
   display_name: string;
   description_en: string;
-  badge: 'super_fast' | 'reasoning' | 'coding' | 'balanced';
+  badge: 'super_fast' | 'reasoning' | 'coding' | 'balanced' | 'max' | 'high' | 'xhigh';
   is_enabled: boolean;
   is_default: boolean;
   context_window: number;
@@ -101,4 +101,16 @@ export interface UsageStats {
   remaining: number;
   percentage: number;
   isLimitReached: boolean;
+}
+
+export interface SystemSettings {
+  global_usage_limit: number;
+  default_monthly_price: number;
+  default_yearly_price: number;
+  support_email: string;
+  support_phone: string;
+  bkash_number: string;
+  nagad_number: string;
+  rocket_number: string;
+  announcement?: string;
 }

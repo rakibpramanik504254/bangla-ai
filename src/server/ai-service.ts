@@ -128,7 +128,14 @@ Provide well-formatted markdown with clear headings, lists, code snippets with s
 
   private static generateContextualResponse(model: AiModel, prompt: string): string {
     const p = prompt.toLowerCase();
-    const modelBadge = `*Model: ${model.display_name}* (${model.badge === 'reasoning' ? 'Deep Reasoning' : model.badge === 'coding' ? 'Code Specialist' : 'Ultra Fast'})\n\n`;
+    const badgeLabel =
+      model.badge === 'max' ? 'Frontier Max Intelligence' :
+      model.badge === 'high' ? 'High Throughput & Reasoning' :
+      model.badge === 'xhigh' ? 'Extreme Inference Power' :
+      model.badge === 'reasoning' ? 'Deep Chain-of-Thought Reasoning' :
+      model.badge === 'coding' ? 'Advanced Code Specialist' :
+      model.badge === 'super_fast' ? 'Ultra Fast Low-Latency' : 'Balanced Multimodal';
+    const modelBadge = `*Model: ${model.display_name}* (${badgeLabel})\n\n`;
 
     if (p.includes('email') || p.includes('letter') || p.includes('proposal') || p.includes('partnership')) {
       return `${modelBadge}Here is a polished, high-converting business partnership proposal email tailored for executive correspondence:

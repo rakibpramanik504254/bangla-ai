@@ -44,7 +44,7 @@ export interface Payment {
   subscription_id?: string;
   amount: number;
   currency: 'BDT';
-  gateway: 'bkash' | 'nagad' | 'rocket' | 'sslcommerz';
+  gateway: 'bkash' | 'nagad' | 'rocket';
   trx_id: string;
   sender_number: string;
   status: 'completed' | 'pending' | 'failed';
@@ -89,7 +89,7 @@ export interface AiModel {
   model_name: string;
   display_name: string;
   description_en: string;
-  badge: 'super_fast' | 'reasoning' | 'coding' | 'balanced';
+  badge: 'super_fast' | 'reasoning' | 'coding' | 'balanced' | 'max' | 'high' | 'xhigh';
   is_enabled: boolean;
   is_default: boolean;
   context_window: number;
@@ -115,6 +115,9 @@ export interface SystemSettings {
   default_yearly_price: number;
   support_email: string;
   support_phone: string;
+  bkash_number: string;
+  nagad_number: string;
+  rocket_number: string;
   announcement?: string;
 }
 
@@ -166,8 +169,12 @@ class Database {
       try {
         const raw = fs.readFileSync(this.dataFile, 'utf-8');
         const parsed = JSON.parse(raw);
-        // Ensure models and settings have English fields
-        if (parsed.ai_models && parsed.ai_models[0]?.description_bn) {
+        // Ensure models and settings have English fields, MFS numbers, and all 10 frontier models
+        if (
+          (parsed.ai_models && parsed.ai_models[0]?.description_bn) ||
+          !parsed.settings?.bkash_number ||
+          (parsed.ai_models && parsed.ai_models.length < 10)
+        ) {
           return this.createSeedData();
         }
         return parsed;
@@ -199,6 +206,8 @@ class Database {
         status: 'active',
         usage_limit: 1000000,
         current_usage: 0,
+        firebase_uid: 'WxBGpxm5T2al2OXFX8wfXzoEtIW2',
+        avatar_url: 'https://lh3.googleusercontent.com/a/ACg8ocLnZ-FD4NuHpOuJ71zbvweJxTc0lay0HXl7CkICxqreJf3UtkLeTw=s96-c',
         created_at: now,
         updated_at: now
       },
@@ -333,10 +342,114 @@ class Database {
         is_active: true,
         created_at: now,
         updated_at: now
+      },
+      {
+        id: 'prov_xai',
+        name: 'xAI Grok',
+        slug: 'xai',
+        api_key: process.env.XAI_API_KEY || '',
+        base_url: 'https://api.x.ai/v1',
+        is_active: true,
+        created_at: now,
+        updated_at: now
+      },
+      {
+        id: 'prov_moonshot',
+        name: 'Moonshot AI (Kimi)',
+        slug: 'moonshot',
+        api_key: process.env.MOONSHOT_API_KEY || '',
+        base_url: 'https://api.moonshot.cn/v1',
+        is_active: true,
+        created_at: now,
+        updated_at: now
       }
     ];
 
     const ai_models: AiModel[] = [
+      {
+        id: 'mod_gemini_4_carbon',
+        provider_id: 'prov_gemini',
+        model_name: 'gemini-4-carbon',
+        display_name: 'Gemini 4 Carbon (high)',
+        description_en: 'Next-generation Google Carbon architecture. High-efficiency inference with 2M context and native multimodal reasoning.',
+        badge: 'high',
+        is_enabled: true,
+        is_default: true,
+        context_window: 2000000,
+        max_output_tokens: 16384,
+        sort_order: 1,
+        created_at: now
+      },
+      {
+        id: 'mod_claude_fable_5_2',
+        provider_id: 'prov_anthropic',
+        model_name: 'claude-fable-5-2',
+        display_name: 'Claude Fable 5.2 (max)',
+        description_en: 'Anthropic pinnacle frontier intelligence. Maximum nuance, multi-turn reasoning, and literary code precision.',
+        badge: 'max',
+        is_enabled: true,
+        is_default: false,
+        context_window: 500000,
+        max_output_tokens: 16384,
+        sort_order: 2,
+        created_at: now
+      },
+      {
+        id: 'mod_gpt_6_astra',
+        provider_id: 'prov_openai',
+        model_name: 'gpt-6-astra',
+        display_name: 'GPT-6 Astra (max)',
+        description_en: 'OpenAI frontier flagship. Maximum general intelligence, autonomous systems design, and mathematical problem-solving.',
+        badge: 'max',
+        is_enabled: true,
+        is_default: false,
+        context_window: 1000000,
+        max_output_tokens: 16384,
+        sort_order: 3,
+        created_at: now
+      },
+      {
+        id: 'mod_deepseek_v4_1_flash',
+        provider_id: 'prov_deepseek',
+        model_name: 'deepseek-v4-1-flash-1017',
+        display_name: 'DeepSeek V4.1 Flash 1017 (max)',
+        description_en: 'Ultra-dense MoE architecture with instantaneous speed and deep algorithmic reasoning at fraction of traditional compute.',
+        badge: 'max',
+        is_enabled: true,
+        is_default: false,
+        context_window: 128000,
+        max_output_tokens: 8192,
+        sort_order: 4,
+        created_at: now
+      },
+      {
+        id: 'mod_grok_4_7',
+        provider_id: 'prov_xai',
+        model_name: 'grok-4-7',
+        display_name: 'Grok 4.7 (xhigh)',
+        description_en: 'xAI frontier real-time intelligence with extreme reasoning throughput and unfiltered technical clarity.',
+        badge: 'xhigh',
+        is_enabled: true,
+        is_default: false,
+        context_window: 256000,
+        max_output_tokens: 8192,
+        sort_order: 5,
+        created_at: now
+      },
+      {
+        id: 'mod_kimi_k3_1_pro',
+        provider_id: 'prov_moonshot',
+        model_name: 'kimi-k3-1-pro',
+        display_name: 'Kimi K3.1 Pro',
+        description_en: 'Moonshot AI flagship with ultra-long 2M context comprehension, document synthesis, and chain-of-thought analysis.',
+        badge: 'reasoning',
+        is_enabled: true,
+        is_default: false,
+        context_window: 2000000,
+        max_output_tokens: 8192,
+        sort_order: 6,
+        created_at: now
+      },
       {
         id: 'mod_gemini_2_5_flash',
         provider_id: 'prov_gemini',
@@ -345,10 +458,10 @@ class Database {
         description_en: 'Ultra-low latency with exceptional context processing. Ideal for everyday writing and rapid query resolution.',
         badge: 'super_fast',
         is_enabled: true,
-        is_default: true,
+        is_default: false,
         context_window: 1000000,
         max_output_tokens: 8192,
-        sort_order: 1,
+        sort_order: 7,
         created_at: now
       },
       {
@@ -362,7 +475,7 @@ class Database {
         is_default: false,
         context_window: 128000,
         max_output_tokens: 4096,
-        sort_order: 2,
+        sort_order: 8,
         created_at: now
       },
       {
@@ -376,7 +489,7 @@ class Database {
         is_default: false,
         context_window: 200000,
         max_output_tokens: 8192,
-        sort_order: 3,
+        sort_order: 9,
         created_at: now
       },
       {
@@ -390,7 +503,7 @@ class Database {
         is_default: false,
         context_window: 64000,
         max_output_tokens: 4096,
-        sort_order: 4,
+        sort_order: 10,
         created_at: now
       }
     ];
@@ -465,6 +578,9 @@ class Database {
       default_yearly_price: 9999,
       support_email: 'support@bangla.ai',
       support_phone: '+880 9612-000000',
+      bkash_number: '01812345678',
+      nagad_number: '01712345678',
+      rocket_number: '01912345678',
       announcement: 'Welcome to Bangla AI — The Premier Unified Multi-Model AI Hub.'
     };
 

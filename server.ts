@@ -234,6 +234,17 @@ app.get('/api/subscription/plans', (_req: Request, res: Response) => {
   res.json(PLANS);
 });
 
+app.get('/api/payment/settings', (_req: Request, res: Response) => {
+  const settings = db.getSettings();
+  res.json({
+    bkash_number: settings.bkash_number || '01812345678',
+    nagad_number: settings.nagad_number || '01712345678',
+    rocket_number: settings.rocket_number || '01912345678',
+    support_phone: settings.support_phone,
+    support_email: settings.support_email
+  });
+});
+
 app.post('/api/subscription/checkout', authenticate, (req: AuthenticatedRequest, res: Response) => {
   try {
     const { planId, paymentMethod, trxId, senderNumber } = req.body;

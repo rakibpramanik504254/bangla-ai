@@ -416,7 +416,7 @@ export const AdminPanel: React.FC = () => {
               <p className="text-2xl font-bold tracking-tight text-gray-900 dark:text-white mt-1 font-mono">
                 {stats ? formatBDT(stats.totalRevenue) : '...'}
               </p>
-              <span className="text-[11px] text-gray-500">Settled via MFS & Cards</span>
+              <span className="text-[11px] text-gray-500">Settled via bKash, Nagad & Rocket</span>
             </div>
 
             <div className="bg-white dark:bg-gray-900 p-5 rounded-2xl border border-gray-100 dark:border-gray-800 shadow-xs">
@@ -735,7 +735,15 @@ export const AdminPanel: React.FC = () => {
                       <div className="text-[10px] font-mono text-gray-400">{m.model_name}</div>
                     </td>
                     <td className="py-3 px-4">
-                      <span className="px-2 py-0.5 rounded bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 text-[10px] font-mono uppercase">
+                      <span className={`px-2 py-0.5 rounded text-[10px] font-mono uppercase font-bold ${
+                        m.badge === 'max'
+                          ? 'bg-purple-50 text-purple-700 dark:bg-purple-950/50 dark:text-purple-300 border border-purple-200 dark:border-purple-800'
+                          : m.badge === 'high'
+                          ? 'bg-blue-50 text-blue-700 dark:bg-blue-950/50 dark:text-blue-300 border border-blue-200 dark:border-blue-800'
+                          : m.badge === 'xhigh'
+                          ? 'bg-amber-50 text-amber-700 dark:bg-amber-950/50 dark:text-amber-300 border border-amber-200 dark:border-amber-800'
+                          : 'bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400'
+                      }`}>
                         {m.badge}
                       </span>
                     </td>
@@ -807,11 +815,65 @@ export const AdminPanel: React.FC = () => {
             />
           </div>
 
-          <div className="pt-1">
+          {/* MFS Payment Numbers Configuration */}
+          <div className="pt-3 border-t border-gray-100 dark:border-gray-800 space-y-3">
+            <div>
+              <h4 className="font-bold text-xs text-gray-900 dark:text-white flex items-center justify-between">
+                <span>MFS Payment Phone Numbers</span>
+                <span className="text-[10px] font-mono text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/40 px-2 py-0.5 rounded">
+                  Live in Checkout
+                </span>
+              </h4>
+              <p className="text-[11px] text-gray-500 mt-0.5">
+                These numbers are dynamically displayed to subscribers during checkout with 1-click copy.
+              </p>
+            </div>
+
+            <div>
+              <label className="block font-medium mb-1 text-gray-700 dark:text-gray-300">
+                bKash Merchant / Personal Number:
+              </label>
+              <input
+                type="text"
+                value={globalSettings.bkash_number || ''}
+                onChange={e => setGlobalSettings({ ...globalSettings, bkash_number: e.target.value })}
+                placeholder="01812345678"
+                className="w-full p-2 rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 font-mono text-xs"
+              />
+            </div>
+
+            <div>
+              <label className="block font-medium mb-1 text-gray-700 dark:text-gray-300">
+                Nagad Merchant / Personal Number:
+              </label>
+              <input
+                type="text"
+                value={globalSettings.nagad_number || ''}
+                onChange={e => setGlobalSettings({ ...globalSettings, nagad_number: e.target.value })}
+                placeholder="01712345678"
+                className="w-full p-2 rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 font-mono text-xs"
+              />
+            </div>
+
+            <div>
+              <label className="block font-medium mb-1 text-gray-700 dark:text-gray-300">
+                Rocket Merchant / Personal Number:
+              </label>
+              <input
+                type="text"
+                value={globalSettings.rocket_number || ''}
+                onChange={e => setGlobalSettings({ ...globalSettings, rocket_number: e.target.value })}
+                placeholder="01912345678"
+                className="w-full p-2 rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 font-mono text-xs"
+              />
+            </div>
+          </div>
+
+          <div className="pt-2">
             <button
               type="submit"
               disabled={savingSettings}
-              className="px-4 py-2 rounded-lg bg-gray-950 hover:bg-black dark:bg-white dark:hover:bg-gray-100 text-white dark:text-gray-950 font-semibold text-xs flex items-center gap-1.5"
+              className="px-4 py-2 rounded-lg bg-gray-950 hover:bg-black dark:bg-white dark:hover:bg-gray-100 text-white dark:text-gray-950 font-semibold text-xs flex items-center gap-1.5 cursor-pointer shadow-xs"
             >
               <Save className="w-3.5 h-3.5" />
               <span>{savingSettings ? 'Saving...' : 'Save Settings'}</span>

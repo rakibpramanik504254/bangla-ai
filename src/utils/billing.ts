@@ -23,7 +23,7 @@ export const PLANS: Record<'monthly' | 'yearly', PlanConfig> = {
       'High-speed streaming responses with priority queuing',
       '50,000 token quota per monthly billing cycle',
       'Persistent chat history & session management',
-      'Instant local payment via bKash, Nagad, Rocket & Cards',
+      'Instant local payment via bKash, Nagad & Rocket',
       '24/7 technical customer support'
     ]
   },

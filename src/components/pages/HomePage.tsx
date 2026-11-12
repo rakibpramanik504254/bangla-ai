@@ -10,7 +10,8 @@ import {
   Zap,
   Lock,
   Layers,
-  ChevronRight
+  ChevronRight,
+  Cpu
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext.tsx';
 import { PLANS, formatBDT } from '../../utils/billing.ts';
@@ -44,7 +45,7 @@ export const HomePage: React.FC<HomePageProps> = ({ onStartChat }) => {
           </h1>
 
           <p className="mt-6 text-base sm:text-lg text-gray-600 dark:text-gray-400 max-w-2xl mx-auto leading-relaxed font-normal">
-            Switch effortlessly between Google Gemini 2.5, OpenAI GPT-4o, Anthropic Claude 3.5, and DeepSeek R1. Pay easily in Bangladeshi Taka (৳) via bKash, Nagad, or Cards without foreign exchange limits.
+            Switch effortlessly between Claude Fable 5.2, Gemini 4 Carbon, GPT-6 Astra, Grok 4.7, and DeepSeek. Pay easily in Bangladeshi Taka (৳) via bKash, Nagad, and Rocket without foreign exchange limits.
           </p>
 
           <div className="mt-8 flex flex-col sm:flex-row items-center justify-center gap-3">
@@ -77,12 +78,12 @@ export const HomePage: React.FC<HomePageProps> = ({ onStartChat }) => {
           {/* Minimal Key Metrics */}
           <div className="mt-14 pt-8 border-t border-gray-100 dark:border-gray-800/80 grid grid-cols-2 md:grid-cols-4 gap-6 text-center">
             <div>
-              <p className="text-2xl font-bold tracking-tight text-gray-900 dark:text-white">4+ Models</p>
-              <p className="text-[11px] text-gray-400 dark:text-gray-500 mt-0.5">Gemini, GPT-4o, Claude, DeepSeek</p>
+              <p className="text-2xl font-bold tracking-tight text-gray-900 dark:text-white">10+ Models</p>
+              <p className="text-[11px] text-gray-400 dark:text-gray-500 mt-0.5">Claude Fable, Gemini 4, GPT-6 Astra, Grok 4.7</p>
             </div>
             <div>
-              <p className="text-2xl font-bold tracking-tight text-gray-900 dark:text-white">Zero Cards</p>
-              <p className="text-[11px] text-gray-400 dark:text-gray-500 mt-0.5">Direct bKash & Nagad checkout</p>
+              <p className="text-2xl font-bold tracking-tight text-gray-900 dark:text-white">MFS Direct</p>
+              <p className="text-[11px] text-gray-400 dark:text-gray-500 mt-0.5">Instant bKash, Nagad & Rocket verification</p>
             </div>
             <div>
               <p className="text-2xl font-bold tracking-tight text-gray-900 dark:text-white">Streaming</p>
@@ -107,88 +108,130 @@ export const HomePage: React.FC<HomePageProps> = ({ onStartChat }) => {
           </p>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-          {/* Gemini */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          {/* Gemini 4 Carbon */}
           <div className="bg-white dark:bg-gray-900/60 rounded-2xl p-5 border border-gray-100 dark:border-gray-800/80 hover:border-gray-300 dark:hover:border-gray-700 transition-all flex flex-col justify-between">
             <div>
               <div className="flex items-center justify-between mb-3">
-                <div className="w-8 h-8 rounded-lg bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 flex items-center justify-center font-bold text-xs">
+                <div className="w-8 h-8 rounded-lg bg-blue-50 dark:bg-blue-950/40 text-blue-600 dark:text-blue-400 flex items-center justify-center font-bold text-xs">
                   <Bot className="w-4 h-4" />
                 </div>
-                <span className="text-[10px] font-mono uppercase px-2 py-0.5 rounded-md bg-gray-50 dark:bg-gray-800/60 border border-gray-200 dark:border-gray-800 text-gray-600 dark:text-gray-400">
-                  Google
+                <span className="text-[10px] font-mono uppercase px-2 py-0.5 rounded-md bg-blue-50 dark:bg-blue-950/50 border border-blue-200 dark:border-blue-800 text-blue-700 dark:text-blue-300 font-bold">
+                  HIGH
                 </span>
               </div>
-              <h3 className="text-sm font-bold text-gray-900 dark:text-white">Gemini 2.5 Pro & Flash</h3>
+              <h3 className="text-sm font-bold text-gray-900 dark:text-white">Gemini 4 Carbon (high)</h3>
               <p className="text-xs text-gray-500 dark:text-gray-400 mt-2 leading-relaxed">
-                Massive 1M+ token context window. Built for deep document research and ultra-rapid general assistance.
+                Next-gen Google Carbon architecture. 2M token context, high-throughput multimodal intelligence, and instantaneous response streaming.
               </p>
             </div>
             <div className="mt-4 pt-3 border-t border-gray-100 dark:border-gray-800/60 text-[11px] font-mono text-gray-400">
-              Low Latency • High Context
+              Google • 2,000,000 Context
             </div>
           </div>
 
-          {/* OpenAI */}
+          {/* Claude Fable 5.2 */}
           <div className="bg-white dark:bg-gray-900/60 rounded-2xl p-5 border border-gray-100 dark:border-gray-800/80 hover:border-gray-300 dark:hover:border-gray-700 transition-all flex flex-col justify-between">
             <div>
               <div className="flex items-center justify-between mb-3">
-                <div className="w-8 h-8 rounded-lg bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 flex items-center justify-center font-bold text-xs">
-                  <Sparkles className="w-4 h-4" />
-                </div>
-                <span className="text-[10px] font-mono uppercase px-2 py-0.5 rounded-md bg-gray-50 dark:bg-gray-800/60 border border-gray-200 dark:border-gray-800 text-gray-600 dark:text-gray-400">
-                  OpenAI
-                </span>
-              </div>
-              <h3 className="text-sm font-bold text-gray-900 dark:text-white">GPT-4o (Omni)</h3>
-              <p className="text-xs text-gray-500 dark:text-gray-400 mt-2 leading-relaxed">
-                Industry-standard multimodal intelligence. Unmatched in creative writing, strategy formulation, and nuanced dialogue.
-              </p>
-            </div>
-            <div className="mt-4 pt-3 border-t border-gray-100 dark:border-gray-800/60 text-[11px] font-mono text-gray-400">
-              Balanced • Versatile
-            </div>
-          </div>
-
-          {/* Claude */}
-          <div className="bg-white dark:bg-gray-900/60 rounded-2xl p-5 border border-gray-100 dark:border-gray-800/80 hover:border-gray-300 dark:hover:border-gray-700 transition-all flex flex-col justify-between">
-            <div>
-              <div className="flex items-center justify-between mb-3">
-                <div className="w-8 h-8 rounded-lg bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 flex items-center justify-center font-bold text-xs">
+                <div className="w-8 h-8 rounded-lg bg-purple-50 dark:bg-purple-950/40 text-purple-600 dark:text-purple-400 flex items-center justify-center font-bold text-xs">
                   <Code2 className="w-4 h-4" />
                 </div>
-                <span className="text-[10px] font-mono uppercase px-2 py-0.5 rounded-md bg-gray-50 dark:bg-gray-800/60 border border-gray-200 dark:border-gray-800 text-gray-600 dark:text-gray-400">
-                  Anthropic
+                <span className="text-[10px] font-mono uppercase px-2 py-0.5 rounded-md bg-purple-50 dark:bg-purple-950/50 border border-purple-200 dark:border-purple-800 text-purple-700 dark:text-purple-300 font-bold">
+                  MAX
                 </span>
               </div>
-              <h3 className="text-sm font-bold text-gray-900 dark:text-white">Claude 3.5 Sonnet</h3>
+              <h3 className="text-sm font-bold text-gray-900 dark:text-white">Claude Fable 5.2 (max)</h3>
               <p className="text-xs text-gray-500 dark:text-gray-400 mt-2 leading-relaxed">
-                Preferred by software engineers. Superior code synthesis, complex refactoring, and natural prose styling.
+                Anthropic's pinnacle model. Exceptional software engineering, complex system architecture design, and nuanced prose refinement.
               </p>
             </div>
             <div className="mt-4 pt-3 border-t border-gray-100 dark:border-gray-800/60 text-[11px] font-mono text-gray-400">
-              Coding • Analytical
+              Anthropic • Coding & Reasoning
             </div>
           </div>
 
-          {/* DeepSeek */}
+          {/* GPT-6 Astra */}
           <div className="bg-white dark:bg-gray-900/60 rounded-2xl p-5 border border-gray-100 dark:border-gray-800/80 hover:border-gray-300 dark:hover:border-gray-700 transition-all flex flex-col justify-between">
             <div>
               <div className="flex items-center justify-between mb-3">
-                <div className="w-8 h-8 rounded-lg bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 flex items-center justify-center font-bold text-xs">
-                  <Brain className="w-4 h-4" />
+                <div className="w-8 h-8 rounded-lg bg-emerald-50 dark:bg-emerald-950/40 text-emerald-600 dark:text-emerald-400 flex items-center justify-center font-bold text-xs">
+                  <Sparkles className="w-4 h-4" />
                 </div>
-                <span className="text-[10px] font-mono uppercase px-2 py-0.5 rounded-md bg-gray-50 dark:bg-gray-800/60 border border-gray-200 dark:border-gray-800 text-gray-600 dark:text-gray-400">
-                  DeepSeek
+                <span className="text-[10px] font-mono uppercase px-2 py-0.5 rounded-md bg-purple-50 dark:bg-purple-950/50 border border-purple-200 dark:border-purple-800 text-purple-700 dark:text-purple-300 font-bold">
+                  MAX
                 </span>
               </div>
-              <h3 className="text-sm font-bold text-gray-900 dark:text-white">DeepSeek R1</h3>
+              <h3 className="text-sm font-bold text-gray-900 dark:text-white">GPT-6 Astra (max)</h3>
               <p className="text-xs text-gray-500 dark:text-gray-400 mt-2 leading-relaxed">
-                State-of-the-art chain-of-thought reasoning model for mathematics, algorithmic logic, and formal proofs.
+                OpenAI's frontier powerhouse. Maximum general intelligence, autonomous strategic planning, and complex cross-domain problem solving.
               </p>
             </div>
             <div className="mt-4 pt-3 border-t border-gray-100 dark:border-gray-800/60 text-[11px] font-mono text-gray-400">
-              Reasoning • Logic proofs
+              OpenAI • 1,000,000 Context
+            </div>
+          </div>
+
+          {/* DeepSeek V4.1 Flash 1017 */}
+          <div className="bg-white dark:bg-gray-900/60 rounded-2xl p-5 border border-gray-100 dark:border-gray-800/80 hover:border-gray-300 dark:hover:border-gray-700 transition-all flex flex-col justify-between">
+            <div>
+              <div className="flex items-center justify-between mb-3">
+                <div className="w-8 h-8 rounded-lg bg-cyan-50 dark:bg-cyan-950/40 text-cyan-600 dark:text-cyan-400 flex items-center justify-center font-bold text-xs">
+                  <Brain className="w-4 h-4" />
+                </div>
+                <span className="text-[10px] font-mono uppercase px-2 py-0.5 rounded-md bg-purple-50 dark:bg-purple-950/50 border border-purple-200 dark:border-purple-800 text-purple-700 dark:text-purple-300 font-bold">
+                  MAX
+                </span>
+              </div>
+              <h3 className="text-sm font-bold text-gray-900 dark:text-white">DeepSeek V4.1 Flash 1017</h3>
+              <p className="text-xs text-gray-500 dark:text-gray-400 mt-2 leading-relaxed">
+                Next-gen MoE architecture offering instantaneous response velocity combined with rigorous chain-of-thought mathematical proof verification.
+              </p>
+            </div>
+            <div className="mt-4 pt-3 border-t border-gray-100 dark:border-gray-800/60 text-[11px] font-mono text-gray-400">
+              DeepSeek • Ultra Dense MoE
+            </div>
+          </div>
+
+          {/* Grok 4.7 */}
+          <div className="bg-white dark:bg-gray-900/60 rounded-2xl p-5 border border-gray-100 dark:border-gray-800/80 hover:border-gray-300 dark:hover:border-gray-700 transition-all flex flex-col justify-between">
+            <div>
+              <div className="flex items-center justify-between mb-3">
+                <div className="w-8 h-8 rounded-lg bg-amber-50 dark:bg-amber-950/40 text-amber-600 dark:text-amber-400 flex items-center justify-center font-bold text-xs">
+                  <Zap className="w-4 h-4" />
+                </div>
+                <span className="text-[10px] font-mono uppercase px-2 py-0.5 rounded-md bg-amber-50 dark:bg-amber-950/50 border border-amber-200 dark:border-amber-800 text-amber-700 dark:text-amber-300 font-bold">
+                  XHIGH
+                </span>
+              </div>
+              <h3 className="text-sm font-bold text-gray-900 dark:text-white">Grok 4.7 (xhigh)</h3>
+              <p className="text-xs text-gray-500 dark:text-gray-400 mt-2 leading-relaxed">
+                xAI's extreme inference engine. Direct real-time insight synthesis, high-throughput multi-agent tasks, and uncompromising technical clarity.
+              </p>
+            </div>
+            <div className="mt-4 pt-3 border-t border-gray-100 dark:border-gray-800/60 text-[11px] font-mono text-gray-400">
+              xAI • Extreme Inference
+            </div>
+          </div>
+
+          {/* Kimi K3.1 Pro */}
+          <div className="bg-white dark:bg-gray-900/60 rounded-2xl p-5 border border-gray-100 dark:border-gray-800/80 hover:border-gray-300 dark:hover:border-gray-700 transition-all flex flex-col justify-between">
+            <div>
+              <div className="flex items-center justify-between mb-3">
+                <div className="w-8 h-8 rounded-lg bg-rose-50 dark:bg-rose-950/40 text-rose-600 dark:text-rose-400 flex items-center justify-center font-bold text-xs">
+                  <Cpu className="w-4 h-4" />
+                </div>
+                <span className="text-[10px] font-mono uppercase px-2 py-0.5 rounded-md bg-rose-50 dark:bg-rose-950/50 border border-rose-200 dark:border-rose-800 text-rose-700 dark:text-rose-300 font-bold">
+                  REASONING
+                </span>
+              </div>
+              <h3 className="text-sm font-bold text-gray-900 dark:text-white">Kimi K3.1 Pro</h3>
+              <p className="text-xs text-gray-500 dark:text-gray-400 mt-2 leading-relaxed">
+                Moonshot flagship with native 2M context handling. Specialized in massive document digests, legal contracts, and academic synthesis.
+              </p>
+            </div>
+            <div className="mt-4 pt-3 border-t border-gray-100 dark:border-gray-800/60 text-[11px] font-mono text-gray-400">
+              Moonshot • 2M Context Window
             </div>
           </div>
         </div>
@@ -316,7 +359,6 @@ export const HomePage: React.FC<HomePageProps> = ({ onStartChat }) => {
             <span className="px-2.5 py-1 rounded-md bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 text-[#E2136E]">bKash</span>
             <span className="px-2.5 py-1 rounded-md bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 text-[#F7941D]">Nagad</span>
             <span className="px-2.5 py-1 rounded-md bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 text-[#8C3494]">Rocket</span>
-            <span className="px-2.5 py-1 rounded-md bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-300">Cards</span>
           </div>
         </div>
       </section>
