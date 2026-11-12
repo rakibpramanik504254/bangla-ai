@@ -1,5 +1,5 @@
 import React from 'react';
-import { ShieldCheck } from 'lucide-react';
+import { ShieldCheck, Facebook, Mail, Phone, Globe } from 'lucide-react';
 
 interface FooterProps {
   setCurrentView: (view: 'home' | 'chat' | 'account' | 'admin' | 'about' | 'privacy' | 'terms' | 'security') => void;
@@ -28,6 +28,19 @@ export const Footer: React.FC<FooterProps> = ({ setCurrentView }) => {
             <div className="flex items-center gap-1.5 text-[11px] text-gray-500 pt-1">
               <ShieldCheck className="w-3.5 h-3.5 text-black dark:text-white" />
               <span>TLS 1.3 Encrypted • Verified Gateways</span>
+            </div>
+            {/* Facebook Social Link */}
+            <div className="pt-2">
+              <a
+                href="https://www.facebook.com/profile.php?id=61596472081766"
+                target="_blank"
+                rel="noopener noreferrer"
+                aria-label="Bangla AI Facebook Page"
+                className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full border border-black/10 dark:border-white/15 hover:border-black/30 dark:hover:border-white/40 text-black dark:text-white text-xs font-medium transition-all group"
+              >
+                <Facebook className="w-3.5 h-3.5 text-[#1877F2]" />
+                <span>Follow on Facebook</span>
+              </a>
             </div>
           </div>
 
@@ -126,17 +139,56 @@ export const Footer: React.FC<FooterProps> = ({ setCurrentView }) => {
             <ul className="space-y-1.5 text-xs text-gray-500">
               <li>Banani Commercial Area</li>
               <li>Dhaka-1213, Bangladesh</li>
-              <li className="pt-1 font-mono text-gray-700 dark:text-gray-300">support@bangla.ai</li>
-              <li className="font-mono text-gray-700 dark:text-gray-300">+880 9612-000000</li>
+              <li className="pt-1 font-mono">
+                <a
+                  href="mailto:ourbangla.ai@gmail.com"
+                  className="text-gray-700 dark:text-gray-300 hover:text-black dark:hover:text-white transition-colors inline-flex items-center gap-1.5"
+                >
+                  <Mail className="w-3 h-3 text-gray-400" />
+                  <span>ourbangla.ai@gmail.com</span>
+                </a>
+              </li>
+              <li className="font-mono">
+                <a
+                  href="tel:+8801622860128"
+                  className="text-gray-700 dark:text-gray-300 hover:text-black dark:hover:text-white transition-colors inline-flex items-center gap-1.5"
+                >
+                  <Phone className="w-3 h-3 text-gray-400" />
+                  <span>+880 1622-860128</span>
+                </a>
+              </li>
+              <li className="font-mono pt-0.5">
+                <a
+                  href="https://bangla-ai.pro"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-gray-700 dark:text-gray-300 hover:text-black dark:hover:text-white transition-colors inline-flex items-center gap-1.5"
+                >
+                  <Globe className="w-3 h-3 text-gray-400" />
+                  <span>bangla-ai.pro</span>
+                </a>
+              </li>
             </ul>
           </div>
         </div>
 
         <div className="mt-12 pt-6 border-t border-black/[0.06] dark:border-white/[0.06] flex flex-col sm:flex-row items-center justify-between gap-4 text-[11px] text-gray-400">
-          <p>© 2026 Bangla AI. All rights reserved.</p>
-          <p className="font-mono text-[10px]">
-            OpenAI Minimal Design Architecture.
-          </p>
+          <p>© 2026 Bangla AI (<a href="https://bangla-ai.pro" className="hover:underline">bangla-ai.pro</a>). All rights reserved.</p>
+          <div className="flex items-center gap-4">
+            <a
+              href="https://www.facebook.com/profile.php?id=61596472081766"
+              target="_blank"
+              rel="noopener noreferrer"
+              aria-label="Facebook"
+              className="hover:text-black dark:hover:text-white transition-colors inline-flex items-center gap-1"
+            >
+              <Facebook className="w-3.5 h-3.5" />
+              <span>Facebook</span>
+            </a>
+            <span className="font-mono text-[10px]">
+              OpenAI Minimal Architecture
+            </span>
+          </div>
         </div>
       </div>
     </footer>

@@ -92,14 +92,16 @@ export const PrivacyPolicyPage: React.FC = () => {
 
         <section className="space-y-2 pt-4 border-t border-black/[0.08] dark:border-white/[0.08]">
           <h2 className="text-xs font-bold text-black dark:text-white uppercase tracking-wider font-mono">
-            7. Privacy Inquiries
+            7. Privacy Inquiries & Data Rights
           </h2>
           <p>
-            For questions or requests concerning data protection, please contact:
+            For questions or requests concerning data protection, account deletion, or statutory rights, please contact:
           </p>
-          <p className="font-mono text-xs text-black dark:text-white font-medium">
-            privacy@bangla.ai
-          </p>
+          <div className="font-mono text-xs text-black dark:text-white space-y-1">
+            <p>Email: <a href="mailto:ourbangla.ai@gmail.com" className="underline">ourbangla.ai@gmail.com</a></p>
+            <p>Hotline: <a href="tel:+8801622860128" className="underline">+880 1622-860128</a></p>
+            <p>Website: <a href="https://bangla-ai.pro" target="_blank" rel="noopener noreferrer" className="underline">bangla-ai.pro</a></p>
+          </div>
         </section>
       </div>
     </div>

@@ -119,4 +119,5 @@ export interface PublicSettings {
   support_email?: string;
   facebook_pixel_id?: string;
   facebook_pixel_enabled?: boolean;
+  facebook_page_url?: string;
 }

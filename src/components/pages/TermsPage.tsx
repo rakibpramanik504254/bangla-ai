@@ -64,7 +64,7 @@ export const TermsPage: React.FC = () => {
             <li><strong className="text-black dark:text-white">Transaction Verification:</strong> To activate a plan, you must send the exact specified amount to our designated official MFS account and submit the 8–10 alphanumeric Transaction ID (TrxID) along with your sender mobile number.</li>
             <li><strong className="text-black dark:text-white">Admin Validation:</strong> Subscriptions are verified against MFS merchant ledgers. Submitting fabricated, duplicate, or third-party unauthorized TrxIDs constitutes fraud and results in immediate account termination.</li>
             <li><strong className="text-black dark:text-white">Token Quotas & Renewal:</strong> Monthly plans allocate 50,000 monthly tokens; Yearly plans allocate 750,000 annual tokens. Quotas reset upon successful renewal.</li>
-            <li><strong className="text-black dark:text-white">Refund Policy:</strong> Because token capacity and GPU inference resources are provisioned in real time upon activation, subscription fees are non-refundable once approved and used. If you submit a duplicate payment in error, contact support@bangla.ai within 48 hours for adjustment.</li>
+            <li><strong className="text-black dark:text-white">Refund Policy:</strong> Because token capacity and GPU inference resources are provisioned in real time upon activation, subscription fees are non-refundable once approved and used. If you submit a duplicate payment in error, contact ourbangla.ai@gmail.com within 48 hours for adjustment.</li>
           </ul>
         </section>
 
@@ -140,8 +140,10 @@ export const TermsPage: React.FC = () => {
             For questions regarding these Terms, billing inquiries, or enterprise arrangements, reach out to our legal and operations desk:
           </p>
           <div className="pt-2 font-mono text-xs space-y-1 text-black dark:text-white">
-            <p>Email: <a href="mailto:support@bangla.ai" className="underline">support@bangla.ai</a></p>
-            <p>Hotline: +880 9612-000000</p>
+            <p>Email: <a href="mailto:ourbangla.ai@gmail.com" className="underline">ourbangla.ai@gmail.com</a></p>
+            <p>Hotline: <a href="tel:+8801622860128" className="underline">+880 1622-860128</a></p>
+            <p>Official Website: <a href="https://bangla-ai.pro" target="_blank" rel="noopener noreferrer" className="underline">bangla-ai.pro</a></p>
+            <p>Facebook: <a href="https://www.facebook.com/profile.php?id=61596472081766" target="_blank" rel="noopener noreferrer" className="underline">facebook.com/profile.php?id=61596472081766</a></p>
             <p>Address: Banani Commercial Area, Dhaka-1213, Bangladesh</p>
           </div>
         </section>

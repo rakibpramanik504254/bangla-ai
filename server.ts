@@ -241,8 +241,9 @@ app.get('/api/settings/public', (_req: Request, res: Response) => {
     bkash_number: settings.bkash_number || '01812345678',
     nagad_number: settings.nagad_number || '01712345678',
     rocket_number: settings.rocket_number || '01912345678',
-    support_phone: settings.support_phone,
-    support_email: settings.support_email,
+    support_phone: settings.support_phone || '+880 1622-860128',
+    support_email: settings.support_email || 'ourbangla.ai@gmail.com',
+    facebook_page_url: settings.facebook_page_url || 'https://www.facebook.com/profile.php?id=61596472081766',
     facebook_pixel_id: settings.facebook_pixel_id || '',
     facebook_pixel_enabled: !!settings.facebook_pixel_enabled
   });
@@ -254,8 +255,9 @@ app.get('/api/payment/settings', (_req: Request, res: Response) => {
     bkash_number: settings.bkash_number || '01812345678',
     nagad_number: settings.nagad_number || '01712345678',
     rocket_number: settings.rocket_number || '01912345678',
-    support_phone: settings.support_phone,
-    support_email: settings.support_email,
+    support_phone: settings.support_phone || '+880 1622-860128',
+    support_email: settings.support_email || 'ourbangla.ai@gmail.com',
+    facebook_page_url: settings.facebook_page_url || 'https://www.facebook.com/profile.php?id=61596472081766',
     facebook_pixel_id: settings.facebook_pixel_id || '',
     facebook_pixel_enabled: !!settings.facebook_pixel_enabled
   });
@@ -600,7 +602,7 @@ async function sendMetaConversionsPurchase(payment: any, settings: any): Promise
         {
           event_name: 'Purchase',
           event_time: Math.floor(Date.now() / 1000),
-          event_source_url: 'https://bangla.ai',
+          event_source_url: 'https://bangla-ai.pro',
           action_source: 'website',
           user_data: {
             ...(emailHash ? { em: [emailHash] } : {}),

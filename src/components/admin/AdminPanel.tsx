@@ -1247,7 +1247,7 @@ export const AdminPanel: React.FC = () => {
               <label className="block font-medium mb-1 text-black dark:text-white">Support Email:</label>
               <input
                 type="email"
-                value={globalSettings.support_email || 'support@bangla.ai'}
+                value={globalSettings.support_email || 'ourbangla.ai@gmail.com'}
                 onChange={e => setGlobalSettings({ ...globalSettings, support_email: e.target.value })}
                 className="w-full px-3.5 py-2.5 rounded-[12px] border border-black/[0.12] dark:border-white/[0.15] bg-white dark:bg-[#121212] text-xs focus:outline-none focus:border-black dark:focus:border-white"
               />
@@ -1257,9 +1257,20 @@ export const AdminPanel: React.FC = () => {
               <label className="block font-medium mb-1 text-black dark:text-white">Support Phone:</label>
               <input
                 type="text"
-                value={globalSettings.support_phone || '+880 9612-000000'}
+                value={globalSettings.support_phone || '+880 1622-860128'}
                 onChange={e => setGlobalSettings({ ...globalSettings, support_phone: e.target.value })}
                 className="w-full px-3.5 py-2.5 rounded-[12px] border border-black/[0.12] dark:border-white/[0.15] bg-white dark:bg-[#121212] text-xs focus:outline-none focus:border-black dark:focus:border-white"
+              />
+            </div>
+
+            <div className="md:col-span-2">
+              <label className="block font-medium mb-1 text-black dark:text-white">Facebook Page Link:</label>
+              <input
+                type="text"
+                value={globalSettings.facebook_page_url || 'https://www.facebook.com/profile.php?id=61596472081766'}
+                onChange={e => setGlobalSettings({ ...globalSettings, facebook_page_url: e.target.value })}
+                className="w-full px-3.5 py-2.5 rounded-[12px] border border-black/[0.12] dark:border-white/[0.15] bg-white dark:bg-[#121212] text-xs font-mono focus:outline-none focus:border-black dark:focus:border-white"
+                placeholder="https://www.facebook.com/..."
               />
             </div>
           </div>

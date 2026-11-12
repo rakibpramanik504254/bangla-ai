@@ -1,5 +1,5 @@
 import React from 'react';
-import { Sparkles, MapPin, Mail, ArrowUpRight, CheckCircle2, Shield } from 'lucide-react';
+import { Sparkles, MapPin, Mail, ArrowUpRight, CheckCircle2, Shield, Facebook, Phone } from 'lucide-react';
 
 export const AboutPage: React.FC = () => {
   return (
@@ -73,18 +73,37 @@ export const AboutPage: React.FC = () => {
       </div>
 
       {/* Office & Contact */}
-      <div className="p-7 rounded-[8px] bg-[#FAFAFA] dark:bg-[#121212] border border-black/[0.08] dark:border-white/[0.08] flex flex-col sm:flex-row sm:items-center justify-between gap-4 text-xs">
+      <div className="p-7 rounded-[8px] bg-[#FAFAFA] dark:bg-[#121212] border border-black/[0.08] dark:border-white/[0.08] flex flex-col md:flex-row md:items-center justify-between gap-6 text-xs">
         <div>
-          <span className="font-semibold text-black dark:text-white block">Headquarters</span>
+          <span className="font-semibold text-black dark:text-white block">Headquarters & Inquiries</span>
           <span className="text-gray-500 mt-0.5 block">Banani Commercial Area, Dhaka-1213, Bangladesh</span>
+          <span className="text-gray-400 font-mono text-[11px] block mt-1">Official Domain: bangla-ai.pro</span>
         </div>
-        <a
-          href="mailto:support@bangla.ai"
-          className="h-9 px-4 rounded-full border border-black/[0.12] dark:border-white/[0.15] bg-white dark:bg-[#1a1a1a] text-black dark:text-white flex items-center justify-center gap-1.5 font-medium hover:border-black/30 transition-colors cursor-pointer self-start sm:self-auto"
-        >
-          <Mail className="w-3.5 h-3.5" />
-          <span>support@bangla.ai</span>
-        </a>
+        <div className="flex flex-wrap items-center gap-2.5">
+          <a
+            href="https://www.facebook.com/profile.php?id=61596472081766"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="h-9 px-4 rounded-full border border-black/[0.12] dark:border-white/[0.15] bg-white dark:bg-[#1a1a1a] text-black dark:text-white flex items-center justify-center gap-1.5 font-medium hover:border-black/30 transition-colors cursor-pointer"
+          >
+            <Facebook className="w-3.5 h-3.5 text-[#1877F2]" />
+            <span>Facebook Page</span>
+          </a>
+          <a
+            href="tel:+8801622860128"
+            className="h-9 px-4 rounded-full border border-black/[0.12] dark:border-white/[0.15] bg-white dark:bg-[#1a1a1a] text-black dark:text-white flex items-center justify-center gap-1.5 font-medium hover:border-black/30 transition-colors cursor-pointer"
+          >
+            <Phone className="w-3.5 h-3.5 text-gray-500" />
+            <span>+880 1622-860128</span>
+          </a>
+          <a
+            href="mailto:ourbangla.ai@gmail.com"
+            className="h-9 px-4 rounded-full border border-black/[0.12] dark:border-white/[0.15] bg-white dark:bg-[#1a1a1a] text-black dark:text-white flex items-center justify-center gap-1.5 font-medium hover:border-black/30 transition-colors cursor-pointer"
+          >
+            <Mail className="w-3.5 h-3.5 text-gray-500" />
+            <span>ourbangla.ai@gmail.com</span>
+          </a>
+        </div>
       </div>
     </div>
   );

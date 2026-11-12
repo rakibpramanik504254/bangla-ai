@@ -130,6 +130,7 @@ export interface SystemSettings {
   facebook_pixel_enabled?: boolean;
   facebook_pixel_access_token?: string;
   facebook_pixel_test_code?: string;
+  facebook_page_url?: string;
 }
 
 interface DatabaseData {
@@ -188,6 +189,20 @@ class Database {
         ) {
           return this.createSeedData();
         }
+
+        // Migrate placeholder contact info to real contact info
+        if (parsed.settings) {
+          if (!parsed.settings.support_email || parsed.settings.support_email === 'support@bangla.ai') {
+            parsed.settings.support_email = 'ourbangla.ai@gmail.com';
+          }
+          if (!parsed.settings.support_phone || parsed.settings.support_phone === '+880 9612-000000') {
+            parsed.settings.support_phone = '+880 1622-860128';
+          }
+          if (!parsed.settings.facebook_page_url) {
+            parsed.settings.facebook_page_url = 'https://www.facebook.com/profile.php?id=61596472081766';
+          }
+        }
+
         return parsed;
       } catch (err) {
         console.warn('Corrupted database file, reseeding initial data:', err);
@@ -592,8 +607,9 @@ class Database {
       global_usage_limit: 50000,
       default_monthly_price: 1299,
       default_yearly_price: 9999,
-      support_email: 'support@bangla.ai',
-      support_phone: '+880 9612-000000',
+      support_email: 'ourbangla.ai@gmail.com',
+      support_phone: '+880 1622-860128',
+      facebook_page_url: 'https://www.facebook.com/profile.php?id=61596472081766',
       bkash_number: '01812345678',
       nagad_number: '01712345678',
       rocket_number: '01912345678',
