@@ -23,6 +23,14 @@ import { useAuth } from '../../context/AuthContext.tsx';
 import { PLANS, formatBDT } from '../../utils/billing.ts';
 import { VideoDemoSection } from '../home/VideoDemoSection.tsx';
 import { SmarterWorkflowsSection } from '../home/SmarterWorkflowsSection.tsx';
+import {
+  AnthropicClaudeIcon,
+  GoogleGeminiIcon,
+  OpenAIIcon,
+  XAIGrokIcon,
+  DeepSeekIcon,
+  MoonshotKimiIcon
+} from '../common/ModelIcons.tsx';
 
 interface HomePageProps {
   onStartChat: () => void;
@@ -263,17 +271,27 @@ export const HomePage: React.FC<HomePageProps> = ({ onStartChat }) => {
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          {/* Claude Fable 5.2 */}
-          <div className="card-minimal flex flex-col justify-between p-5 hover:border-black/30 dark:hover:border-white/30 transition-colors">
-            <div className="space-y-2.5">
+          {/* 1. Claude Fable 5.2 */}
+          <div className="card-minimal flex flex-col justify-between p-5 hover:border-black/30 dark:hover:border-white/30 transition-colors group">
+            <div className="space-y-3">
               <div className="flex items-center justify-between text-xs text-gray-500">
-                <span>Anthropic</span>
-                <span>·</span>
-                <span>500k Context</span>
-                <span>·</span>
-                <span className="font-mono text-[10px] uppercase font-bold text-black dark:text-white">MAX</span>
+                <div className="flex items-center gap-1.5 font-medium">
+                  <span>Anthropic</span>
+                  <span>·</span>
+                  <span>500k Context</span>
+                </div>
+                <span className="font-mono text-[10px] uppercase font-bold text-amber-700 dark:text-amber-400 px-1.5 py-0.5 rounded bg-amber-500/10 border border-amber-500/20">
+                  MAX
+                </span>
               </div>
-              <h3 className="text-base font-semibold text-black dark:text-white">Claude Fable 5.2 (max)</h3>
+              <div className="flex items-center gap-2.5">
+                <div className="w-8 h-8 rounded-lg bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20 flex items-center justify-center shrink-0 shadow-2xs group-hover:scale-105 transition-transform">
+                  <AnthropicClaudeIcon size={18} />
+                </div>
+                <h3 className="text-base font-semibold text-black dark:text-white leading-snug">
+                  Claude Fable 5.2 (max)
+                </h3>
+              </div>
               <p className="text-xs text-gray-600 dark:text-gray-400 leading-relaxed">
                 Anthropic's pinnacle intelligence. Exceptional software engineering, complex system architecture design, and nuanced prose refinement.
               </p>
@@ -283,17 +301,27 @@ export const HomePage: React.FC<HomePageProps> = ({ onStartChat }) => {
             </div>
           </div>
 
-          {/* Gemini 4 Carbon */}
-          <div className="card-minimal flex flex-col justify-between p-5 hover:border-black/30 dark:hover:border-white/30 transition-colors">
-            <div className="space-y-2.5">
+          {/* 2. Gemini 4 Carbon */}
+          <div className="card-minimal flex flex-col justify-between p-5 hover:border-black/30 dark:hover:border-white/30 transition-colors group">
+            <div className="space-y-3">
               <div className="flex items-center justify-between text-xs text-gray-500">
-                <span>Google</span>
-                <span>·</span>
-                <span>2M Context</span>
-                <span>·</span>
-                <span className="font-mono text-[10px] uppercase font-bold text-black dark:text-white">HIGH</span>
+                <div className="flex items-center gap-1.5 font-medium">
+                  <span>Google</span>
+                  <span>·</span>
+                  <span>2M Context</span>
+                </div>
+                <span className="font-mono text-[10px] uppercase font-bold text-blue-700 dark:text-blue-400 px-1.5 py-0.5 rounded bg-blue-500/10 border border-blue-500/20">
+                  HIGH
+                </span>
               </div>
-              <h3 className="text-base font-semibold text-black dark:text-white">Gemini 4 Carbon (high)</h3>
+              <div className="flex items-center gap-2.5">
+                <div className="w-8 h-8 rounded-lg bg-blue-500/10 text-blue-600 dark:text-blue-400 border border-blue-500/20 flex items-center justify-center shrink-0 shadow-2xs group-hover:scale-105 transition-transform">
+                  <GoogleGeminiIcon size={18} />
+                </div>
+                <h3 className="text-base font-semibold text-black dark:text-white leading-snug">
+                  Gemini 4 Carbon (high)
+                </h3>
+              </div>
               <p className="text-xs text-gray-600 dark:text-gray-400 leading-relaxed">
                 Next-generation Google Carbon architecture with massive 2M token context, high-throughput multimodal intelligence, and instantaneous response streaming.
               </p>
@@ -303,17 +331,27 @@ export const HomePage: React.FC<HomePageProps> = ({ onStartChat }) => {
             </div>
           </div>
 
-          {/* GPT-6 Astra */}
-          <div className="card-minimal flex flex-col justify-between p-5 hover:border-black/30 dark:hover:border-white/30 transition-colors">
-            <div className="space-y-2.5">
+          {/* 3. GPT-6 Astra */}
+          <div className="card-minimal flex flex-col justify-between p-5 hover:border-black/30 dark:hover:border-white/30 transition-colors group">
+            <div className="space-y-3">
               <div className="flex items-center justify-between text-xs text-gray-500">
-                <span>OpenAI</span>
-                <span>·</span>
-                <span>1M Context</span>
-                <span>·</span>
-                <span className="font-mono text-[10px] uppercase font-bold text-black dark:text-white">MAX</span>
+                <div className="flex items-center gap-1.5 font-medium">
+                  <span>OpenAI</span>
+                  <span>·</span>
+                  <span>1M Context</span>
+                </div>
+                <span className="font-mono text-[10px] uppercase font-bold text-emerald-700 dark:text-emerald-400 px-1.5 py-0.5 rounded bg-emerald-500/10 border border-emerald-500/20">
+                  MAX
+                </span>
               </div>
-              <h3 className="text-base font-semibold text-black dark:text-white">GPT-6 Astra (max)</h3>
+              <div className="flex items-center gap-2.5">
+                <div className="w-8 h-8 rounded-lg bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20 flex items-center justify-center shrink-0 shadow-2xs group-hover:scale-105 transition-transform">
+                  <OpenAIIcon size={18} />
+                </div>
+                <h3 className="text-base font-semibold text-black dark:text-white leading-snug">
+                  GPT-6 Astra (max)
+                </h3>
+              </div>
               <p className="text-xs text-gray-600 dark:text-gray-400 leading-relaxed">
                 OpenAI frontier flagship. Maximum general intelligence, autonomous systems design, and multi-step cross-domain problem solving.
               </p>
@@ -323,17 +361,27 @@ export const HomePage: React.FC<HomePageProps> = ({ onStartChat }) => {
             </div>
           </div>
 
-          {/* Grok 4.7 */}
-          <div className="card-minimal flex flex-col justify-between p-5 hover:border-black/30 dark:hover:border-white/30 transition-colors">
-            <div className="space-y-2.5">
+          {/* 4. Grok 4.7 */}
+          <div className="card-minimal flex flex-col justify-between p-5 hover:border-black/30 dark:hover:border-white/30 transition-colors group">
+            <div className="space-y-3">
               <div className="flex items-center justify-between text-xs text-gray-500">
-                <span>xAI</span>
-                <span>·</span>
-                <span>256k Context</span>
-                <span>·</span>
-                <span className="font-mono text-[10px] uppercase font-bold text-black dark:text-white">XHIGH</span>
+                <div className="flex items-center gap-1.5 font-medium">
+                  <span>xAI</span>
+                  <span>·</span>
+                  <span>256k Context</span>
+                </div>
+                <span className="font-mono text-[10px] uppercase font-bold text-black dark:text-white px-1.5 py-0.5 rounded bg-black/10 dark:bg-white/10 border border-black/15 dark:border-white/20">
+                  XHIGH
+                </span>
               </div>
-              <h3 className="text-base font-semibold text-black dark:text-white">Grok 4.7 (xhigh)</h3>
+              <div className="flex items-center gap-2.5">
+                <div className="w-8 h-8 rounded-lg bg-black/5 dark:bg-white/10 text-black dark:text-white border border-black/10 dark:border-white/20 flex items-center justify-center shrink-0 shadow-2xs group-hover:scale-105 transition-transform">
+                  <XAIGrokIcon size={17} />
+                </div>
+                <h3 className="text-base font-semibold text-black dark:text-white leading-snug">
+                  Grok 4.7 (xhigh)
+                </h3>
+              </div>
               <p className="text-xs text-gray-600 dark:text-gray-400 leading-relaxed">
                 xAI's extreme inference engine. Direct real-time insight synthesis, high-throughput multi-agent orchestration, and uncompromising technical clarity.
               </p>
@@ -343,17 +391,27 @@ export const HomePage: React.FC<HomePageProps> = ({ onStartChat }) => {
             </div>
           </div>
 
-          {/* DeepSeek V4.1 Flash 1017 */}
-          <div className="card-minimal flex flex-col justify-between p-5 hover:border-black/30 dark:hover:border-white/30 transition-colors">
-            <div className="space-y-2.5">
+          {/* 5. DeepSeek V4.1 Flash 1017 */}
+          <div className="card-minimal flex flex-col justify-between p-5 hover:border-black/30 dark:hover:border-white/30 transition-colors group">
+            <div className="space-y-3">
               <div className="flex items-center justify-between text-xs text-gray-500">
-                <span>DeepSeek</span>
-                <span>·</span>
-                <span>128k Context</span>
-                <span>·</span>
-                <span className="font-mono text-[10px] uppercase font-bold text-black dark:text-white">MAX</span>
+                <div className="flex items-center gap-1.5 font-medium">
+                  <span>DeepSeek</span>
+                  <span>·</span>
+                  <span>128k Context</span>
+                </div>
+                <span className="font-mono text-[10px] uppercase font-bold text-indigo-700 dark:text-indigo-400 px-1.5 py-0.5 rounded bg-indigo-500/10 border border-indigo-500/20">
+                  MAX
+                </span>
               </div>
-              <h3 className="text-base font-semibold text-black dark:text-white">DeepSeek V4.1 Flash 1017</h3>
+              <div className="flex items-center gap-2.5">
+                <div className="w-8 h-8 rounded-lg bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 border border-indigo-500/20 flex items-center justify-center shrink-0 shadow-2xs group-hover:scale-105 transition-transform">
+                  <DeepSeekIcon size={18} />
+                </div>
+                <h3 className="text-base font-semibold text-black dark:text-white leading-snug">
+                  DeepSeek V4.1 Flash
+                </h3>
+              </div>
               <p className="text-xs text-gray-600 dark:text-gray-400 leading-relaxed">
                 Next-gen MoE architecture offering instantaneous response velocity combined with rigorous chain-of-thought mathematical proof verification.
               </p>
@@ -363,17 +421,27 @@ export const HomePage: React.FC<HomePageProps> = ({ onStartChat }) => {
             </div>
           </div>
 
-          {/* Kimi K3.1 Pro */}
-          <div className="card-minimal flex flex-col justify-between p-5 hover:border-black/30 dark:hover:border-white/30 transition-colors">
-            <div className="space-y-2.5">
+          {/* 6. Kimi K3.1 Pro */}
+          <div className="card-minimal flex flex-col justify-between p-5 hover:border-black/30 dark:hover:border-white/30 transition-colors group">
+            <div className="space-y-3">
               <div className="flex items-center justify-between text-xs text-gray-500">
-                <span>Moonshot</span>
-                <span>·</span>
-                <span>2M Context</span>
-                <span>·</span>
-                <span className="font-mono text-[10px] uppercase font-bold text-black dark:text-white">REASONING</span>
+                <div className="flex items-center gap-1.5 font-medium">
+                  <span>Moonshot AI</span>
+                  <span>·</span>
+                  <span>2M Context</span>
+                </div>
+                <span className="font-mono text-[10px] uppercase font-bold text-purple-700 dark:text-purple-400 px-1.5 py-0.5 rounded bg-purple-500/10 border border-purple-500/20">
+                  REASONING
+                </span>
               </div>
-              <h3 className="text-base font-semibold text-black dark:text-white">Kimi K3.1 Pro</h3>
+              <div className="flex items-center gap-2.5">
+                <div className="w-8 h-8 rounded-lg bg-purple-500/10 text-purple-600 dark:text-purple-400 border border-purple-500/20 flex items-center justify-center shrink-0 shadow-2xs group-hover:scale-105 transition-transform">
+                  <MoonshotKimiIcon size={18} />
+                </div>
+                <h3 className="text-base font-semibold text-black dark:text-white leading-snug">
+                  Kimi K3.1 Pro
+                </h3>
+              </div>
               <p className="text-xs text-gray-600 dark:text-gray-400 leading-relaxed">
                 Moonshot flagship with native 2M context handling. Specialized in massive document digests, legal contracts, and academic synthesis.
               </p>
@@ -383,17 +451,27 @@ export const HomePage: React.FC<HomePageProps> = ({ onStartChat }) => {
             </div>
           </div>
 
-          {/* Gemini 2.5 Flash */}
-          <div className="card-minimal flex flex-col justify-between p-5 hover:border-black/30 dark:hover:border-white/30 transition-colors">
-            <div className="space-y-2.5">
+          {/* 7. Gemini 2.5 Flash */}
+          <div className="card-minimal flex flex-col justify-between p-5 hover:border-black/30 dark:hover:border-white/30 transition-colors group">
+            <div className="space-y-3">
               <div className="flex items-center justify-between text-xs text-gray-500">
-                <span>Google</span>
-                <span>·</span>
-                <span>1M Context</span>
-                <span>·</span>
-                <span className="font-mono text-[10px] uppercase font-bold text-emerald-600">BALANCED</span>
+                <div className="flex items-center gap-1.5 font-medium">
+                  <span>Google</span>
+                  <span>·</span>
+                  <span>1M Context</span>
+                </div>
+                <span className="font-mono text-[10px] uppercase font-bold text-emerald-600 dark:text-emerald-400 px-1.5 py-0.5 rounded bg-emerald-500/10 border border-emerald-500/20">
+                  BALANCED
+                </span>
               </div>
-              <h3 className="text-base font-semibold text-black dark:text-white">Gemini 2.5 Flash</h3>
+              <div className="flex items-center gap-2.5">
+                <div className="w-8 h-8 rounded-lg bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20 flex items-center justify-center shrink-0 shadow-2xs group-hover:scale-105 transition-transform">
+                  <GoogleGeminiIcon size={18} />
+                </div>
+                <h3 className="text-base font-semibold text-black dark:text-white leading-snug">
+                  Gemini 2.5 Flash
+                </h3>
+              </div>
               <p className="text-xs text-gray-600 dark:text-gray-400 leading-relaxed">
                 Ultra-fast versatile workhorse designed for high-frequency queries, instant summarization, and rapid draft iterations.
               </p>
@@ -403,17 +481,27 @@ export const HomePage: React.FC<HomePageProps> = ({ onStartChat }) => {
             </div>
           </div>
 
-          {/* Gemini 2.5 Pro */}
-          <div className="card-minimal flex flex-col justify-between p-5 hover:border-black/30 dark:hover:border-white/30 transition-colors">
-            <div className="space-y-2.5">
+          {/* 8. Gemini 2.5 Pro */}
+          <div className="card-minimal flex flex-col justify-between p-5 hover:border-black/30 dark:hover:border-white/30 transition-colors group">
+            <div className="space-y-3">
               <div className="flex items-center justify-between text-xs text-gray-500">
-                <span>Google</span>
-                <span>·</span>
-                <span>2M Context</span>
-                <span>·</span>
-                <span className="font-mono text-[10px] uppercase font-bold text-black dark:text-white">PRO</span>
+                <div className="flex items-center gap-1.5 font-medium">
+                  <span>Google</span>
+                  <span>·</span>
+                  <span>2M Context</span>
+                </div>
+                <span className="font-mono text-[10px] uppercase font-bold text-blue-700 dark:text-blue-400 px-1.5 py-0.5 rounded bg-blue-500/10 border border-blue-500/20">
+                  PRO
+                </span>
               </div>
-              <h3 className="text-base font-semibold text-black dark:text-white">Gemini 2.5 Pro</h3>
+              <div className="flex items-center gap-2.5">
+                <div className="w-8 h-8 rounded-lg bg-blue-500/10 text-blue-600 dark:text-blue-400 border border-blue-500/20 flex items-center justify-center shrink-0 shadow-2xs group-hover:scale-105 transition-transform">
+                  <GoogleGeminiIcon size={18} />
+                </div>
+                <h3 className="text-base font-semibold text-black dark:text-white leading-snug">
+                  Gemini 2.5 Pro
+                </h3>
+              </div>
               <p className="text-xs text-gray-600 dark:text-gray-400 leading-relaxed">
                 Deep analytical reasoning model optimized for cross-modal datasets, video timestamps, and multi-file codebases.
               </p>
@@ -423,21 +511,63 @@ export const HomePage: React.FC<HomePageProps> = ({ onStartChat }) => {
             </div>
           </div>
 
-          {/* GPT-4o & Claude 3.5 Sonnet */}
-          <div className="card-minimal flex flex-col justify-between p-5 hover:border-black/30 dark:hover:border-white/30 transition-colors">
-            <div className="space-y-2.5">
+          {/* 9. OpenAI GPT-4o */}
+          <div className="card-minimal flex flex-col justify-between p-5 hover:border-black/30 dark:hover:border-white/30 transition-colors group">
+            <div className="space-y-3">
               <div className="flex items-center justify-between text-xs text-gray-500">
-                <span>OpenAI / Anthropic</span>
-                <span>·</span>
-                <span>Industry Standards</span>
+                <div className="flex items-center gap-1.5 font-medium">
+                  <span>OpenAI</span>
+                  <span>·</span>
+                  <span>128k Context</span>
+                </div>
+                <span className="font-mono text-[10px] uppercase font-bold text-emerald-700 dark:text-emerald-400 px-1.5 py-0.5 rounded bg-emerald-500/10 border border-emerald-500/20">
+                  OMNI
+                </span>
               </div>
-              <h3 className="text-base font-semibold text-black dark:text-white">GPT-4o & Claude 3.5 Sonnet</h3>
+              <div className="flex items-center gap-2.5">
+                <div className="w-8 h-8 rounded-lg bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20 flex items-center justify-center shrink-0 shadow-2xs group-hover:scale-105 transition-transform">
+                  <OpenAIIcon size={18} />
+                </div>
+                <h3 className="text-base font-semibold text-black dark:text-white leading-snug">
+                  OpenAI GPT-4o
+                </h3>
+              </div>
               <p className="text-xs text-gray-600 dark:text-gray-400 leading-relaxed">
-                Proven industry workhorses for software development, technical writing, and production conversational logic.
+                Flagship multimodal intelligence. Excels at nuanced reasoning, creative writing, vision synthesis, and production conversational logic.
               </p>
             </div>
             <div className="mt-4 pt-3 border-t border-black/[0.06] dark:border-white/[0.06] text-[11px] text-gray-400 font-mono">
-              Industry Benchmarks • Reliable
+              Industry Standard • Multimodal
+            </div>
+          </div>
+
+          {/* 10. Claude 3.5 Sonnet */}
+          <div className="card-minimal flex flex-col justify-between p-5 hover:border-black/30 dark:hover:border-white/30 transition-colors group">
+            <div className="space-y-3">
+              <div className="flex items-center justify-between text-xs text-gray-500">
+                <div className="flex items-center gap-1.5 font-medium">
+                  <span>Anthropic</span>
+                  <span>·</span>
+                  <span>200k Context</span>
+                </div>
+                <span className="font-mono text-[10px] uppercase font-bold text-amber-700 dark:text-amber-400 px-1.5 py-0.5 rounded bg-amber-500/10 border border-amber-500/20">
+                  CODING
+                </span>
+              </div>
+              <div className="flex items-center gap-2.5">
+                <div className="w-8 h-8 rounded-lg bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20 flex items-center justify-center shrink-0 shadow-2xs group-hover:scale-105 transition-transform">
+                  <AnthropicClaudeIcon size={18} />
+                </div>
+                <h3 className="text-base font-semibold text-black dark:text-white leading-snug">
+                  Claude 3.5 Sonnet
+                </h3>
+              </div>
+              <p className="text-xs text-gray-600 dark:text-gray-400 leading-relaxed">
+                Industry-leading software engineering and prose refinement. Unmatched code generation, debugging, and architecture review.
+              </p>
+            </div>
+            <div className="mt-4 pt-3 border-t border-black/[0.06] dark:border-white/[0.06] text-[11px] text-gray-400 font-mono">
+              Engineering Benchmark • Nuance
             </div>
           </div>
         </div>
