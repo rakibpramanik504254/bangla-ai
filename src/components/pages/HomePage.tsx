@@ -121,7 +121,7 @@ export const HomePage: React.FC<HomePageProps> = ({ onStartChat }) => {
           <h1 className="text-4xl sm:text-5xl lg:text-6xl font-bold tracking-tight leading-[1.12] text-black dark:text-white max-w-3xl mx-auto">
             Every top AI model.
             <span className="block font-medium text-gray-500 dark:text-gray-400 mt-1">
-              One sparse, high-clarity interface.
+              One clean, simple interface.
             </span>
           </h1>
 
