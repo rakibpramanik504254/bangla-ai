@@ -582,13 +582,13 @@ export const HomePage: React.FC<HomePageProps> = ({ onStartChat }) => {
       <section id="pricing-section" className="max-w-4xl mx-auto px-4 sm:px-6">
         <div className="text-center mb-10 space-y-2">
           <span className="text-xs font-mono uppercase tracking-wider text-gray-400 block">
-            Pricing
+            Special Launch Offer
           </span>
           <h2 className="text-2xl sm:text-3xl font-medium tracking-tight text-black dark:text-white">
             Simple, Transparent Subscription
           </h2>
           <p className="text-sm text-gray-500 max-w-md mx-auto">
-            Choose the subscription that matches your workflow. Activate easily with bKash, Nagad, or Rocket.
+            Limited-time special launch discount on all plans. Activate instantly with bKash, Nagad, or Rocket.
           </p>
         </div>
 
@@ -598,15 +598,27 @@ export const HomePage: React.FC<HomePageProps> = ({ onStartChat }) => {
             <div>
               <div className="flex justify-between items-center">
                 <h3 className="text-lg font-bold text-black dark:text-white">Monthly Plan</h3>
-                <span className="text-xs text-gray-500 font-medium">Flexible</span>
+                <span className="px-2.5 py-0.5 rounded-full bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20 text-[10px] font-mono font-bold">
+                  15% OFF
+                </span>
               </div>
               <p className="text-xs text-gray-500 mt-1">Ideal for individuals getting started with AI</p>
 
-              <div className="mt-6 flex items-baseline gap-1">
-                <span className="text-3xl sm:text-4xl font-bold text-black dark:text-white font-mono">
-                  {formatBDT(PLANS.monthly.priceBDT)}
-                </span>
-                <span className="text-xs text-gray-500">/ month</span>
+              <div className="mt-6 flex flex-col gap-1">
+                <div className="flex items-center gap-2">
+                  <span className="text-xs font-mono text-gray-400 line-through">
+                    ৳1,529
+                  </span>
+                  <span className="text-[10px] font-mono font-semibold text-emerald-600 dark:text-emerald-400">
+                    Save ৳230/mo
+                  </span>
+                </div>
+                <div className="flex items-baseline gap-1">
+                  <span className="text-3xl sm:text-4xl font-bold text-black dark:text-white font-mono">
+                    {formatBDT(PLANS.monthly.priceBDT)}
+                  </span>
+                  <span className="text-xs text-gray-500">/ month</span>
+                </div>
               </div>
 
               <div className="mt-6 space-y-2.5 border-t border-black/[0.06] dark:border-white/[0.06] pt-5">
@@ -630,32 +642,41 @@ export const HomePage: React.FC<HomePageProps> = ({ onStartChat }) => {
                 }}
                 className="btn-pill-secondary w-full text-center cursor-pointer"
               >
-                Subscribe Monthly (৳1,299)
+                Claim 15% Off • Subscribe (৳1,299)
               </button>
             </div>
           </div>
 
           {/* Yearly Plan (Emphasis Card) */}
           <div className="card-minimal p-7 flex flex-col justify-between border-black/20 dark:border-white/25 shadow-sm relative">
-            <span className="absolute top-5 right-5 text-[11px] font-mono text-gray-500 dark:text-gray-400">
-              SAVE 36%
-            </span>
-
             <div>
               <div className="flex justify-between items-center">
                 <h3 className="text-lg font-bold text-black dark:text-white">Yearly Plan</h3>
+                <span className="px-2.5 py-0.5 rounded-full bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20 text-[10px] font-mono font-bold">
+                  36% OFF • BEST VALUE
+                </span>
               </div>
               <p className="text-xs text-gray-500 mt-1">Best value for power users and professionals</p>
 
-              <div className="mt-6 flex items-baseline gap-1">
-                <span className="text-3xl sm:text-4xl font-bold text-black dark:text-white font-mono">
-                  {formatBDT(PLANS.yearly.priceBDT)}
-                </span>
-                <span className="text-xs text-gray-500">/ year</span>
+              <div className="mt-6 flex flex-col gap-1">
+                <div className="flex items-center gap-2">
+                  <span className="text-xs font-mono text-gray-400 line-through">
+                    ৳15,588
+                  </span>
+                  <span className="text-[10px] font-mono font-semibold text-emerald-600 dark:text-emerald-400">
+                    Save ৳5,589/yr
+                  </span>
+                </div>
+                <div className="flex items-baseline gap-1">
+                  <span className="text-3xl sm:text-4xl font-bold text-black dark:text-white font-mono">
+                    {formatBDT(PLANS.yearly.priceBDT)}
+                  </span>
+                  <span className="text-xs text-gray-500">/ year</span>
+                </div>
+                <p className="text-xs text-gray-500 mt-0.5 font-mono">
+                  Equivalent to ৳833/month
+                </p>
               </div>
-              <p className="text-xs text-gray-500 mt-1">
-                Equivalent to ৳833/month
-              </p>
 
               <div className="mt-6 space-y-2.5 border-t border-black/[0.06] dark:border-white/[0.06] pt-5">
                 {PLANS.yearly.features.map((feature, idx) => (
@@ -678,7 +699,7 @@ export const HomePage: React.FC<HomePageProps> = ({ onStartChat }) => {
                 }}
                 className="btn-pill-primary w-full text-center cursor-pointer"
               >
-                Subscribe Yearly (৳9,999)
+                Claim 36% Off • Subscribe (৳9,999)
               </button>
             </div>
           </div>
