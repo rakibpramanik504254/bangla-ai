@@ -3,33 +3,33 @@ import { Shield, AlertTriangle, Lock, Eye, Database, Scale, Mail } from 'lucide-
 
 export const PrivacyPolicyPage: React.FC = () => {
   return (
-    <div className="max-w-3xl mx-auto px-4 sm:px-6 py-16 space-y-12 text-xs sm:text-sm text-gray-600 dark:text-gray-400 leading-relaxed">
+    <div className="max-w-4xl mx-auto px-4 sm:px-6 py-20 space-y-12 text-xs sm:text-sm text-gray-700 dark:text-gray-300 leading-relaxed">
       {/* Header */}
       <div className="space-y-2">
-        <span className="text-[11px] font-mono uppercase tracking-wider text-gray-400 block">
+        <span className="text-[11px] font-mono uppercase tracking-wider text-gray-500 block">
           Legal & Compliance
         </span>
-        <h1 className="text-3xl sm:text-4xl font-extrabold text-gray-950 dark:text-white tracking-tight">
+        <h1 className="text-3xl sm:text-4xl font-bold text-black dark:text-white tracking-tight">
           Privacy Policy
         </h1>
-        <p className="text-xs text-gray-400 font-mono">Effective: November 2026 • Dhaka, Bangladesh</p>
+        <p className="text-xs text-gray-500 font-mono">Effective: November 2026 • Dhaka, Bangladesh</p>
       </div>
 
-      {/* Prominent Legal Review Notice Callout */}
-      <div className="bg-amber-50/70 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800/80 rounded-2xl p-5 text-amber-900 dark:text-amber-200 text-xs flex items-start gap-3">
-        <AlertTriangle className="w-5 h-5 text-amber-600 dark:text-amber-400 shrink-0 mt-0.5" />
+      {/* Legal Notice */}
+      <div className="bg-[#FAFAFA] dark:bg-[#121212] border border-black/[0.1] dark:border-white/[0.1] rounded-[8px] p-5 text-xs flex items-start gap-3.5">
+        <AlertTriangle className="w-4 h-4 text-black dark:text-white shrink-0 mt-0.5" />
         <div className="space-y-1">
-          <p className="font-bold text-xs uppercase tracking-wide">Important Legal Notice:</p>
-          <p className="leading-relaxed text-amber-800 dark:text-amber-300">
-            This document represents a comprehensive initial draft privacy policy reflecting Bangla AI's data collection workflows, AI model transit architecture, and local regulatory considerations in Bangladesh. Prior to full-scale commercial deployment, this policy should be formally reviewed and finalized by a qualified legal professional or cyber law practitioner.
+          <p className="font-bold text-xs uppercase tracking-wide text-black dark:text-white">Legal Notice:</p>
+          <p className="leading-relaxed text-gray-600 dark:text-gray-400">
+            This document represents a comprehensive privacy policy reflecting Bangla AI's data collection workflows, AI model transit architecture, and local regulatory considerations in Bangladesh. Prior to full-scale commercial deployment, this policy should be formally reviewed by a qualified cyber law practitioner.
           </p>
         </div>
       </div>
 
       {/* Policy Sections */}
-      <div className="space-y-8 bg-white dark:bg-gray-900 p-6 sm:p-8 rounded-3xl border border-gray-100 dark:border-gray-800/80">
+      <div className="space-y-8 bg-white dark:bg-[#0c0c0c] p-6 sm:p-8 rounded-[8px] border border-black/[0.08] dark:border-white/[0.08] shadow-xs">
         <section className="space-y-2">
-          <h2 className="text-sm font-bold text-gray-900 dark:text-white uppercase tracking-wider font-mono">
+          <h2 className="text-xs font-bold text-black dark:text-white uppercase tracking-wider font-mono">
             1. Overview & Scope
           </h2>
           <p>
@@ -38,28 +38,28 @@ export const PrivacyPolicyPage: React.FC = () => {
         </section>
 
         <section className="space-y-2">
-          <h2 className="text-sm font-bold text-gray-900 dark:text-white uppercase tracking-wider font-mono">
+          <h2 className="text-xs font-bold text-black dark:text-white uppercase tracking-wider font-mono">
             2. Information We Collect
           </h2>
-          <ul className="list-disc pl-5 space-y-1.5">
-            <li><strong>Account Profile Data:</strong> Full name, verified email address, phone number, and cryptographically salted password hashes (processed via scrypt).</li>
-            <li><strong>Subscription & Transaction Metadata:</strong> Selected plan, billing records, MFS Transaction IDs (TrxID via bKash/Nagad/Rocket), payment gateway timestamps, and active status. We never collect or store confidential MFS PINs or card CVVs.</li>
-            <li><strong>Interaction & Session Data:</strong> Prompts submitted to AI models, generated responses, model identifiers, token consumption metrics, and user-initiated chat titles.</li>
-            <li><strong>Technical Telemetry:</strong> Anonymized server logs, browser user-agent headers, and authentication tokens for session verification.</li>
+          <ul className="list-disc pl-5 space-y-1.5 text-gray-600 dark:text-gray-400">
+            <li><strong className="text-black dark:text-white">Account Profile Data:</strong> Full name, verified email address, phone number, and cryptographically salted password hashes (processed via scrypt).</li>
+            <li><strong className="text-black dark:text-white">Subscription & Transaction Metadata:</strong> Selected plan, billing records, MFS Transaction IDs (TrxID via bKash/Nagad/Rocket), payment gateway timestamps, and active status. We never collect or store confidential MFS PINs or card CVVs.</li>
+            <li><strong className="text-black dark:text-white">Interaction & Session Data:</strong> Prompts submitted to AI models, generated responses, model identifiers, token consumption metrics, and user-initiated chat titles.</li>
+            <li><strong className="text-black dark:text-white">Technical Telemetry:</strong> Anonymized server logs, browser user-agent headers, and authentication tokens for session verification.</li>
           </ul>
         </section>
 
         <section className="space-y-2">
-          <h2 className="text-sm font-bold text-gray-900 dark:text-white uppercase tracking-wider font-mono">
+          <h2 className="text-xs font-bold text-black dark:text-white uppercase tracking-wider font-mono">
             3. AI Model Processing & Third-Party Providers
           </h2>
           <p>
-            When you interact with models (Google Gemini, OpenAI GPT-4o, Anthropic Claude, DeepSeek R1), your prompt payload is transmitted over secure TLS 1.3 channels to provider inference clusters strictly for the purpose of generating real-time completions. In accordance with enterprise provider terms, individual conversational data transmitted through our API pipelines is not utilized to train public foundation models.
+            When you interact with models (Claude 3.7 Sonnet, Claude Fable 5.2, GPT-6 Astra, Gemini 4 Carbon, Grok 4.7, DeepSeek V4.1, etc.), your prompt payload is transmitted over secure TLS 1.3 channels to provider inference clusters strictly for the purpose of generating real-time completions. In accordance with enterprise provider terms, individual conversational data transmitted through our API pipelines is not utilized to train public foundation models.
           </p>
         </section>
 
         <section className="space-y-2">
-          <h2 className="text-sm font-bold text-gray-900 dark:text-white uppercase tracking-wider font-mono">
+          <h2 className="text-xs font-bold text-black dark:text-white uppercase tracking-wider font-mono">
             4. Security Architecture & Storage
           </h2>
           <p>
@@ -68,21 +68,21 @@ export const PrivacyPolicyPage: React.FC = () => {
         </section>
 
         <section className="space-y-2">
-          <h2 className="text-sm font-bold text-gray-900 dark:text-white uppercase tracking-wider font-mono">
+          <h2 className="text-xs font-bold text-black dark:text-white uppercase tracking-wider font-mono">
             5. User Rights & Data Governance
           </h2>
           <p>
             You retain complete control over your conversational history:
           </p>
-          <ul className="list-disc pl-5 space-y-1">
-            <li><strong>Access:</strong> Review your account usage, token quotas, and conversation history at any time.</li>
-            <li><strong>Deletion:</strong> Delete individual conversation threads permanently from your interface with immediate database cascade.</li>
-            <li><strong>Account Termination:</strong> Request complete account erasure by contacting our support team.</li>
+          <ul className="list-disc pl-5 space-y-1 text-gray-600 dark:text-gray-400">
+            <li><strong className="text-black dark:text-white">Access:</strong> Review your account usage, token quotas, and conversation history at any time.</li>
+            <li><strong className="text-black dark:text-white">Deletion:</strong> Delete individual conversation threads permanently from your interface with immediate database cascade.</li>
+            <li><strong className="text-black dark:text-white">Account Termination:</strong> Request complete account erasure by contacting our support team.</li>
           </ul>
         </section>
 
         <section className="space-y-2">
-          <h2 className="text-sm font-bold text-gray-900 dark:text-white uppercase tracking-wider font-mono">
+          <h2 className="text-xs font-bold text-black dark:text-white uppercase tracking-wider font-mono">
             6. Regulatory Compliance
           </h2>
           <p>
@@ -90,15 +90,15 @@ export const PrivacyPolicyPage: React.FC = () => {
           </p>
         </section>
 
-        <section className="space-y-2 pt-4 border-t border-gray-100 dark:border-gray-800">
-          <h2 className="text-sm font-bold text-gray-900 dark:text-white uppercase tracking-wider font-mono">
+        <section className="space-y-2 pt-4 border-t border-black/[0.08] dark:border-white/[0.08]">
+          <h2 className="text-xs font-bold text-black dark:text-white uppercase tracking-wider font-mono">
             7. Privacy Inquiries
           </h2>
           <p>
             For questions or requests concerning data protection, please contact:
           </p>
-          <p className="font-mono text-xs text-gray-900 dark:text-white font-medium">
-            privacy@bangla.ai / support@bangla.ai
+          <p className="font-mono text-xs text-black dark:text-white font-medium">
+            privacy@bangla.ai
           </p>
         </section>
       </div>

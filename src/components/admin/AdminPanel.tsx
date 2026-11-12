@@ -66,8 +66,8 @@ export const AdminPanel: React.FC = () => {
   if (!user || user.role !== 'admin') {
     return (
       <div className="max-w-md mx-auto py-24 text-center px-4">
-        <Shield className="w-10 h-10 text-red-500 mx-auto mb-3" />
-        <h2 className="text-xl font-bold text-gray-900 dark:text-white">Unauthorized Access</h2>
+        <Shield className="w-10 h-10 text-gray-400 mx-auto mb-3" />
+        <h2 className="text-xl font-bold tracking-tight text-black dark:text-white">Unauthorized Access</h2>
         <p className="text-xs text-gray-500 mt-1">
           This portal is restricted to authorized platform administrators.
         </p>
@@ -250,10 +250,13 @@ export const AdminPanel: React.FC = () => {
           'Content-Type': 'application/json',
           Authorization: `Bearer ${token}`
         },
-        body: JSON.stringify({ is_enabled: !model.is_enabled })
+        body: JSON.stringify({
+          is_enabled: !model.is_enabled
+        })
       });
       if (res.ok) {
         fetchProvidersAndModels();
+        setFeedback(`Model ${model.display_name} is now ${!model.is_enabled ? 'enabled' : 'disabled'}.`);
       }
     } catch (err) {
       console.error(err);
@@ -273,7 +276,7 @@ export const AdminPanel: React.FC = () => {
         body: JSON.stringify(globalSettings)
       });
       if (res.ok) {
-        setFeedback('Platform settings updated successfully.');
+        setFeedback('Platform settings and MFS payment numbers saved.');
       }
     } catch (err) {
       console.error(err);
@@ -283,22 +286,22 @@ export const AdminPanel: React.FC = () => {
   };
 
   return (
-    <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-10 space-y-6 animate-in fade-in">
+    <div className="max-w-6xl mx-auto px-4 sm:px-6 py-12 space-y-8 animate-in fade-in">
       {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-gray-100 dark:border-gray-800 pb-5">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-black/[0.08] dark:border-white/[0.08] pb-6">
         <div className="flex items-center gap-3">
-          <div className="w-9 h-9 rounded-xl bg-gray-100 dark:bg-gray-800 text-gray-900 dark:text-white flex items-center justify-center font-bold">
+          <div className="w-10 h-10 rounded-full border border-black/10 dark:border-white/10 bg-white dark:bg-[#121212] flex items-center justify-center text-black dark:text-white">
             <Shield className="w-5 h-5" />
           </div>
           <div>
-            <h1 className="text-xl font-bold tracking-tight text-gray-900 dark:text-white flex items-center gap-2">
-              <span>Admin Console</span>
-              <span className="text-[10px] font-mono uppercase bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400 px-2 py-0.5 rounded">
-                RBAC Active
-              </span>
+            <span className="text-[10px] font-mono uppercase tracking-wider text-gray-500 block">
+              Platform Administration
+            </span>
+            <h1 className="text-2xl font-bold tracking-tight text-black dark:text-white">
+              System Control Console
             </h1>
-            <p className="text-xs text-gray-500">
-              User governance, subscription quotas, and AI provider credentials
+            <p className="text-xs text-gray-500 mt-0.5">
+              User governance, quotas, models catalog, and MFS payment configuration
             </p>
           </div>
         </div>
@@ -309,7 +312,7 @@ export const AdminPanel: React.FC = () => {
             fetchUsers();
             fetchProvidersAndModels();
           }}
-          className="self-start sm:self-auto px-3 py-1.5 rounded-lg border border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-800 text-xs font-medium text-gray-700 dark:text-gray-300 flex items-center gap-1.5 transition-colors"
+          className="self-start sm:self-auto h-9 px-4 rounded-full border border-black/[0.12] dark:border-white/[0.15] hover:border-black/30 dark:hover:border-white/30 text-xs font-semibold text-black dark:text-white flex items-center gap-1.5 transition-colors cursor-pointer shadow-2xs"
         >
           <RefreshCw className="w-3.5 h-3.5" />
           <span>Refresh</span>
@@ -317,25 +320,25 @@ export const AdminPanel: React.FC = () => {
       </div>
 
       {feedback && (
-        <div className="p-3 text-xs bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800 text-emerald-700 dark:text-emerald-300 rounded-xl flex items-center justify-between">
+        <div className="p-3.5 text-xs bg-[#FAFAFA] dark:bg-[#121212] border border-black/[0.1] dark:border-white/[0.1] rounded-[8px] flex items-center justify-between">
           <div className="flex items-center gap-2">
             <CheckCircle2 className="w-4 h-4 text-emerald-500 shrink-0" />
-            <span>{feedback}</span>
+            <span className="text-black dark:text-white font-medium">{feedback}</span>
           </div>
-          <button onClick={() => setFeedback(null)} className="text-emerald-600 hover:underline">
+          <button onClick={() => setFeedback(null)} className="text-gray-400 hover:text-black dark:hover:text-white cursor-pointer">
             ✕
           </button>
         </div>
       )}
 
       {/* Tabs */}
-      <div className="flex items-center gap-1.5 border-b border-gray-100 dark:border-gray-800 overflow-x-auto pb-1 text-xs font-medium">
+      <div className="flex items-center gap-2 border-b border-black/[0.08] dark:border-white/[0.08] overflow-x-auto pb-2 text-xs font-medium">
         <button
           onClick={() => setActiveTab('overview')}
-          className={`px-3 py-1.5 rounded-lg transition-all flex items-center gap-1.5 whitespace-nowrap ${
+          className={`h-9 px-4 rounded-full transition-all flex items-center gap-1.5 whitespace-nowrap cursor-pointer ${
             activeTab === 'overview'
-              ? 'bg-gray-950 text-white dark:bg-white dark:text-gray-950 font-semibold'
-              : 'text-gray-500 hover:text-gray-900 dark:hover:text-white'
+              ? 'bg-black text-white dark:bg-white dark:text-black font-semibold shadow-xs'
+              : 'text-gray-500 hover:text-black dark:hover:text-white'
           }`}
         >
           <TrendingUp className="w-3.5 h-3.5" />
@@ -344,10 +347,10 @@ export const AdminPanel: React.FC = () => {
 
         <button
           onClick={() => setActiveTab('users')}
-          className={`px-3 py-1.5 rounded-lg transition-all flex items-center gap-1.5 whitespace-nowrap ${
+          className={`h-9 px-4 rounded-full transition-all flex items-center gap-1.5 whitespace-nowrap cursor-pointer ${
             activeTab === 'users'
-              ? 'bg-gray-950 text-white dark:bg-white dark:text-gray-950 font-semibold'
-              : 'text-gray-500 hover:text-gray-900 dark:hover:text-white'
+              ? 'bg-black text-white dark:bg-white dark:text-black font-semibold shadow-xs'
+              : 'text-gray-500 hover:text-black dark:hover:text-white'
           }`}
         >
           <Users className="w-3.5 h-3.5" />
@@ -356,10 +359,10 @@ export const AdminPanel: React.FC = () => {
 
         <button
           onClick={() => setActiveTab('providers')}
-          className={`px-3 py-1.5 rounded-lg transition-all flex items-center gap-1.5 whitespace-nowrap ${
+          className={`h-9 px-4 rounded-full transition-all flex items-center gap-1.5 whitespace-nowrap cursor-pointer ${
             activeTab === 'providers'
-              ? 'bg-gray-950 text-white dark:bg-white dark:text-gray-950 font-semibold'
-              : 'text-gray-500 hover:text-gray-900 dark:hover:text-white'
+              ? 'bg-black text-white dark:bg-white dark:text-black font-semibold shadow-xs'
+              : 'text-gray-500 hover:text-black dark:hover:text-white'
           }`}
         >
           <Key className="w-3.5 h-3.5" />
@@ -368,10 +371,10 @@ export const AdminPanel: React.FC = () => {
 
         <button
           onClick={() => setActiveTab('models')}
-          className={`px-3 py-1.5 rounded-lg transition-all flex items-center gap-1.5 whitespace-nowrap ${
+          className={`h-9 px-4 rounded-full transition-all flex items-center gap-1.5 whitespace-nowrap cursor-pointer ${
             activeTab === 'models'
-              ? 'bg-gray-950 text-white dark:bg-white dark:text-gray-950 font-semibold'
-              : 'text-gray-500 hover:text-gray-900 dark:hover:text-white'
+              ? 'bg-black text-white dark:bg-white dark:text-black font-semibold shadow-xs'
+              : 'text-gray-500 hover:text-black dark:hover:text-white'
           }`}
         >
           <Cpu className="w-3.5 h-3.5" />
@@ -380,10 +383,10 @@ export const AdminPanel: React.FC = () => {
 
         <button
           onClick={() => setActiveTab('settings')}
-          className={`px-3 py-1.5 rounded-lg transition-all flex items-center gap-1.5 whitespace-nowrap ${
+          className={`h-9 px-4 rounded-full transition-all flex items-center gap-1.5 whitespace-nowrap cursor-pointer ${
             activeTab === 'settings'
-              ? 'bg-gray-950 text-white dark:bg-white dark:text-gray-950 font-semibold'
-              : 'text-gray-500 hover:text-gray-900 dark:hover:text-white'
+              ? 'bg-black text-white dark:bg-white dark:text-black font-semibold shadow-xs'
+              : 'text-gray-500 hover:text-black dark:hover:text-white'
           }`}
         >
           <Settings className="w-3.5 h-3.5" />
@@ -395,41 +398,41 @@ export const AdminPanel: React.FC = () => {
       {activeTab === 'overview' && (
         <div className="space-y-6">
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-            <div className="bg-white dark:bg-gray-900 p-5 rounded-2xl border border-gray-100 dark:border-gray-800 shadow-xs">
-              <span className="text-xs text-gray-400 block font-mono">TOTAL REGISTERED</span>
-              <p className="text-2xl font-bold tracking-tight text-gray-900 dark:text-white mt-1">
+            <div className="bg-white dark:bg-[#0c0c0c] p-5 rounded-[8px] border border-black/[0.08] dark:border-white/[0.08] shadow-xs">
+              <span className="text-[10px] text-gray-400 block font-mono uppercase tracking-wider">Total Registered</span>
+              <p className="text-2xl font-bold tracking-tight text-black dark:text-white mt-1">
                 {stats ? stats.totalUsers : '...'} users
               </p>
               <span className="text-[11px] text-gray-500">Active accounts</span>
             </div>
 
-            <div className="bg-white dark:bg-gray-900 p-5 rounded-2xl border border-gray-100 dark:border-gray-800 shadow-xs">
-              <span className="text-xs text-gray-400 block font-mono">PAID SUBSCRIBERS</span>
-              <p className="text-2xl font-bold tracking-tight text-emerald-600 dark:text-emerald-400 mt-1">
-                {stats ? stats.activeSubscribers : '...'} users
+            <div className="bg-white dark:bg-[#0c0c0c] p-5 rounded-[8px] border border-black/[0.08] dark:border-white/[0.08] shadow-xs">
+              <span className="text-[10px] text-gray-400 block font-mono uppercase tracking-wider">Paid Subscribers</span>
+              <p className="text-2xl font-bold tracking-tight text-black dark:text-white mt-1">
+                {stats ? stats.activeSubscribers : '...'} subscribers
               </p>
-              <span className="text-[11px] text-gray-500">Gated workspace access</span>
+              <span className="text-[11px] text-gray-500">Active workspace access</span>
             </div>
 
-            <div className="bg-white dark:bg-gray-900 p-5 rounded-2xl border border-gray-100 dark:border-gray-800 shadow-xs">
-              <span className="text-xs text-gray-400 block font-mono">CUMULATIVE REVENUE</span>
-              <p className="text-2xl font-bold tracking-tight text-gray-900 dark:text-white mt-1 font-mono">
+            <div className="bg-white dark:bg-[#0c0c0c] p-5 rounded-[8px] border border-black/[0.08] dark:border-white/[0.08] shadow-xs">
+              <span className="text-[10px] text-gray-400 block font-mono uppercase tracking-wider">Cumulative Revenue</span>
+              <p className="text-2xl font-bold tracking-tight text-black dark:text-white mt-1 font-mono">
                 {stats ? formatBDT(stats.totalRevenue) : '...'}
               </p>
-              <span className="text-[11px] text-gray-500">Settled via bKash, Nagad & Rocket</span>
+              <span className="text-[11px] text-gray-500">bKash, Nagad & Rocket</span>
             </div>
 
-            <div className="bg-white dark:bg-gray-900 p-5 rounded-2xl border border-gray-100 dark:border-gray-800 shadow-xs">
-              <span className="text-xs text-gray-400 block font-mono">TOTAL TOKENS USED</span>
-              <p className="text-2xl font-bold tracking-tight text-gray-900 dark:text-white mt-1 font-mono">
+            <div className="bg-white dark:bg-[#0c0c0c] p-5 rounded-[8px] border border-black/[0.08] dark:border-white/[0.08] shadow-xs">
+              <span className="text-[10px] text-gray-400 block font-mono uppercase tracking-wider">Tokens Generated</span>
+              <p className="text-2xl font-bold tracking-tight text-black dark:text-white mt-1 font-mono">
                 {stats ? stats.totalTokensUsed.toLocaleString() : '...'}
               </p>
-              <span className="text-[11px] text-gray-500">Prompt & response volume</span>
+              <span className="text-[11px] text-gray-500">Inference volume</span>
             </div>
           </div>
 
-          <div className="bg-white dark:bg-gray-900 p-6 rounded-2xl border border-gray-100 dark:border-gray-800 shadow-xs">
-            <h3 className="font-bold text-gray-900 dark:text-white text-sm mb-3">
+          <div className="bg-white dark:bg-[#0c0c0c] p-6 rounded-[8px] border border-black/[0.08] dark:border-white/[0.08] shadow-xs">
+            <h3 className="font-bold text-black dark:text-white text-sm mb-4">
               Model Token Consumption Breakdown
             </h3>
             {stats && Object.keys(stats.modelUsageMap).length > 0 ? (
@@ -437,15 +440,15 @@ export const AdminPanel: React.FC = () => {
                 {Object.entries(stats.modelUsageMap).map(([modelId, tokens]) => {
                   const m = models.find(mod => mod.id === modelId);
                   return (
-                    <div key={modelId} className="flex items-center justify-between text-xs py-2 border-b border-gray-50 dark:border-gray-800 font-mono">
-                      <span className="font-sans font-medium text-gray-800 dark:text-gray-200">{m?.display_name || modelId}</span>
+                    <div key={modelId} className="flex items-center justify-between text-xs py-2.5 border-b border-black/[0.04] dark:border-white/[0.04] font-mono">
+                      <span className="font-sans font-semibold text-black dark:text-white">{m?.display_name || modelId}</span>
                       <span className="font-bold">{tokens.toLocaleString()} tokens</span>
                     </div>
                   );
                 })}
               </div>
             ) : (
-              <p className="text-xs text-gray-400">No token activity recorded yet.</p>
+              <p className="text-xs text-gray-500">No token activity recorded yet.</p>
             )}
           </div>
         </div>
@@ -455,48 +458,48 @@ export const AdminPanel: React.FC = () => {
       {activeTab === 'users' && (
         <div className="space-y-4">
           <div className="flex flex-col sm:flex-row items-center justify-between gap-3">
-            <div className="relative w-full sm:w-72">
-              <Search className="w-3.5 h-3.5 absolute left-3 top-2.5 text-gray-400" />
+            <div className="relative w-full sm:w-80">
+              <Search className="w-3.5 h-3.5 absolute left-3 top-3 text-gray-400" />
               <input
                 type="text"
                 value={userSearch}
                 onChange={e => setUserSearch(e.target.value)}
                 onKeyDown={e => e.key === 'Enter' && fetchUsers()}
                 placeholder="Search by name or email..."
-                className="w-full pl-8 pr-3 py-1.5 text-xs rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 text-gray-900 dark:text-white focus:outline-none focus:ring-1 focus:ring-gray-400"
+                className="w-full pl-9 pr-3 py-2 text-xs rounded-[12px] border border-black/[0.12] dark:border-white/[0.15] bg-white dark:bg-[#121212] text-black dark:text-white focus:outline-none focus:border-black dark:focus:border-white transition-colors"
               />
             </div>
-            <span className="text-xs text-gray-400 font-mono self-end sm:self-auto">
+            <span className="text-xs text-gray-500 font-mono self-end sm:self-auto">
               Total Accounts: {users.length}
             </span>
           </div>
 
-          <div className="bg-white dark:bg-gray-900 rounded-2xl border border-gray-100 dark:border-gray-800 shadow-xs overflow-hidden">
+          <div className="bg-white dark:bg-[#0c0c0c] rounded-[8px] border border-black/[0.08] dark:border-white/[0.08] shadow-xs overflow-hidden">
             <div className="overflow-x-auto">
               <table className="w-full text-left text-xs">
-                <thead className="border-b border-gray-100 dark:border-gray-800 text-gray-400 font-mono text-[11px]">
+                <thead className="border-b border-black/[0.08] dark:border-white/[0.08] text-gray-400 font-mono text-[11px]">
                   <tr>
-                    <th className="py-2.5 px-4 font-medium">User Profile</th>
-                    <th className="py-2.5 px-4 font-medium">Role</th>
-                    <th className="py-2.5 px-4 font-medium">Subscription</th>
-                    <th className="py-2.5 px-4 font-medium">Tokens / Limit</th>
-                    <th className="py-2.5 px-4 font-medium">Status</th>
-                    <th className="py-2.5 px-4 font-medium text-right">Actions</th>
+                    <th className="py-3 px-4 font-medium">User Profile</th>
+                    <th className="py-3 px-4 font-medium">Role</th>
+                    <th className="py-3 px-4 font-medium">Subscription</th>
+                    <th className="py-3 px-4 font-medium">Tokens / Limit</th>
+                    <th className="py-3 px-4 font-medium">Status</th>
+                    <th className="py-3 px-4 font-medium text-right">Actions</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-gray-100 dark:divide-gray-850">
+                <tbody className="divide-y divide-black/[0.04] dark:divide-white/[0.04]">
                   {users.map(u => (
-                    <tr key={u.id} className="hover:bg-gray-50/50 dark:hover:bg-gray-800/20">
+                    <tr key={u.id} className="hover:bg-black/[0.02] dark:hover:bg-white/[0.02] transition-colors">
                       <td className="py-3 px-4">
-                        <div className="font-semibold text-gray-900 dark:text-white">{u.name}</div>
-                        <div className="text-[11px] text-gray-400">{u.email}</div>
-                        {u.phone && <div className="text-[10px] text-gray-500 font-mono">{u.phone}</div>}
+                        <div className="font-semibold text-black dark:text-white">{u.name}</div>
+                        <div className="text-[11px] text-gray-500">{u.email}</div>
+                        {u.phone && <div className="text-[10px] text-gray-400 font-mono">{u.phone}</div>}
                       </td>
                       <td className="py-3 px-4">
-                        <span className={`px-2 py-0.5 rounded text-[10px] font-mono uppercase ${
+                        <span className={`px-2 py-0.5 rounded-full text-[10px] font-mono uppercase ${
                           u.role === 'admin'
-                            ? 'bg-amber-50 text-amber-700 dark:bg-amber-950/40 dark:text-amber-400'
-                            : 'bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-300'
+                            ? 'bg-black text-white dark:bg-white dark:text-black font-bold'
+                            : 'bg-black/[0.05] text-gray-700 dark:bg-white/[0.08] dark:text-gray-300'
                         }`}>
                           {u.role}
                         </span>
@@ -504,8 +507,8 @@ export const AdminPanel: React.FC = () => {
                       <td className="py-3 px-4">
                         {u.subscription ? (
                           <div>
-                            <span className="font-medium text-gray-900 dark:text-white block">{u.subscription.plan_name}</span>
-                            <span className="text-[10px] text-gray-400 font-mono">
+                            <span className="font-semibold text-black dark:text-white block">{u.subscription.plan_name}</span>
+                            <span className="text-[10px] text-gray-500 font-mono">
                               Exp: {new Date(u.subscription.expires_at).toLocaleDateString('en-US')}
                             </span>
                           </div>
@@ -521,33 +524,33 @@ export const AdminPanel: React.FC = () => {
                             type="number"
                             defaultValue={u.usage_limit}
                             onBlur={e => handleUpdateUserLimit(u.id, e.target.value)}
-                            className="w-20 px-1.5 py-0.5 rounded border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 text-[11px] font-mono"
+                            className="w-20 px-1.5 py-0.5 rounded-[4px] border border-black/[0.1] dark:border-white/[0.1] bg-white dark:bg-[#121212] text-[11px] font-mono"
                           />
                         </div>
                       </td>
                       <td className="py-3 px-4">
                         <button
                           onClick={() => handleToggleUserStatus(u)}
-                          className={`px-2 py-0.5 rounded text-[10px] font-mono uppercase ${
+                          className={`px-2 py-0.5 rounded-full text-[10px] font-mono uppercase cursor-pointer ${
                             u.status === 'active'
-                              ? 'bg-emerald-50 text-emerald-700 hover:bg-emerald-100 dark:bg-emerald-950/40 dark:text-emerald-400'
-                              : 'bg-red-50 text-red-700 hover:bg-red-100 dark:bg-red-950/40 dark:text-red-400'
+                              ? 'bg-emerald-50 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-400 border border-emerald-200'
+                              : 'bg-red-50 text-red-700 dark:bg-red-950/40 dark:text-red-400 border border-red-200'
                           }`}
                         >
                           {u.status}
                         </button>
                       </td>
-                      <td className="py-3 px-4 text-right space-x-1.5">
+                      <td className="py-3 px-4 text-right space-x-2">
                         <button
                           onClick={() => setSelectedUserForSub(u)}
-                          className="px-2 py-1 rounded text-xs border border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-800 font-medium"
+                          className="h-7 px-3 rounded-full text-xs border border-black/[0.12] dark:border-white/[0.15] hover:border-black/30 font-medium cursor-pointer"
                         >
                           Grant Plan
                         </button>
                         {u.role !== 'admin' && (
                           <button
                             onClick={() => handleDeleteUser(u.id)}
-                            className="p-1 text-gray-400 hover:text-red-500 rounded"
+                            className="p-1 text-gray-400 hover:text-red-500 rounded cursor-pointer"
                             title="Delete user"
                           >
                             <Trash2 className="w-3.5 h-3.5" />
@@ -563,18 +566,18 @@ export const AdminPanel: React.FC = () => {
 
           {/* Grant Modal */}
           {selectedUserForSub && (
-            <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
-              <div className="bg-white dark:bg-gray-900 rounded-2xl p-6 max-w-sm w-full border border-gray-100 dark:border-gray-800 shadow-2xl">
-                <h3 className="font-bold text-sm text-gray-900 dark:text-white mb-1">
+            <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
+              <div className="bg-white dark:bg-[#0c0c0c] rounded-[16px] p-6 max-w-sm w-full border border-black/[0.12] dark:border-white/[0.15] shadow-2xl">
+                <h3 className="font-bold text-base text-black dark:text-white mb-1">
                   Grant Subscription
                 </h3>
                 <p className="text-xs text-gray-500 mb-4">
                   Target: <strong>{selectedUserForSub.name}</strong> ({selectedUserForSub.email})
                 </p>
 
-                <form onSubmit={handleGrantSubscription} className="space-y-3 text-xs">
+                <form onSubmit={handleGrantSubscription} className="space-y-3.5 text-xs">
                   <div>
-                    <label className="block font-medium mb-1 text-gray-700 dark:text-gray-300">Plan Tier:</label>
+                    <label className="block font-medium mb-1 text-black dark:text-white">Plan Tier:</label>
                     <select
                       value={grantPlanId}
                       onChange={e => {
@@ -582,7 +585,7 @@ export const AdminPanel: React.FC = () => {
                         setGrantPlanId(val);
                         setGrantDays(val === 'yearly' ? 365 : 30);
                       }}
-                      className="w-full p-2 rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800"
+                      className="w-full p-2.5 rounded-[12px] border border-black/[0.12] dark:border-white/[0.15] bg-white dark:bg-[#121212]"
                     >
                       <option value="monthly">Monthly Plan (30 Days)</option>
                       <option value="yearly">Yearly Plan (365 Days)</option>
@@ -590,12 +593,12 @@ export const AdminPanel: React.FC = () => {
                   </div>
 
                   <div>
-                    <label className="block font-medium mb-1 text-gray-700 dark:text-gray-300">Duration (Days):</label>
+                    <label className="block font-medium mb-1 text-black dark:text-white">Duration (Days):</label>
                     <input
                       type="number"
                       value={grantDays}
                       onChange={e => setGrantDays(parseInt(e.target.value, 10))}
-                      className="w-full p-2 rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 font-mono"
+                      className="w-full p-2.5 rounded-[12px] border border-black/[0.12] dark:border-white/[0.15] bg-white dark:bg-[#121212] font-mono"
                     />
                   </div>
 
@@ -603,13 +606,13 @@ export const AdminPanel: React.FC = () => {
                     <button
                       type="button"
                       onClick={() => setSelectedUserForSub(null)}
-                      className="px-3 py-1.5 rounded-lg border text-xs"
+                      className="h-9 px-4 rounded-full border border-black/[0.12] dark:border-white/[0.15] text-xs font-semibold cursor-pointer"
                     >
                       Cancel
                     </button>
                     <button
                       type="submit"
-                      className="px-3 py-1.5 rounded-lg bg-gray-950 hover:bg-black dark:bg-white dark:hover:bg-gray-100 text-white dark:text-gray-950 font-bold text-xs"
+                      className="h-9 px-4 rounded-full bg-black hover:bg-black/90 dark:bg-white dark:hover:bg-white/90 text-white dark:text-black font-semibold text-xs cursor-pointer shadow-xs"
                     >
                       Confirm & Grant
                     </button>
@@ -624,8 +627,8 @@ export const AdminPanel: React.FC = () => {
       {/* Tab 3: Providers */}
       {activeTab === 'providers' && (
         <div className="space-y-4">
-          <div className="bg-gray-50 dark:bg-gray-850 p-4 rounded-xl border border-gray-100 dark:border-gray-800 text-xs text-gray-600 dark:text-gray-300 flex items-start gap-2.5">
-            <Lock className="w-4 h-4 shrink-0 mt-0.5 text-gray-500" />
+          <div className="bg-[#FAFAFA] dark:bg-[#121212] p-4 rounded-[8px] border border-black/[0.08] dark:border-white/[0.08] text-xs text-gray-600 dark:text-gray-300 flex items-start gap-2.5">
+            <Lock className="w-4 h-4 shrink-0 mt-0.5 text-black dark:text-white" />
             <span>
               <strong>Server-Side Secret Isolation:</strong> Configured API keys are stored in encrypted server state and never transmitted to the browser client runtime.
             </span>
@@ -633,13 +636,13 @@ export const AdminPanel: React.FC = () => {
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {providers.map(p => (
-              <div key={p.id} className="bg-white dark:bg-gray-900 p-5 rounded-2xl border border-gray-100 dark:border-gray-800 shadow-xs space-y-3">
+              <div key={p.id} className="bg-white dark:bg-[#0c0c0c] p-6 rounded-[8px] border border-black/[0.08] dark:border-white/[0.08] shadow-xs space-y-3">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
                     <Key className="w-3.5 h-3.5 text-gray-500" />
-                    <h3 className="font-bold text-gray-900 dark:text-white text-sm">{p.name}</h3>
+                    <h3 className="font-bold text-black dark:text-white text-sm">{p.name}</h3>
                   </div>
-                  <span className="text-[10px] font-mono uppercase px-2 py-0.5 rounded bg-emerald-50 dark:bg-emerald-950/40 text-emerald-600 dark:text-emerald-400">
+                  <span className="text-[10px] font-mono uppercase px-2 py-0.5 rounded-full bg-black/[0.05] dark:bg-white/[0.08] text-black dark:text-white font-semibold">
                     Active
                   </span>
                 </div>
@@ -647,50 +650,35 @@ export const AdminPanel: React.FC = () => {
                 <div className="text-xs space-y-1.5 text-gray-500 font-mono text-[11px]">
                   <div className="flex items-center justify-between">
                     <span>Slug:</span>
-                    <span className="text-gray-900 dark:text-white font-semibold">{p.slug}</span>
+                    <span className="text-black dark:text-white font-semibold">{p.slug}</span>
                   </div>
-
-                  <div className="flex items-center justify-between">
-                    <span>Active Key:</span>
-                    <span className="text-gray-900 dark:text-white font-bold">
-                      {p.api_key_masked || (p.slug === 'gemini' ? 'AI Studio Env Key (Active)' : 'Not Configured')}
-                    </span>
-                  </div>
-
                   <div className="flex items-center justify-between">
                     <span>Base URL:</span>
-                    <span className="truncate max-w-[180px]">{p.base_url || 'Default'}</span>
+                    <span className="text-gray-600 dark:text-gray-400 truncate max-w-xs">{p.base_url}</span>
                   </div>
                 </div>
 
                 {editingProviderId === p.id ? (
-                  <div className="pt-3 border-t border-gray-100 dark:border-gray-800 space-y-2">
+                  <div className="pt-3 border-t border-black/[0.08] dark:border-white/[0.08] space-y-2">
                     <input
                       type="password"
-                      placeholder="Enter new API key (sk-...)"
+                      placeholder="Enter new API Key..."
                       value={newApiKey}
                       onChange={e => setNewApiKey(e.target.value)}
-                      className="w-full p-2 text-xs rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 font-mono"
+                      className="w-full px-3 py-1.5 rounded-[8px] border border-black/[0.12] dark:border-white/[0.15] bg-white dark:bg-[#121212] text-xs font-mono"
                     />
-                    <input
-                      type="text"
-                      placeholder="Custom Base URL (optional)"
-                      value={newBaseUrl}
-                      onChange={e => setNewBaseUrl(e.target.value)}
-                      className="w-full p-2 text-xs rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 font-mono"
-                    />
-                    <div className="flex justify-end gap-2 pt-1">
+                    <div className="flex justify-end gap-2">
                       <button
                         onClick={() => setEditingProviderId(null)}
-                        className="px-2.5 py-1 rounded border text-xs"
+                        className="h-8 px-3 rounded-full border text-xs cursor-pointer"
                       >
                         Cancel
                       </button>
                       <button
                         onClick={() => handleSaveProvider(p.id)}
-                        className="px-2.5 py-1 rounded bg-gray-950 text-white dark:bg-white dark:text-gray-950 text-xs font-semibold"
+                        className="h-8 px-3 rounded-full bg-black text-white dark:bg-white dark:text-black font-semibold text-xs cursor-pointer"
                       >
-                        Save Key
+                        Save
                       </button>
                     </div>
                   </div>
@@ -698,12 +686,12 @@ export const AdminPanel: React.FC = () => {
                   <button
                     onClick={() => {
                       setEditingProviderId(p.id);
-                      setNewApiKey('');
                       setNewBaseUrl(p.base_url || '');
                     }}
-                    className="w-full py-2 rounded-lg border border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-800 text-xs font-medium text-gray-800 dark:text-gray-200 transition-colors"
+                    className="h-8 px-3 rounded-full border border-black/[0.12] dark:border-white/[0.15] hover:border-black/30 text-xs font-semibold flex items-center gap-1.5 cursor-pointer"
                   >
-                    Configure API Key
+                    <Edit className="w-3 h-3" />
+                    <span>Configure Key</span>
                   </button>
                 )}
               </div>
@@ -714,46 +702,38 @@ export const AdminPanel: React.FC = () => {
 
       {/* Tab 4: Models */}
       {activeTab === 'models' && (
-        <div className="bg-white dark:bg-gray-900 rounded-2xl border border-gray-100 dark:border-gray-800 shadow-xs overflow-hidden">
+        <div className="bg-white dark:bg-[#0c0c0c] rounded-[8px] border border-black/[0.08] dark:border-white/[0.08] shadow-xs overflow-hidden">
           <div className="overflow-x-auto">
             <table className="w-full text-left text-xs">
-              <thead className="border-b border-gray-100 dark:border-gray-800 text-gray-400 font-mono text-[11px]">
+              <thead className="border-b border-black/[0.08] dark:border-white/[0.08] text-gray-400 font-mono text-[11px]">
                 <tr>
-                  <th className="py-2.5 px-4 font-medium">Model Name</th>
-                  <th className="py-2.5 px-4 font-medium">Capability Badge</th>
-                  <th className="py-2.5 px-4 font-medium">Context Window</th>
-                  <th className="py-2.5 px-4 font-medium">Max Output</th>
-                  <th className="py-2.5 px-4 font-medium">Status</th>
-                  <th className="py-2.5 px-4 font-medium text-right">Toggle</th>
+                  <th className="py-3 px-4 font-medium">Model Name</th>
+                  <th className="py-3 px-4 font-medium">Badge</th>
+                  <th className="py-3 px-4 font-medium">Context Window</th>
+                  <th className="py-3 px-4 font-medium">Max Output</th>
+                  <th className="py-3 px-4 font-medium">Status</th>
+                  <th className="py-3 px-4 font-medium text-right">Toggle</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-gray-100 dark:divide-gray-850">
+              <tbody className="divide-y divide-black/[0.04] dark:divide-white/[0.04]">
                 {models.map(m => (
-                  <tr key={m.id} className="hover:bg-gray-50/50 dark:hover:bg-gray-800/20">
+                  <tr key={m.id} className="hover:bg-black/[0.02] dark:hover:bg-white/[0.02] transition-colors">
                     <td className="py-3 px-4">
-                      <div className="font-semibold text-gray-900 dark:text-white">{m.display_name}</div>
+                      <div className="font-semibold text-black dark:text-white">{m.display_name}</div>
                       <div className="text-[10px] font-mono text-gray-400">{m.model_name}</div>
                     </td>
                     <td className="py-3 px-4">
-                      <span className={`px-2 py-0.5 rounded text-[10px] font-mono uppercase font-bold ${
-                        m.badge === 'max'
-                          ? 'bg-purple-50 text-purple-700 dark:bg-purple-950/50 dark:text-purple-300 border border-purple-200 dark:border-purple-800'
-                          : m.badge === 'high'
-                          ? 'bg-blue-50 text-blue-700 dark:bg-blue-950/50 dark:text-blue-300 border border-blue-200 dark:border-blue-800'
-                          : m.badge === 'xhigh'
-                          ? 'bg-amber-50 text-amber-700 dark:bg-amber-950/50 dark:text-amber-300 border border-amber-200 dark:border-amber-800'
-                          : 'bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400'
-                      }`}>
+                      <span className="px-2 py-0.5 rounded-full text-[10px] font-mono uppercase font-bold bg-black/[0.05] dark:bg-white/[0.08] text-black dark:text-white">
                         {m.badge}
                       </span>
                     </td>
                     <td className="py-3 px-4 font-mono">{m.context_window.toLocaleString()}</td>
                     <td className="py-3 px-4 font-mono">{m.max_output_tokens.toLocaleString()}</td>
                     <td className="py-3 px-4">
-                      <span className={`px-2 py-0.5 rounded text-[10px] font-mono uppercase ${
+                      <span className={`px-2 py-0.5 rounded-full text-[10px] font-mono uppercase ${
                         m.is_enabled
                           ? 'bg-emerald-50 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-400'
-                          : 'bg-gray-100 text-gray-500'
+                          : 'bg-black/[0.05] text-gray-500'
                       }`}>
                         {m.is_enabled ? 'Enabled' : 'Disabled'}
                       </span>
@@ -761,7 +741,7 @@ export const AdminPanel: React.FC = () => {
                     <td className="py-3 px-4 text-right">
                       <button
                         onClick={() => handleToggleModel(m)}
-                        className={`px-2.5 py-1 rounded text-xs font-semibold ${
+                        className={`h-7 px-3 rounded-full text-xs font-semibold cursor-pointer ${
                           m.is_enabled
                             ? 'text-red-600 hover:bg-red-50 dark:hover:bg-red-950/40'
                             : 'text-emerald-600 hover:bg-emerald-50 dark:hover:bg-emerald-950/40'
@@ -780,47 +760,52 @@ export const AdminPanel: React.FC = () => {
 
       {/* Tab 5: Settings */}
       {activeTab === 'settings' && (
-        <form onSubmit={handleSaveSettings} className="bg-white dark:bg-gray-900 p-6 rounded-2xl border border-gray-100 dark:border-gray-800 shadow-xs space-y-4 max-w-xl text-xs">
-          <h3 className="font-bold text-sm text-gray-900 dark:text-white">
-            Global Quotas & Support Contacts
-          </h3>
+        <form onSubmit={handleSaveSettings} className="bg-white dark:bg-[#0c0c0c] p-6 sm:p-8 rounded-[8px] border border-black/[0.08] dark:border-white/[0.08] shadow-xs space-y-5 max-w-xl text-xs">
+          <div>
+            <h3 className="font-bold text-base text-black dark:text-white">
+              Global Platform & Payment Settings
+            </h3>
+            <p className="text-xs text-gray-500 mt-0.5">
+              Configure system quotas, support coordinates, and live MFS merchant numbers.
+            </p>
+          </div>
 
           <div>
-            <label className="block font-medium mb-1 text-gray-700 dark:text-gray-300">Default Monthly Token Limit:</label>
+            <label className="block font-medium mb-1 text-black dark:text-white">Default Monthly Token Limit:</label>
             <input
               type="number"
               value={globalSettings.global_usage_limit || 50000}
               onChange={e => setGlobalSettings({ ...globalSettings, global_usage_limit: parseInt(e.target.value, 10) })}
-              className="w-full p-2 rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 font-mono text-xs"
+              className="w-full px-3.5 py-2.5 rounded-[12px] border border-black/[0.12] dark:border-white/[0.15] bg-white dark:bg-[#121212] font-mono text-xs focus:outline-none focus:border-black dark:focus:border-white"
             />
           </div>
 
           <div>
-            <label className="block font-medium mb-1 text-gray-700 dark:text-gray-300">Support Email:</label>
+            <label className="block font-medium mb-1 text-black dark:text-white">Support Email:</label>
             <input
               type="email"
               value={globalSettings.support_email || 'support@bangla.ai'}
               onChange={e => setGlobalSettings({ ...globalSettings, support_email: e.target.value })}
-              className="w-full p-2 rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-xs"
+              className="w-full px-3.5 py-2.5 rounded-[12px] border border-black/[0.12] dark:border-white/[0.15] bg-white dark:bg-[#121212] text-xs focus:outline-none focus:border-black dark:focus:border-white"
             />
           </div>
 
           <div>
-            <label className="block font-medium mb-1 text-gray-700 dark:text-gray-300">Support Phone:</label>
+            <label className="block font-medium mb-1 text-black dark:text-white">Support Phone:</label>
             <input
               type="text"
               value={globalSettings.support_phone || '+880 9612-000000'}
               onChange={e => setGlobalSettings({ ...globalSettings, support_phone: e.target.value })}
-              className="w-full p-2 rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-xs"
+              className="w-full px-3.5 py-2.5 rounded-[12px] border border-black/[0.12] dark:border-white/[0.15] bg-white dark:bg-[#121212] text-xs focus:outline-none focus:border-black dark:focus:border-white"
             />
           </div>
 
           {/* MFS Payment Numbers Configuration */}
-          <div className="pt-3 border-t border-gray-100 dark:border-gray-800 space-y-3">
+          <div className="pt-4 border-t border-black/[0.08] dark:border-white/[0.08] space-y-3.5">
             <div>
-              <h4 className="font-bold text-xs text-gray-900 dark:text-white flex items-center justify-between">
+              <h4 className="font-bold text-xs text-black dark:text-white flex items-center justify-between">
                 <span>MFS Payment Phone Numbers</span>
-                <span className="text-[10px] font-mono text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/40 px-2 py-0.5 rounded">
+                <span className="text-[10px] font-mono text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/40 px-2 py-0.5 rounded-full border border-emerald-200">
                   Live in Checkout
                 </span>
               </h4>
@@ -830,7 +815,7 @@ export const AdminPanel: React.FC = () => {
             </div>
 
             <div>
-              <label className="block font-medium mb-1 text-gray-700 dark:text-gray-300">
+              <label className="block font-medium mb-1 text-black dark:text-white">
                 bKash Merchant / Personal Number:
               </label>
               <input
@@ -838,12 +823,12 @@ export const AdminPanel: React.FC = () => {
                 value={globalSettings.bkash_number || ''}
                 onChange={e => setGlobalSettings({ ...globalSettings, bkash_number: e.target.value })}
                 placeholder="01812345678"
-                className="w-full p-2 rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 font-mono text-xs"
+                className="w-full px-3.5 py-2.5 rounded-[12px] border border-black/[0.12] dark:border-white/[0.15] bg-white dark:bg-[#121212] font-mono text-xs focus:outline-none focus:border-black dark:focus:border-white"
               />
             </div>
 
             <div>
-              <label className="block font-medium mb-1 text-gray-700 dark:text-gray-300">
+              <label className="block font-medium mb-1 text-black dark:text-white">
                 Nagad Merchant / Personal Number:
               </label>
               <input
@@ -851,12 +836,12 @@ export const AdminPanel: React.FC = () => {
                 value={globalSettings.nagad_number || ''}
                 onChange={e => setGlobalSettings({ ...globalSettings, nagad_number: e.target.value })}
                 placeholder="01712345678"
-                className="w-full p-2 rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 font-mono text-xs"
+                className="w-full px-3.5 py-2.5 rounded-[12px] border border-black/[0.12] dark:border-white/[0.15] bg-white dark:bg-[#121212] font-mono text-xs focus:outline-none focus:border-black dark:focus:border-white"
               />
             </div>
 
             <div>
-              <label className="block font-medium mb-1 text-gray-700 dark:text-gray-300">
+              <label className="block font-medium mb-1 text-black dark:text-white">
                 Rocket Merchant / Personal Number:
               </label>
               <input
@@ -864,7 +849,7 @@ export const AdminPanel: React.FC = () => {
                 value={globalSettings.rocket_number || ''}
                 onChange={e => setGlobalSettings({ ...globalSettings, rocket_number: e.target.value })}
                 placeholder="01912345678"
-                className="w-full p-2 rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 font-mono text-xs"
+                className="w-full px-3.5 py-2.5 rounded-[12px] border border-black/[0.12] dark:border-white/[0.15] bg-white dark:bg-[#121212] font-mono text-xs focus:outline-none focus:border-black dark:focus:border-white"
               />
             </div>
           </div>
@@ -873,7 +858,7 @@ export const AdminPanel: React.FC = () => {
             <button
               type="submit"
               disabled={savingSettings}
-              className="px-4 py-2 rounded-lg bg-gray-950 hover:bg-black dark:bg-white dark:hover:bg-gray-100 text-white dark:text-gray-950 font-semibold text-xs flex items-center gap-1.5 cursor-pointer shadow-xs"
+              className="h-10 px-5 rounded-full bg-black hover:bg-black/90 dark:bg-white dark:hover:bg-white/90 text-white dark:text-black font-semibold text-xs flex items-center gap-2 cursor-pointer shadow-xs"
             >
               <Save className="w-3.5 h-3.5" />
               <span>{savingSettings ? 'Saving...' : 'Save Settings'}</span>

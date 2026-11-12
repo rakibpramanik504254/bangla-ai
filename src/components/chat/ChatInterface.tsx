@@ -44,13 +44,16 @@ const FormattedMessage: React.FC<{ content: string }> = ({ content }) => {
           const code = part.substring(firstLineEnd + 1, part.length - 3);
 
           return (
-            <div key={index} className="rounded-xl overflow-hidden border border-gray-800 bg-gray-950 text-gray-100 my-2.5 font-mono text-xs">
-              <div className="flex items-center justify-between px-3.5 py-1.5 bg-gray-900 border-b border-gray-800 text-[11px] text-gray-400">
-                <span className="font-sans uppercase text-[10px] tracking-wider text-gray-500">{lang}</span>
+            <div
+              key={index}
+              className="rounded-[8px] overflow-hidden border border-black/10 dark:border-white/10 bg-[#0c0c0c] text-white my-3 font-mono text-xs shadow-xs"
+            >
+              <div className="flex items-center justify-between px-3.5 py-1.5 bg-black/40 border-b border-white/10 text-[11px] text-gray-400">
+                <span className="font-sans uppercase text-[10px] tracking-wider text-gray-400">{lang}</span>
                 <button
                   type="button"
                   onClick={() => handleCopyCode(code, index)}
-                  className="flex items-center gap-1 hover:text-white px-2 py-0.5 rounded hover:bg-gray-850 transition-colors font-sans text-[11px]"
+                  className="flex items-center gap-1 hover:text-white px-2 py-0.5 rounded-full hover:bg-white/10 transition-colors font-sans text-[11px]"
                 >
                   {copiedIndex === index ? (
                     <>
@@ -78,14 +81,14 @@ const FormattedMessage: React.FC<{ content: string }> = ({ content }) => {
             {lines.map((line, lIdx) => {
               if (line.startsWith('### ')) {
                 return (
-                  <h4 key={lIdx} className="text-sm font-bold text-gray-900 dark:text-white pt-2">
+                  <h4 key={lIdx} className="text-sm font-bold text-black dark:text-white pt-2">
                     {line.substring(4)}
                   </h4>
                 );
               }
               if (line.startsWith('## ')) {
                 return (
-                  <h3 key={lIdx} className="text-base font-bold text-gray-900 dark:text-white pt-2.5">
+                  <h3 key={lIdx} className="text-base font-bold text-black dark:text-white pt-2.5">
                     {line.substring(3)}
                   </h3>
                 );
@@ -93,7 +96,7 @@ const FormattedMessage: React.FC<{ content: string }> = ({ content }) => {
               if (line.startsWith('* ') || line.startsWith('- ')) {
                 return (
                   <div key={lIdx} className="flex items-start gap-2 pl-2">
-                    <span className="w-1.5 h-1.5 rounded-full bg-gray-400 dark:bg-gray-500 mt-2 shrink-0" />
+                    <span className="w-1.5 h-1.5 rounded-full bg-black/40 dark:bg-white/40 mt-2 shrink-0" />
                     <span>{parseBold(line.substring(2))}</span>
                   </div>
                 );
@@ -109,7 +112,7 @@ const FormattedMessage: React.FC<{ content: string }> = ({ content }) => {
                 return <div key={lIdx} className="h-1" />;
               }
               return (
-                <p key={lIdx} className="text-gray-800 dark:text-gray-200">
+                <p key={lIdx} className="text-black/85 dark:text-white/85">
                   {parseBold(line)}
                 </p>
               );
@@ -126,7 +129,7 @@ function parseBold(text: string) {
   return segments.map((seg, i) => {
     if (seg.startsWith('**') && seg.endsWith('**')) {
       return (
-        <strong key={i} className="font-semibold text-gray-950 dark:text-white">
+        <strong key={i} className="font-semibold text-black dark:text-white">
           {seg.slice(2, -2)}
         </strong>
       );
@@ -230,7 +233,7 @@ export const ChatInterface: React.FC = () => {
           Authorization: `Bearer ${token}`
         },
         body: JSON.stringify({
-          title: 'New Chat',
+          title: 'New Conversation',
           modelId: selectedModelId
         })
       });
@@ -258,8 +261,8 @@ export const ChatInterface: React.FC = () => {
       if (res.ok) {
         setChats(prev => prev.filter(c => c.id !== id));
         if (activeChatId === id) {
-          const remaining = chats.filter(c => c.id !== id);
-          setActiveChatId(remaining.length > 0 ? remaining[0].id : null);
+          setActiveChatId(null);
+          setMessages([]);
         }
       }
     } catch (err) {
@@ -269,7 +272,7 @@ export const ChatInterface: React.FC = () => {
 
   const handleSaveRename = async (id: string, e: React.FormEvent) => {
     e.preventDefault();
-    if (!editTitle.trim() || !token) return;
+    if (!token || !editTitle.trim()) return;
     try {
       const res = await fetch(`/api/chats/${id}`, {
         method: 'PATCH',
@@ -290,27 +293,54 @@ export const ChatInterface: React.FC = () => {
 
   const handleSendMessage = async (customPrompt?: string) => {
     const textToSend = (customPrompt || inputMessage).trim();
-    if (!textToSend || isStreaming || !token) return;
+    if (!textToSend || isStreaming) return;
 
     if (!isSubscribed) {
       openPaymentModal('monthly');
       return;
     }
 
-    setInputMessage('');
-    setIsStreaming(true);
-    setStreamedText('');
+    let targetChatId = activeChatId;
+    if (!targetChatId) {
+      if (!token) return;
+      try {
+        const res = await fetch('/api/chats', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${token}`
+          },
+          body: JSON.stringify({
+            title: textToSend.slice(0, 30) + '...',
+            modelId: selectedModelId
+          })
+        });
+        if (res.ok) {
+          const newChat = await res.json();
+          setChats(prev => [newChat, ...prev]);
+          setActiveChatId(newChat.id);
+          targetChatId = newChat.id;
+        }
+      } catch (err) {
+        console.error('Failed to create initial chat:', err);
+        return;
+      }
+    }
 
     const tempUserMsg: Message = {
-      id: 'temp_' + Date.now(),
-      chat_id: activeChatId || 'temp',
+      id: 'tmp-' + Date.now(),
+      chat_id: targetChatId!,
       role: 'user',
       content: textToSend,
       model_id: selectedModelId,
       tokens_used: 0,
       created_at: new Date().toISOString()
     };
+
     setMessages(prev => [...prev, tempUserMsg]);
+    setInputMessage('');
+    setIsStreaming(true);
+    setStreamedText('');
 
     try {
       const response = await fetch('/api/chat/stream', {
@@ -320,62 +350,72 @@ export const ChatInterface: React.FC = () => {
           Authorization: `Bearer ${token}`
         },
         body: JSON.stringify({
-          chatId: activeChatId,
-          message: textToSend,
-          modelId: selectedModelId
+          chatId: targetChatId,
+          modelId: selectedModelId,
+          message: textToSend
         })
       });
 
       if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || 'Chat processing error');
+        const errJson = await response.json();
+        throw new Error(errJson.error || 'Failed to stream response from foundation model.');
       }
 
       const reader = response.body?.getReader();
-      const decoder = new TextDecoder();
-      let fullAssistantText = '';
+      const decoder = new TextDecoder('utf-8');
+      let fullAssistantReply = '';
 
       if (reader) {
         while (true) {
           const { done, value } = await reader.read();
           if (done) break;
 
-          const textChunk = decoder.decode(value, { stream: true });
-          const lines = textChunk.split('\n');
+          const chunk = decoder.decode(value, { stream: true });
+          const lines = chunk.split('\n');
 
           for (const line of lines) {
             if (line.startsWith('data: ')) {
+              const dataStr = line.replace('data: ', '').trim();
+              if (dataStr === '[DONE]') {
+                break;
+              }
               try {
-                const data = JSON.parse(line.substring(6));
-
-                if (data.type === 'start') {
-                  if (!activeChatId) {
-                    setActiveChatId(data.chatId);
-                    fetchChats();
-                  }
-                } else if (data.type === 'chunk') {
-                  fullAssistantText += data.text;
-                  setStreamedText(fullAssistantText);
-                } else if (data.type === 'done') {
-                  setMessages(prev => [...prev, data.assistantMessage]);
-                  setStreamedText('');
-                  refreshUser();
-                } else if (data.type === 'error') {
-                  throw new Error(data.error);
+                const parsed = JSON.parse(dataStr);
+                if (parsed.chunk) {
+                  fullAssistantReply += parsed.chunk;
+                  setStreamedText(fullAssistantReply);
                 }
-              } catch (parseErr) {
-                // partial chunk
+                if (parsed.error) {
+                  throw new Error(parsed.error);
+                }
+              } catch {
+                // Ignore parse errors on raw tokens
               }
             }
           }
         }
       }
+
+      setMessages(prev => [
+        ...prev,
+        {
+          id: 'asst-' + Date.now(),
+          chat_id: targetChatId!,
+          role: 'assistant',
+          content: fullAssistantReply || 'No response generated.',
+          model_id: selectedModelId,
+          tokens_used: Math.round(fullAssistantReply.length / 4),
+          created_at: new Date().toISOString()
+        }
+      ]);
+      setStreamedText('');
+      refreshUser();
     } catch (err: any) {
       setMessages(prev => [
         ...prev,
         {
-          id: 'err_' + Date.now(),
-          chat_id: activeChatId || '',
+          id: 'err-' + Date.now(),
+          chat_id: targetChatId!,
           role: 'assistant',
           content: `⚠️ Error: ${err.message}`,
           model_id: selectedModelId,
@@ -400,17 +440,17 @@ export const ChatInterface: React.FC = () => {
   ];
 
   return (
-    <div className="flex h-[calc(100vh-4rem)] overflow-hidden bg-white dark:bg-gray-950 transition-colors">
+    <div className="flex h-[calc(100vh-4rem)] overflow-hidden bg-white dark:bg-black transition-colors">
       {/* Collapsible Sidebar */}
       <aside
         className={`${
           sidebarOpen ? 'w-64 sm:w-72' : 'w-0'
-        } shrink-0 border-r border-gray-100 dark:border-gray-850 bg-gray-50/50 dark:bg-gray-900/40 flex flex-col transition-all duration-300 overflow-hidden relative z-20`}
+        } shrink-0 border-r border-black/[0.08] dark:border-white/[0.08] bg-[#FAFAFA] dark:bg-[#0A0A0A] flex flex-col transition-all duration-300 overflow-hidden relative z-20`}
       >
-        <div className="p-3 border-b border-gray-100 dark:border-gray-800 flex items-center justify-between gap-2">
+        <div className="p-3 border-b border-black/[0.08] dark:border-white/[0.08] flex items-center justify-between gap-2">
           <button
             onClick={handleCreateNewChat}
-            className="flex-1 py-2 px-3 rounded-lg bg-gray-950 hover:bg-black dark:bg-white dark:hover:bg-gray-100 text-white dark:text-gray-950 font-medium text-xs flex items-center justify-center gap-1.5 transition-all shadow-2xs"
+            className="flex-1 h-9 px-3.5 rounded-full bg-black hover:bg-black/90 dark:bg-white dark:hover:bg-white/90 text-white dark:text-black font-medium text-xs flex items-center justify-center gap-1.5 transition-all shadow-xs cursor-pointer"
           >
             <Plus className="w-3.5 h-3.5" />
             <span>New Chat</span>
@@ -418,7 +458,7 @@ export const ChatInterface: React.FC = () => {
           <button
             onClick={() => setSidebarOpen(false)}
             aria-label="Collapse sidebar"
-            className="p-1.5 text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 rounded-md transition-colors"
+            className="w-9 h-9 flex items-center justify-center text-gray-500 hover:text-black dark:hover:text-white rounded-full hover:bg-black/[0.04] dark:hover:bg-white/[0.05] transition-colors cursor-pointer"
           >
             <PanelLeftClose className="w-4 h-4" />
           </button>
@@ -427,13 +467,13 @@ export const ChatInterface: React.FC = () => {
         {/* Search */}
         <div className="p-2.5">
           <div className="relative">
-            <Search className="w-3 h-3 absolute left-2.5 top-2.5 text-gray-400" />
+            <Search className="w-3.5 h-3.5 absolute left-3 top-2.5 text-gray-400" />
             <input
               type="text"
               value={searchQuery}
               onChange={e => setSearchQuery(e.target.value)}
               placeholder="Search conversations..."
-              className="w-full pl-7 pr-2 py-1.5 text-xs rounded-md border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none focus:ring-1 focus:ring-gray-400"
+              className="w-full pl-8 pr-3 py-1.5 text-xs rounded-[8px] border border-black/[0.08] dark:border-white/[0.08] bg-white dark:bg-[#121212] text-black dark:text-white placeholder-gray-400 focus:outline-none focus:border-black dark:focus:border-white transition-colors"
             />
           </div>
         </div>
@@ -449,10 +489,10 @@ export const ChatInterface: React.FC = () => {
               <div
                 key={c.id}
                 onClick={() => setActiveChatId(c.id)}
-                className={`group flex items-center justify-between px-2.5 py-2 rounded-lg cursor-pointer text-xs transition-colors ${
+                className={`group flex items-center justify-between px-3 py-2 rounded-[8px] cursor-pointer text-xs transition-colors ${
                   activeChatId === c.id
-                    ? 'bg-gray-200/70 dark:bg-gray-800 text-gray-950 dark:text-white font-medium'
-                    : 'text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-850/60'
+                    ? 'bg-black/[0.06] dark:bg-white/[0.08] text-black dark:text-white font-medium'
+                    : 'text-gray-600 dark:text-gray-400 hover:bg-black/[0.03] dark:hover:bg-white/[0.04]'
                 }`}
               >
                 <div className="flex items-center gap-2 truncate flex-1 mr-1">
@@ -465,7 +505,7 @@ export const ChatInterface: React.FC = () => {
                         value={editTitle}
                         onChange={e => setEditTitle(e.target.value)}
                         onBlur={() => setEditingChatId(null)}
-                        className="w-full bg-white dark:bg-gray-900 px-1 py-0.5 rounded border border-gray-400 text-xs focus:outline-none"
+                        className="w-full bg-white dark:bg-[#121212] px-1.5 py-0.5 rounded-[4px] border border-black dark:border-white text-xs focus:outline-none"
                       />
                     </form>
                   ) : (
@@ -481,14 +521,14 @@ export const ChatInterface: React.FC = () => {
                       setEditTitle(c.title);
                     }}
                     aria-label="Rename conversation"
-                    className="p-0.5 text-gray-400 hover:text-gray-700 dark:hover:text-gray-200"
+                    className="p-1 text-gray-400 hover:text-black dark:hover:text-white rounded transition-colors"
                   >
                     <Edit2 className="w-3 h-3" />
                   </button>
                   <button
                     onClick={e => handleDeleteChat(c.id, e)}
                     aria-label="Delete conversation"
-                    className="p-0.5 text-gray-400 hover:text-red-500"
+                    className="p-1 text-gray-400 hover:text-red-500 rounded transition-colors"
                   >
                     <Trash2 className="w-3 h-3" />
                   </button>
@@ -499,22 +539,22 @@ export const ChatInterface: React.FC = () => {
         </div>
 
         {/* Footer info */}
-        <div className="p-3 border-t border-gray-100 dark:border-gray-800 text-[11px] font-mono text-gray-400 flex items-center justify-between">
-          <span>Total Chats:</span>
-          <span className="font-bold text-gray-700 dark:text-gray-300">{chats.length}</span>
+        <div className="p-3 border-t border-black/[0.08] dark:border-white/[0.08] text-[11px] font-mono text-gray-500 flex items-center justify-between">
+          <span>Conversations:</span>
+          <span className="font-semibold text-black dark:text-white">{chats.length}</span>
         </div>
       </aside>
 
       {/* Main Chat Canvas */}
-      <main className="flex-1 flex flex-col h-full overflow-hidden relative">
+      <main className="flex-1 flex flex-col h-full overflow-hidden relative bg-white dark:bg-black">
         {/* Header Bar */}
-        <div className="h-14 border-b border-gray-100 dark:border-gray-800/80 px-4 flex items-center justify-between gap-3 bg-white/80 dark:bg-gray-950/80 backdrop-blur-sm z-10">
+        <div className="h-14 border-b border-black/[0.08] dark:border-white/[0.08] px-4 flex items-center justify-between gap-3 bg-white/90 dark:bg-black/90 backdrop-blur-sm z-10">
           <div className="flex items-center gap-2">
             {!sidebarOpen && (
               <button
                 onClick={() => setSidebarOpen(true)}
                 aria-label="Open sidebar"
-                className="p-1.5 text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 rounded-md transition-colors"
+                className="w-9 h-9 flex items-center justify-center text-gray-500 hover:text-black dark:hover:text-white rounded-full hover:bg-black/[0.04] dark:hover:bg-white/[0.05] transition-colors cursor-pointer"
               >
                 <PanelLeftOpen className="w-4 h-4" />
               </button>
@@ -524,11 +564,11 @@ export const ChatInterface: React.FC = () => {
             <div className="relative">
               <button
                 onClick={() => setModelDropdownOpen(!modelDropdownOpen)}
-                className="flex items-center gap-2 px-2.5 py-1.5 rounded-lg border border-gray-200 dark:border-gray-800 hover:border-gray-300 dark:hover:border-gray-700 bg-white dark:bg-gray-900 text-xs font-semibold text-gray-900 dark:text-white transition-all"
+                className="flex items-center gap-2 px-3 py-1.5 rounded-full border border-black/[0.12] dark:border-white/[0.15] hover:border-black/30 dark:hover:border-white/30 bg-white dark:bg-[#121212] text-xs font-medium text-black dark:text-white transition-all cursor-pointer shadow-2xs"
               >
-                <Sparkles className="w-3 h-3 text-gray-400" />
-                <span>{selectedModel?.display_name || 'Select Model'}</span>
-                <span className="text-[10px] uppercase font-mono px-1.5 py-0.2 rounded bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400">
+                <Sparkles className="w-3 h-3 text-gray-500" />
+                <span className="font-semibold">{selectedModel?.display_name || 'Select Model'}</span>
+                <span className="text-[10px] uppercase font-mono px-1.5 py-0.2 rounded-full bg-black/[0.05] dark:bg-white/[0.08] text-gray-600 dark:text-gray-400">
                   {selectedModel?.badge}
                 </span>
                 <ChevronDown className="w-3 h-3 text-gray-400" />
@@ -536,42 +576,44 @@ export const ChatInterface: React.FC = () => {
 
               {modelDropdownOpen && (
                 <div
-                  className="absolute left-0 mt-1.5 w-72 rounded-xl bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800 shadow-xl py-1.5 z-50 text-xs animate-in fade-in slide-in-from-top-1"
+                  className="absolute left-0 mt-2 w-76 rounded-[8px] bg-white dark:bg-[#121212] border border-black/[0.12] dark:border-white/[0.15] shadow-xl py-1.5 z-50 text-xs animate-in fade-in slide-in-from-top-1"
                   onClick={() => setModelDropdownOpen(false)}
                 >
-                  <div className="px-3 py-1 text-[10px] uppercase font-mono text-gray-400 border-b border-gray-100 dark:border-gray-800">
-                    Foundation Models
+                  <div className="px-3.5 py-1.5 text-[10px] uppercase font-mono text-gray-400 border-b border-black/[0.06] dark:border-white/[0.06]">
+                    Frontier Foundation Models
                   </div>
-                  {models.map(m => (
-                    <button
-                      key={m.id}
-                      onClick={() => setSelectedModelId(m.id)}
-                      className={`w-full text-left px-3 py-2 flex items-start gap-2.5 hover:bg-gray-50 dark:hover:bg-gray-800/60 transition-colors ${
-                        selectedModelId === m.id
-                          ? 'bg-gray-50 dark:bg-gray-800/80 text-gray-900 dark:text-white font-medium'
-                          : 'text-gray-600 dark:text-gray-400'
-                      }`}
-                    >
-                      <div className="mt-0.5">
-                        {m.badge === 'reasoning' ? (
-                          <Brain className="w-3.5 h-3.5 text-purple-500" />
-                        ) : m.badge === 'coding' ? (
-                          <Code2 className="w-3.5 h-3.5 text-blue-500" />
-                        ) : (
-                          <Bot className="w-3.5 h-3.5 text-emerald-500" />
-                        )}
-                      </div>
-                      <div className="flex-1">
-                        <div className="flex items-center justify-between">
-                          <span>{m.display_name}</span>
-                          {selectedModelId === m.id && <Check className="w-3.5 h-3.5 text-gray-900 dark:text-white" />}
+                  <div className="max-h-80 overflow-y-auto">
+                    {models.map(m => (
+                      <button
+                        key={m.id}
+                        onClick={() => setSelectedModelId(m.id)}
+                        className={`w-full text-left px-3.5 py-2.5 flex items-start gap-2.5 hover:bg-black/[0.03] dark:hover:bg-white/[0.04] transition-colors cursor-pointer ${
+                          selectedModelId === m.id
+                            ? 'bg-black/[0.04] dark:bg-white/[0.06] text-black dark:text-white font-medium'
+                            : 'text-gray-700 dark:text-gray-300'
+                        }`}
+                      >
+                        <div className="mt-0.5">
+                          {m.badge === 'reasoning' ? (
+                            <Brain className="w-3.5 h-3.5 text-black dark:text-white" />
+                          ) : m.badge === 'coding' ? (
+                            <Code2 className="w-3.5 h-3.5 text-black dark:text-white" />
+                          ) : (
+                            <Bot className="w-3.5 h-3.5 text-black dark:text-white" />
+                          )}
                         </div>
-                        <p className="text-[10px] text-gray-400 line-clamp-1 mt-0.5 font-normal">
-                          {m.description_en}
-                        </p>
-                      </div>
-                    </button>
-                  ))}
+                        <div className="flex-1">
+                          <div className="flex items-center justify-between">
+                            <span className="font-semibold">{m.display_name}</span>
+                            {selectedModelId === m.id && <Check className="w-3.5 h-3.5 text-black dark:text-white" />}
+                          </div>
+                          <p className="text-[10px] text-gray-500 line-clamp-1 mt-0.5 font-normal">
+                            {m.description_en}
+                          </p>
+                        </div>
+                      </button>
+                    ))}
+                  </div>
                 </div>
               )}
             </div>
@@ -579,8 +621,8 @@ export const ChatInterface: React.FC = () => {
 
           {user && (
             <div className="flex items-center gap-2 text-xs font-mono">
-              <span className="text-gray-400">Tokens Remaining:</span>
-              <span className="font-bold text-gray-900 dark:text-white">
+              <span className="text-gray-500 hidden sm:inline">Tokens:</span>
+              <span className="font-semibold text-black dark:text-white">
                 {(user.usage_limit - user.current_usage).toLocaleString()}
               </span>
             </div>
@@ -589,16 +631,16 @@ export const ChatInterface: React.FC = () => {
 
         {/* Gating Banner if unpaid */}
         {!isSubscribed && (
-          <div className="bg-gray-950 text-white dark:bg-white dark:text-gray-950 px-4 py-2.5 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs z-10">
+          <div className="bg-black text-white dark:bg-white dark:text-black px-4 py-2.5 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs z-10">
             <div className="flex items-center gap-2">
-              <Lock className="w-3.5 h-3.5 text-amber-400 shrink-0" />
+              <Lock className="w-3.5 h-3.5 text-amber-300 shrink-0" />
               <span>
                 <strong>Subscription Required:</strong> Active subscription needed to converse with foundation models.
               </span>
             </div>
             <button
               onClick={() => openPaymentModal('monthly')}
-              className="px-3 py-1 rounded-md bg-white text-gray-950 dark:bg-gray-950 dark:text-white font-bold text-xs hover:opacity-90 transition-opacity"
+              className="h-8 px-4 rounded-full bg-white text-black dark:bg-black dark:text-white font-semibold text-xs hover:opacity-90 transition-opacity cursor-pointer"
             >
               Subscribe (৳1,299/mo)
             </button>
@@ -606,32 +648,32 @@ export const ChatInterface: React.FC = () => {
         )}
 
         {/* Messages Stream */}
-        <div className="flex-1 overflow-y-auto px-4 sm:px-8 py-6 space-y-6">
+        <div className="flex-1 overflow-y-auto px-4 sm:px-8 py-8 space-y-6">
           {messages.length === 0 && !isStreaming ? (
             <div className="h-full flex flex-col items-center justify-center max-w-xl mx-auto text-center py-12 space-y-6">
-              <div className="w-12 h-12 rounded-2xl bg-gray-100 dark:bg-gray-900 text-gray-900 dark:text-white flex items-center justify-center font-bold text-base">
-                <Sparkles className="w-6 h-6" />
+              <div className="w-12 h-12 rounded-full border border-black/10 dark:border-white/10 bg-white dark:bg-[#121212] text-black dark:text-white flex items-center justify-center font-bold shadow-xs">
+                <Sparkles className="w-5 h-5" />
               </div>
               <div className="space-y-1.5">
-                <h2 className="text-xl font-bold text-gray-900 dark:text-white">
+                <h2 className="text-2xl font-bold tracking-tight text-black dark:text-white">
                   Ready when you are.
                 </h2>
                 <p className="text-xs text-gray-500 max-w-md mx-auto">
-                  Powered by <strong>{selectedModel?.display_name}</strong>. Start typing below or pick a prompt:
+                  Powered by <span className="font-semibold text-black dark:text-white">{selectedModel?.display_name}</span>. Start a query below or select a prompt:
                 </p>
               </div>
 
-              {/* Suggestions */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 w-full text-left pt-2">
+              {/* Suggestions Chips */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 w-full text-left pt-2">
                 {suggestions.map((s, idx) => (
                   <button
                     key={idx}
                     type="button"
                     onClick={() => handleSendMessage(s)}
-                    className="p-3 rounded-xl border border-gray-100 dark:border-gray-800 hover:border-gray-300 dark:hover:border-gray-700 bg-gray-50/50 dark:bg-gray-900/50 text-xs text-gray-700 dark:text-gray-300 transition-all flex items-start justify-between gap-2 group"
+                    className="p-3.5 rounded-[8px] border border-black/[0.08] dark:border-white/[0.08] hover:border-black/30 dark:hover:border-white/30 bg-white dark:bg-[#0c0c0c] text-xs text-gray-700 dark:text-gray-300 transition-all flex items-start justify-between gap-2.5 group cursor-pointer shadow-xs"
                   >
-                    <span>{s}</span>
-                    <ArrowRight className="w-3 h-3 text-gray-400 group-hover:translate-x-0.5 transition-transform shrink-0 mt-0.5" />
+                    <span className="leading-snug">{s}</span>
+                    <ArrowRight className="w-3.5 h-3.5 text-gray-400 group-hover:translate-x-0.5 group-hover:text-black dark:group-hover:text-white transition-all shrink-0 mt-0.5" />
                   </button>
                 ))}
               </div>
@@ -644,16 +686,16 @@ export const ChatInterface: React.FC = () => {
                   className={`flex gap-3 ${m.role === 'user' ? 'justify-end' : 'justify-start'}`}
                 >
                   {m.role === 'assistant' && (
-                    <div className="w-7 h-7 rounded-lg bg-gray-100 dark:bg-gray-800 text-gray-900 dark:text-white flex items-center justify-center font-bold text-xs shrink-0 mt-0.5">
+                    <div className="w-7 h-7 rounded-full border border-black/10 dark:border-white/10 bg-white dark:bg-[#121212] text-black dark:text-white flex items-center justify-center font-bold text-xs shrink-0 mt-0.5">
                       <Sparkles className="w-3.5 h-3.5" />
                     </div>
                   )}
 
                   <div
-                    className={`max-w-[85%] sm:max-w-[80%] rounded-2xl px-4 py-3 text-sm ${
+                    className={`max-w-[85%] sm:max-w-[80%] rounded-[12px] px-4 py-3 text-sm leading-relaxed ${
                       m.role === 'user'
-                        ? 'bg-gray-950 text-white dark:bg-white dark:text-gray-950'
-                        : 'bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-gray-100 border border-gray-100 dark:border-gray-800'
+                        ? 'bg-black text-white dark:bg-white dark:text-black font-normal'
+                        : 'bg-white dark:bg-[#0f0f0f] text-black dark:text-white border border-black/[0.08] dark:border-white/[0.08] shadow-xs'
                     }`}
                   >
                     {m.role === 'user' ? (
@@ -667,15 +709,15 @@ export const ChatInterface: React.FC = () => {
 
               {isStreaming && (
                 <div className="flex gap-3 justify-start animate-in fade-in">
-                  <div className="w-7 h-7 rounded-lg bg-gray-100 dark:bg-gray-800 text-gray-900 dark:text-white flex items-center justify-center font-bold text-xs shrink-0 mt-0.5 animate-pulse">
+                  <div className="w-7 h-7 rounded-full border border-black/10 dark:border-white/10 bg-white dark:bg-[#121212] text-black dark:text-white flex items-center justify-center font-bold text-xs shrink-0 mt-0.5 animate-pulse">
                     <Sparkles className="w-3.5 h-3.5" />
                   </div>
-                  <div className="max-w-[85%] sm:max-w-[80%] rounded-2xl px-4 py-3 bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-gray-100 border border-gray-100 dark:border-gray-800">
+                  <div className="max-w-[85%] sm:max-w-[80%] rounded-[12px] px-4 py-3 bg-white dark:bg-[#0f0f0f] text-black dark:text-white border border-black/[0.08] dark:border-white/[0.08] shadow-xs">
                     {streamedText ? (
                       <FormattedMessage content={streamedText} />
                     ) : (
-                      <div className="flex items-center gap-2 text-xs text-gray-400 py-1">
-                        <span className="w-1.5 h-1.5 rounded-full bg-gray-400 animate-ping" />
+                      <div className="flex items-center gap-2 text-xs text-gray-500 py-1">
+                        <span className="w-1.5 h-1.5 rounded-full bg-black dark:bg-white animate-ping" />
                         <span>Generating response with {selectedModel?.display_name}...</span>
                       </div>
                     )}
@@ -689,14 +731,14 @@ export const ChatInterface: React.FC = () => {
         </div>
 
         {/* Input Box Bar */}
-        <div className="p-4 border-t border-gray-100 dark:border-gray-800 bg-white dark:bg-gray-950">
+        <div className="p-4 border-t border-black/[0.08] dark:border-white/[0.08] bg-white dark:bg-black">
           <div className="max-w-3xl mx-auto">
             <form
               onSubmit={e => {
                 e.preventDefault();
                 handleSendMessage();
               }}
-              className="relative flex items-end rounded-xl border border-gray-200 dark:border-gray-800 bg-gray-50/60 dark:bg-gray-900/60 focus-within:border-gray-400 dark:focus-within:border-gray-600 focus-within:ring-1 focus-within:ring-gray-400 transition-all p-1.5"
+              className="relative flex items-end rounded-[12px] border border-black/[0.12] dark:border-white/[0.15] bg-white dark:bg-[#0c0c0c] focus-within:border-black dark:focus-within:border-white transition-all p-2 shadow-xs"
             >
               <textarea
                 ref={inputRef}
@@ -715,20 +757,20 @@ export const ChatInterface: React.FC = () => {
                     : 'Activate a subscription plan to chat...'
                 }
                 disabled={!isSubscribed}
-                className="w-full resize-none bg-transparent px-3 py-1.5 text-xs sm:text-sm text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none max-h-36 disabled:opacity-50"
+                className="w-full resize-none bg-transparent px-3 py-2 text-xs sm:text-sm text-black dark:text-white placeholder-gray-400 focus:outline-none max-h-36 disabled:opacity-50"
               />
 
               <button
                 type="submit"
                 disabled={!inputMessage.trim() || isStreaming || !isSubscribed}
-                className="p-2 rounded-lg bg-gray-950 hover:bg-black dark:bg-white dark:hover:bg-gray-100 text-white dark:text-gray-950 disabled:opacity-30 transition-all shrink-0"
+                className="w-9 h-9 rounded-full bg-black hover:bg-black/90 dark:bg-white dark:hover:bg-white/90 text-white dark:text-black flex items-center justify-center disabled:opacity-20 transition-all shrink-0 cursor-pointer"
                 aria-label="Send message"
               >
                 <Send className="w-3.5 h-3.5" />
               </button>
             </form>
 
-            <div className="flex items-center justify-between text-[10px] text-gray-400 px-2 mt-1.5 font-mono">
+            <div className="flex items-center justify-between text-[11px] text-gray-500 px-2 mt-2 font-mono">
               <span>Enter to send • Shift+Enter for new line</span>
               <span>{selectedModel?.display_name}</span>
             </div>
