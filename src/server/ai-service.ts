@@ -71,13 +71,42 @@ Provide well-formatted markdown with clear headings, lists, code snippets with s
           parts: [{ text: m.content }]
         }));
 
-        const responseStream = await ai.models.generateContentStream({
-          model: model.model_name.includes('flash') ? 'gemini-2.5-flash' : 'gemini-2.5-pro',
-          contents: formattedContents,
-          config: {
-            systemInstruction: systemPrompt
+        // Determine the target model name from Gemini fleet
+        let targetModel = 'gemini-2.5-flash';
+        if (model.model_name === 'gemini-4-carbon') {
+          targetModel = 'gemini-4-carbon';
+        } else if (model.model_name.includes('flash')) {
+          targetModel = 'gemini-2.5-flash';
+        } else {
+          // Use gemini-3.1-pro-preview per Google GenAI specification (gemini-2.5-pro is retired)
+          targetModel = 'gemini-3.1-pro-preview';
+        }
+
+        let responseStream: any = null;
+        try {
+          responseStream = await ai.models.generateContentStream({
+            model: targetModel,
+            contents: formattedContents,
+            config: {
+              systemInstruction: systemPrompt
+            }
+          });
+        } catch (modelErr: any) {
+          // If model is 404 or unsupported for this key tier, fall back gracefully to gemini-2.5-flash
+          if (targetModel !== 'gemini-2.5-flash') {
+            console.warn(`[Google GenAI] Model ${targetModel} unavailable, falling back to gemini-2.5-flash:`, modelErr?.message);
+            targetModel = 'gemini-2.5-flash';
+            responseStream = await ai.models.generateContentStream({
+              model: targetModel,
+              contents: formattedContents,
+              config: {
+                systemInstruction: systemPrompt
+              }
+            });
+          } else {
+            throw modelErr;
           }
-        });
+        }
 
         for await (const chunk of responseStream) {
           const text = chunk.text;
