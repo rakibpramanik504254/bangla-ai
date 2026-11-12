@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import { X, CheckCircle2, ShieldCheck, Copy, Check, ArrowRight, Smartphone, AlertCircle } from 'lucide-react';
+import { X, CheckCircle2, ShieldCheck, Copy, Check, ArrowRight, Smartphone, AlertCircle, Clock } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext.tsx';
 import { PLANS, formatBDT } from '../../utils/billing.ts';
+import { trackMetaInitiateCheckout, trackMetaAddPaymentInfo } from '../../utils/metaPixel.ts';
 
 interface PaymentModalProps {
   isOpen: boolean;
@@ -14,6 +15,14 @@ interface PaymentSettings {
   bkash_number: string;
   nagad_number: string;
   rocket_number: string;
+}
+
+interface SubmittedState {
+  trxId: string;
+  gateway: string;
+  senderNumber: string;
+  amount: number;
+  planName: string;
 }
 
 export const PaymentModal: React.FC<PaymentModalProps> = ({
@@ -30,7 +39,7 @@ export const PaymentModal: React.FC<PaymentModalProps> = ({
   const [copied, setCopied] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [success, setSuccess] = useState<string | null>(null);
+  const [submittedPayment, setSubmittedPayment] = useState<SubmittedState | null>(null);
 
   const [paymentSettings, setPaymentSettings] = useState<PaymentSettings>({
     bkash_number: '01812345678',
@@ -38,8 +47,17 @@ export const PaymentModal: React.FC<PaymentModalProps> = ({
     rocket_number: '01912345678'
   });
 
+  const plan = PLANS[selectedPlan];
+
   useEffect(() => {
     if (isOpen) {
+      setSubmittedPayment(null);
+      setError(null);
+      setTrxId('');
+
+      // Track Meta Pixel InitiateCheckout
+      trackMetaInitiateCheckout(plan.name, plan.priceBDT);
+
       fetch('/api/payment/settings')
         .then(res => res.json())
         .then(data => {
@@ -53,7 +71,7 @@ export const PaymentModal: React.FC<PaymentModalProps> = ({
         })
         .catch(err => console.error('Failed to load payment numbers:', err));
     }
-  }, [isOpen]);
+  }, [isOpen, selectedPlan]);
 
   useEffect(() => {
     if (user?.phone && !senderNumber) {
@@ -63,7 +81,6 @@ export const PaymentModal: React.FC<PaymentModalProps> = ({
 
   if (!isOpen) return null;
 
-  const plan = PLANS[selectedPlan];
   const activeMerchantNumber =
     gateway === 'bkash' ? paymentSettings.bkash_number :
     gateway === 'nagad' ? paymentSettings.nagad_number :
@@ -83,7 +100,7 @@ export const PaymentModal: React.FC<PaymentModalProps> = ({
       return;
     }
 
-    const cleanTrx = trxId.trim();
+    const cleanTrx = trxId.trim().toUpperCase();
     if (!cleanTrx || cleanTrx.length < 6) {
       setError('Please provide a valid MFS Transaction ID (TrxID) received via SMS.');
       return;
@@ -113,21 +130,30 @@ export const PaymentModal: React.FC<PaymentModalProps> = ({
         })
       });
 
-      const data = await res.json();
-
-      if (!res.ok) {
-        throw new Error(data.error || 'Payment verification failed.');
+      let resData: any = {};
+      const responseText = await res.text();
+      try {
+        resData = JSON.parse(responseText);
+      } catch {
+        resData = { error: responseText || 'Unknown server response' };
       }
 
-      setSuccess(`Payment verified! Your ${plan.name} has been activated.`);
-      await refreshUser();
+      if (!res.ok) {
+        throw new Error(resData.error || 'Payment verification submission failed.');
+      }
 
-      setTimeout(() => {
-        onClose();
-        if (onSuccessRedirectToChat) {
-          onSuccessRedirectToChat();
-        }
-      }, 1500);
+      // Track Meta Pixel AddPaymentInfo
+      trackMetaAddPaymentInfo(plan.name, plan.priceBDT, gateway);
+
+      setSubmittedPayment({
+        trxId: cleanTrx,
+        gateway,
+        senderNumber: cleanSender,
+        amount: plan.priceBDT,
+        planName: plan.name
+      });
+
+      await refreshUser();
     } catch (err: any) {
       setError(err.message || 'Payment processing error.');
     } finally {
@@ -148,204 +174,265 @@ export const PaymentModal: React.FC<PaymentModalProps> = ({
         </button>
 
         <div className="overflow-y-auto p-6 sm:p-8 space-y-6">
-          {/* Header */}
-          <div className="text-center">
-            <span className="text-[11px] font-mono uppercase tracking-wider text-gray-500 block mb-1">
-              Official MFS Payment Verification
-            </span>
-            <h2 className="text-2xl font-bold tracking-tight text-black dark:text-white">
-              Activate Subscription
-            </h2>
-            <p className="text-xs text-gray-500 mt-1">
-              Direct verification via bKash, Nagad, and Rocket
-            </p>
-          </div>
+          {submittedPayment ? (
+            /* Pending Verification Confirmation Card */
+            <div className="space-y-6 text-center py-4 animate-in fade-in">
+              <div className="w-14 h-14 rounded-full bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800 flex items-center justify-center mx-auto text-emerald-600 dark:text-emerald-400">
+                <Clock className="w-7 h-7" />
+              </div>
 
-          {/* Plan Selector */}
-          <div className="grid grid-cols-2 gap-3">
-            <button
-              type="button"
-              onClick={() => setSelectedPlan('monthly')}
-              className={`p-4 rounded-[8px] border text-left transition-all cursor-pointer ${
-                selectedPlan === 'monthly'
-                  ? 'border-black dark:border-white bg-black/[0.02] dark:bg-white/[0.03] ring-1 ring-black dark:ring-white'
-                  : 'border-black/[0.08] dark:border-white/[0.08] hover:border-black/30 dark:hover:border-white/30'
-              }`}
-            >
-              <div className="flex justify-between items-start">
-                <span className="text-xs font-semibold text-black dark:text-white">Monthly Plan</span>
-                <span className="w-4 h-4 rounded-full border border-black/30 dark:border-white/30 flex items-center justify-center">
-                  {selectedPlan === 'monthly' && <span className="w-2 h-2 rounded-full bg-black dark:bg-white" />}
+              <div className="space-y-1.5">
+                <span className="text-[11px] font-mono uppercase tracking-wider text-emerald-600 dark:text-emerald-400 font-bold block">
+                  Payment Submitted • Awaiting Verification
                 </span>
+                <h2 className="text-2xl font-bold tracking-tight text-black dark:text-white">
+                  Verification Pending
+                </h2>
+                <p className="text-xs text-gray-600 dark:text-gray-400 max-w-sm mx-auto leading-relaxed">
+                  Thank you! We have received your payment submission. An administrator will verify the Transaction ID against our MFS statement and activate your access shortly.
+                </p>
               </div>
-              <p className="text-xl font-bold text-black dark:text-white mt-1.5 font-mono">
-                {formatBDT(PLANS.monthly.priceBDT)}
-                <span className="text-xs font-normal text-gray-500">/mo</span>
-              </p>
-              <p className="text-[11px] text-gray-500 mt-1">30 days • 50,000 tokens</p>
-            </button>
 
-            <button
-              type="button"
-              onClick={() => setSelectedPlan('yearly')}
-              className={`p-4 rounded-[8px] border text-left transition-all relative cursor-pointer ${
-                selectedPlan === 'yearly'
-                  ? 'border-black dark:border-white bg-black/[0.02] dark:bg-white/[0.03] ring-1 ring-black dark:ring-white'
-                  : 'border-black/[0.08] dark:border-white/[0.08] hover:border-black/30 dark:hover:border-white/30'
-              }`}
-            >
-              <span className="absolute -top-2 right-2 bg-black text-white dark:bg-white dark:text-black text-[9px] font-mono font-bold px-2 py-0.5 rounded-full border border-black/10">
-                SAVE 36%
-              </span>
-              <div className="flex justify-between items-start">
-                <span className="text-xs font-semibold text-black dark:text-white">Yearly Plan</span>
-                <span className="w-4 h-4 rounded-full border border-black/30 dark:border-white/30 flex items-center justify-center">
-                  {selectedPlan === 'yearly' && <span className="w-2 h-2 rounded-full bg-black dark:bg-white" />}
+              <div className="bg-[#FAFAFA] dark:bg-[#141414] rounded-[8px] p-4 border border-black/[0.08] dark:border-white/[0.08] text-xs space-y-2.5 text-left font-mono">
+                <div className="flex justify-between items-center py-1 border-b border-black/[0.04] dark:border-white/[0.04]">
+                  <span className="text-gray-500 font-sans">Plan Selected:</span>
+                  <span className="font-bold text-black dark:text-white font-sans">{submittedPayment.planName}</span>
+                </div>
+                <div className="flex justify-between items-center py-1 border-b border-black/[0.04] dark:border-white/[0.04]">
+                  <span className="text-gray-500 font-sans">Amount:</span>
+                  <span className="font-bold text-black dark:text-white">{formatBDT(submittedPayment.amount)}</span>
+                </div>
+                <div className="flex justify-between items-center py-1 border-b border-black/[0.04] dark:border-white/[0.04]">
+                  <span className="text-gray-500 font-sans">MFS Gateway:</span>
+                  <span className="font-bold text-black dark:text-white uppercase font-sans">{submittedPayment.gateway}</span>
+                </div>
+                <div className="flex justify-between items-center py-1 border-b border-black/[0.04] dark:border-white/[0.04]">
+                  <span className="text-gray-500 font-sans">Sender Mobile:</span>
+                  <span className="font-bold text-black dark:text-white">{submittedPayment.senderNumber}</span>
+                </div>
+                <div className="flex justify-between items-center py-1">
+                  <span className="text-gray-500 font-sans">Transaction ID:</span>
+                  <span className="font-bold text-emerald-600 dark:text-emerald-400 font-mono tracking-wider">{submittedPayment.trxId}</span>
+                </div>
+              </div>
+
+              <div className="pt-2 flex flex-col sm:flex-row items-center gap-3 justify-center">
+                <button
+                  type="button"
+                  onClick={onClose}
+                  className="w-full sm:w-auto h-11 px-6 rounded-full font-semibold text-xs text-white dark:text-black bg-black hover:bg-black/90 dark:bg-white dark:hover:bg-white/90 transition-all cursor-pointer shadow-xs"
+                >
+                  Close & Return
+                </button>
+                {onSuccessRedirectToChat && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      onClose();
+                      onSuccessRedirectToChat();
+                    }}
+                    className="w-full sm:w-auto h-11 px-6 rounded-full font-semibold text-xs text-black dark:text-white border border-black/[0.12] dark:border-white/[0.15] hover:border-black/30 transition-colors cursor-pointer"
+                  >
+                    Go to Workspace
+                  </button>
+                )}
+              </div>
+            </div>
+          ) : (
+            <>
+              {/* Header */}
+              <div className="text-center">
+                <span className="text-[11px] font-mono uppercase tracking-wider text-gray-500 block mb-1">
+                  Official MFS Payment Verification
                 </span>
+                <h2 className="text-2xl font-bold tracking-tight text-black dark:text-white">
+                  Activate Subscription
+                </h2>
+                <p className="text-xs text-gray-500 mt-1">
+                  Send BDT via bKash, Nagad, or Rocket and enter your SMS TrxID
+                </p>
               </div>
-              <p className="text-xl font-bold text-black dark:text-white mt-1.5 font-mono">
-                {formatBDT(PLANS.yearly.priceBDT)}
-                <span className="text-xs font-normal text-gray-500">/yr</span>
-              </p>
-              <p className="text-[11px] text-gray-500 mt-1">365 days • 750,000 tokens</p>
-            </button>
-          </div>
 
-          {/* Payment Gateway: bKash, Nagad, Rocket */}
-          <div>
-            <label className="block text-xs font-semibold text-black dark:text-white mb-2">
-              Select Mobile Financial Service:
-            </label>
-            <div className="grid grid-cols-3 gap-2.5">
-              <button
-                type="button"
-                onClick={() => setGateway('bkash')}
-                className={`py-2.5 px-2 rounded-full border flex flex-col items-center justify-center transition-all cursor-pointer ${
-                  gateway === 'bkash'
-                    ? 'border-black dark:border-white bg-black/[0.05] dark:bg-white/[0.08] font-bold text-black dark:text-white'
-                    : 'border-black/[0.08] dark:border-white/[0.08] text-gray-600 dark:text-gray-400 hover:border-black/30'
-                }`}
-              >
-                <span className="text-xs font-bold">bKash</span>
-                <span className="text-[10px] font-mono text-gray-400">বিকাশ</span>
-              </button>
+              {/* Plan Selector */}
+              <div className="grid grid-cols-2 gap-3">
+                <button
+                  type="button"
+                  onClick={() => setSelectedPlan('monthly')}
+                  className={`p-4 rounded-[8px] border text-left transition-all cursor-pointer ${
+                    selectedPlan === 'monthly'
+                      ? 'border-black dark:border-white bg-black/[0.02] dark:bg-white/[0.03] ring-1 ring-black dark:ring-white'
+                      : 'border-black/[0.08] dark:border-white/[0.08] hover:border-black/30 dark:hover:border-white/30'
+                  }`}
+                >
+                  <div className="flex justify-between items-start">
+                    <span className="text-xs font-semibold text-black dark:text-white">Monthly Plan</span>
+                    <span className="w-4 h-4 rounded-full border border-black/30 dark:border-white/30 flex items-center justify-center">
+                      {selectedPlan === 'monthly' && <span className="w-2 h-2 rounded-full bg-black dark:bg-white" />}
+                    </span>
+                  </div>
+                  <p className="text-xl font-bold text-black dark:text-white mt-1.5 font-mono">
+                    {formatBDT(PLANS.monthly.priceBDT)}
+                    <span className="text-xs font-normal text-gray-500">/mo</span>
+                  </p>
+                  <p className="text-[11px] text-gray-500 mt-1">30 days • 50,000 tokens</p>
+                </button>
 
-              <button
-                type="button"
-                onClick={() => setGateway('nagad')}
-                className={`py-2.5 px-2 rounded-full border flex flex-col items-center justify-center transition-all cursor-pointer ${
-                  gateway === 'nagad'
-                    ? 'border-black dark:border-white bg-black/[0.05] dark:bg-white/[0.08] font-bold text-black dark:text-white'
-                    : 'border-black/[0.08] dark:border-white/[0.08] text-gray-600 dark:text-gray-400 hover:border-black/30'
-                }`}
-              >
-                <span className="text-xs font-bold">Nagad</span>
-                <span className="text-[10px] font-mono text-gray-400">নগদ</span>
-              </button>
-
-              <button
-                type="button"
-                onClick={() => setGateway('rocket')}
-                className={`py-2.5 px-2 rounded-full border flex flex-col items-center justify-center transition-all cursor-pointer ${
-                  gateway === 'rocket'
-                    ? 'border-black dark:border-white bg-black/[0.05] dark:bg-white/[0.08] font-bold text-black dark:text-white'
-                    : 'border-black/[0.08] dark:border-white/[0.08] text-gray-600 dark:text-gray-400 hover:border-black/30'
-                }`}
-              >
-                <span className="text-xs font-bold">Rocket</span>
-                <span className="text-[10px] font-mono text-gray-400">রকেট</span>
-              </button>
-            </div>
-          </div>
-
-          {/* Payment Instructions Box with Dynamic Number */}
-          <div className="bg-[#F8F9FA] dark:bg-[#141414] rounded-[8px] p-4 border border-black/[0.08] dark:border-white/[0.08] text-xs text-gray-600 dark:text-gray-400 space-y-2.5">
-            <div className="flex items-center justify-between">
-              <span className="font-semibold text-black dark:text-white flex items-center gap-1.5">
-                <Smartphone className="w-3.5 h-3.5 text-gray-400" />
-                <span>Send {formatBDT(plan.priceBDT)} to {gateway.toUpperCase()}:</span>
-              </span>
-              <button
-                type="button"
-                onClick={handleCopyMerchant}
-                className="px-2.5 py-1 text-[11px] bg-white dark:bg-[#1f1f1f] border border-black/[0.1] dark:border-white/[0.1] rounded-full font-mono font-bold text-black dark:text-white flex items-center gap-1 hover:bg-black/[0.03] transition-colors cursor-pointer"
-                title="Click to copy number"
-              >
-                {copied ? <Check className="w-3 h-3 text-emerald-500" /> : <Copy className="w-3 h-3 text-gray-400" />}
-                <span>{copied ? 'Copied' : activeMerchantNumber}</span>
-              </button>
-            </div>
-            <ol className="list-decimal list-inside space-y-1 text-[11px] text-gray-500 dark:text-gray-400">
-              <li>Open your <strong>{gateway.toUpperCase()}</strong> app on your mobile device.</li>
-              <li>Select <strong>Send Money</strong> or <strong>Payment</strong> and enter number: <code className="font-mono font-bold text-black dark:text-white">{activeMerchantNumber}</code></li>
-              <li>Send exact amount: <strong className="font-mono text-black dark:text-white">{formatBDT(plan.priceBDT)}</strong></li>
-              <li>Copy the <strong>Transaction ID (TrxID)</strong> from your SMS receipt.</li>
-            </ol>
-          </div>
-
-          {/* Verification Form */}
-          <form onSubmit={handleSubmit} className="space-y-4">
-            {error && (
-              <div className="p-3 text-xs bg-red-50 dark:bg-red-950/40 border border-red-200 dark:border-red-900 text-red-600 dark:text-red-300 rounded-[8px] flex items-center gap-2">
-                <AlertCircle className="w-4 h-4 shrink-0" />
-                <span>{error}</span>
+                <button
+                  type="button"
+                  onClick={() => setSelectedPlan('yearly')}
+                  className={`p-4 rounded-[8px] border text-left transition-all relative cursor-pointer ${
+                    selectedPlan === 'yearly'
+                      ? 'border-black dark:border-white bg-black/[0.02] dark:bg-white/[0.03] ring-1 ring-black dark:ring-white'
+                      : 'border-black/[0.08] dark:border-white/[0.08] hover:border-black/30 dark:hover:border-white/30'
+                  }`}
+                >
+                  <span className="absolute -top-2 right-2 bg-black text-white dark:bg-white dark:text-black text-[9px] font-mono font-bold px-2 py-0.5 rounded-full border border-black/10">
+                    SAVE 36%
+                  </span>
+                  <div className="flex justify-between items-start">
+                    <span className="text-xs font-semibold text-black dark:text-white">Yearly Plan</span>
+                    <span className="w-4 h-4 rounded-full border border-black/30 dark:border-white/30 flex items-center justify-center">
+                      {selectedPlan === 'yearly' && <span className="w-2 h-2 rounded-full bg-black dark:bg-white" />}
+                    </span>
+                  </div>
+                  <p className="text-xl font-bold text-black dark:text-white mt-1.5 font-mono">
+                    {formatBDT(PLANS.yearly.priceBDT)}
+                    <span className="text-xs font-normal text-gray-500">/yr</span>
+                  </p>
+                  <p className="text-[11px] text-gray-500 mt-1">365 days • 750,000 tokens</p>
+                </button>
               </div>
-            )}
 
-            {success && (
-              <div className="p-3 text-xs bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-900 text-emerald-600 dark:text-emerald-300 rounded-[8px] flex items-center gap-2">
-                <CheckCircle2 className="w-4 h-4 text-emerald-500 shrink-0" />
-                <span>{success}</span>
+              {/* Payment Gateway: bKash, Nagad, Rocket */}
+              <div>
+                <label className="block text-xs font-semibold text-black dark:text-white mb-2">
+                  Select Mobile Financial Service (MFS):
+                </label>
+                <div className="grid grid-cols-3 gap-2.5">
+                  <button
+                    type="button"
+                    onClick={() => setGateway('bkash')}
+                    className={`py-2.5 px-2 rounded-full border flex flex-col items-center justify-center transition-all cursor-pointer ${
+                      gateway === 'bkash'
+                        ? 'border-black dark:border-white bg-black/[0.05] dark:bg-white/[0.08] font-bold text-black dark:text-white'
+                        : 'border-black/[0.08] dark:border-white/[0.08] text-gray-600 dark:text-gray-400 hover:border-black/30'
+                    }`}
+                  >
+                    <span className="text-xs font-bold">bKash</span>
+                    <span className="text-[10px] font-mono text-gray-400">বিকাশ</span>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => setGateway('nagad')}
+                    className={`py-2.5 px-2 rounded-full border flex flex-col items-center justify-center transition-all cursor-pointer ${
+                      gateway === 'nagad'
+                        ? 'border-black dark:border-white bg-black/[0.05] dark:bg-white/[0.08] font-bold text-black dark:text-white'
+                        : 'border-black/[0.08] dark:border-white/[0.08] text-gray-600 dark:text-gray-400 hover:border-black/30'
+                    }`}
+                  >
+                    <span className="text-xs font-bold">Nagad</span>
+                    <span className="text-[10px] font-mono text-gray-400">নগদ</span>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => setGateway('rocket')}
+                    className={`py-2.5 px-2 rounded-full border flex flex-col items-center justify-center transition-all cursor-pointer ${
+                      gateway === 'rocket'
+                        ? 'border-black dark:border-white bg-black/[0.05] dark:bg-white/[0.08] font-bold text-black dark:text-white'
+                        : 'border-black/[0.08] dark:border-white/[0.08] text-gray-600 dark:text-gray-400 hover:border-black/30'
+                    }`}
+                  >
+                    <span className="text-xs font-bold">Rocket</span>
+                    <span className="text-[10px] font-mono text-gray-400">রকেট</span>
+                  </button>
+                </div>
               </div>
-            )}
 
-            <div>
-              <label className="block text-xs font-medium text-black dark:text-white mb-1">
-                Your Sender Mobile Number *
-              </label>
-              <input
-                type="text"
-                required
-                value={senderNumber}
-                onChange={e => setSenderNumber(e.target.value)}
-                placeholder="e.g. 01812345678"
-                className="w-full px-3.5 py-2.5 text-xs rounded-[12px] border border-black/[0.12] dark:border-white/[0.15] bg-white dark:bg-[#121212] text-black dark:text-white font-mono focus:outline-none focus:border-black dark:focus:border-white transition-colors"
-              />
-            </div>
+              {/* Payment Instructions Box with Dynamic Number */}
+              <div className="bg-[#F8F9FA] dark:bg-[#141414] rounded-[8px] p-4 border border-black/[0.08] dark:border-white/[0.08] text-xs text-gray-600 dark:text-gray-400 space-y-2.5">
+                <div className="flex items-center justify-between">
+                  <span className="font-semibold text-black dark:text-white flex items-center gap-1.5">
+                    <Smartphone className="w-3.5 h-3.5 text-gray-400" />
+                    <span>Send {formatBDT(plan.priceBDT)} to {gateway.toUpperCase()}:</span>
+                  </span>
+                  <button
+                    type="button"
+                    onClick={handleCopyMerchant}
+                    className="px-2.5 py-1 text-[11px] bg-white dark:bg-[#1f1f1f] border border-black/[0.1] dark:border-white/[0.1] rounded-full font-mono font-bold text-black dark:text-white flex items-center gap-1 hover:bg-black/[0.03] transition-colors cursor-pointer"
+                    title="Click to copy number"
+                  >
+                    {copied ? <Check className="w-3 h-3 text-emerald-500" /> : <Copy className="w-3 h-3 text-gray-400" />}
+                    <span>{copied ? 'Copied' : activeMerchantNumber}</span>
+                  </button>
+                </div>
+                <ol className="list-decimal list-inside space-y-1 text-[11px] text-gray-500 dark:text-gray-400">
+                  <li>Open your <strong>{gateway.toUpperCase()}</strong> app on your mobile device.</li>
+                  <li>Select <strong>Send Money</strong> or <strong>Payment</strong> to: <code className="font-mono font-bold text-black dark:text-white">{activeMerchantNumber}</code></li>
+                  <li>Send exact amount: <strong className="font-mono text-black dark:text-white">{formatBDT(plan.priceBDT)}</strong></li>
+                  <li>Copy the <strong>Transaction ID (TrxID)</strong> from your SMS receipt and submit below.</li>
+                </ol>
+              </div>
 
-            <div>
-              <label className="block text-xs font-medium text-black dark:text-white mb-1">
-                Transaction ID (TrxID) *
-              </label>
-              <input
-                type="text"
-                required
-                value={trxId}
-                onChange={e => setTrxId(e.target.value)}
-                placeholder="e.g. BKB8792019X or 9G821KLA"
-                className="w-full px-3.5 py-2.5 text-xs rounded-[12px] border border-black/[0.12] dark:border-white/[0.15] bg-white dark:bg-[#121212] text-black dark:text-white font-mono uppercase focus:outline-none focus:border-black dark:focus:border-white transition-colors"
-              />
-              <span className="text-[10px] text-gray-500 block mt-1">
-                Enter the real TrxID received from your MFS SMS notification.
-              </span>
-            </div>
+              {/* Verification Form */}
+              <form onSubmit={handleSubmit} className="space-y-4">
+                {error && (
+                  <div className="p-3 text-xs bg-red-50 dark:bg-red-950/40 border border-red-200 dark:border-red-900 text-red-600 dark:text-red-300 rounded-[8px] flex items-center gap-2">
+                    <AlertCircle className="w-4 h-4 shrink-0" />
+                    <span>{error}</span>
+                  </div>
+                )}
 
-            <button
-              type="submit"
-              disabled={loading}
-              className="w-full h-11 px-5 rounded-full font-semibold text-xs text-white dark:text-black bg-black hover:bg-black/90 dark:bg-white dark:hover:bg-white/90 transition-all flex items-center justify-center gap-2 disabled:opacity-50 mt-2 shadow-xs cursor-pointer"
-            >
-              {loading ? (
-                <span className="w-4 h-4 border-2 border-white dark:border-black border-t-transparent rounded-full animate-spin" />
-              ) : (
-                <>
-                  <ShieldCheck className="w-4 h-4" />
-                  <span>Verify Payment & Activate Plan</span>
-                  <ArrowRight className="w-3.5 h-3.5" />
-                </>
-              )}
-            </button>
-          </form>
+                <div>
+                  <label className="block text-xs font-medium text-black dark:text-white mb-1">
+                    Your Sender Mobile Number *
+                  </label>
+                  <input
+                    type="text"
+                    required
+                    value={senderNumber}
+                    onChange={e => setSenderNumber(e.target.value)}
+                    placeholder="e.g. 01812345678"
+                    className="w-full px-3.5 py-2.5 text-xs rounded-[12px] border border-black/[0.12] dark:border-white/[0.15] bg-white dark:bg-[#121212] text-black dark:text-white font-mono focus:outline-none focus:border-black dark:focus:border-white transition-colors"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-medium text-black dark:text-white mb-1">
+                    SMS Transaction ID (TrxID) *
+                  </label>
+                  <input
+                    type="text"
+                    required
+                    value={trxId}
+                    onChange={e => setTrxId(e.target.value)}
+                    placeholder="e.g. BKB8792019X or 9G821KLA"
+                    className="w-full px-3.5 py-2.5 text-xs rounded-[12px] border border-black/[0.12] dark:border-white/[0.15] bg-white dark:bg-[#121212] text-black dark:text-white font-mono uppercase focus:outline-none focus:border-black dark:focus:border-white transition-colors"
+                  />
+                  <span className="text-[10px] text-gray-500 block mt-1">
+                    Enter the exact TrxID received from {gateway.toUpperCase()} SMS.
+                  </span>
+                </div>
+
+                <button
+                  type="submit"
+                  disabled={loading}
+                  className="w-full h-11 px-5 rounded-full font-semibold text-xs text-white dark:text-black bg-black hover:bg-black/90 dark:bg-white dark:hover:bg-white/90 transition-all flex items-center justify-center gap-2 disabled:opacity-50 mt-2 shadow-xs cursor-pointer"
+                >
+                  {loading ? (
+                    <span className="w-4 h-4 border-2 border-white dark:border-black border-t-transparent rounded-full animate-spin" />
+                  ) : (
+                    <>
+                      <ShieldCheck className="w-4 h-4" />
+                      <span>Submit Payment for Verification</span>
+                      <ArrowRight className="w-3.5 h-3.5" />
+                    </>
+                  )}
+                </button>
+              </form>
+            </>
+          )}
         </div>
       </div>
     </div>

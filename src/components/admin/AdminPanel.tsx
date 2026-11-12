@@ -15,11 +15,19 @@ import {
   RefreshCw,
   Sliders,
   Lock,
-  Save
+  Save,
+  Clock,
+  Check,
+  X,
+  Copy,
+  Smartphone,
+  ExternalLink,
+  Activity
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext.tsx';
 import { formatBDT } from '../../utils/billing.ts';
-import { AdminStats, AiProvider, AiModel } from '../../types/index.ts';
+import { AdminStats, AiProvider, AiModel, Payment } from '../../types/index.ts';
+import { trackMetaPurchase } from '../../utils/metaPixel.ts';
 
 interface AdminUser {
   id: string;
@@ -41,7 +49,7 @@ interface AdminUser {
 
 export const AdminPanel: React.FC = () => {
   const { user, token } = useAuth();
-  const [activeTab, setActiveTab] = useState<'overview' | 'users' | 'providers' | 'models' | 'settings'>('overview');
+  const [activeTab, setActiveTab] = useState<'overview' | 'users' | 'payments' | 'providers' | 'models' | 'settings'>('overview');
 
   const [stats, setStats] = useState<AdminStats | null>(null);
   const [loadingStats, setLoadingStats] = useState(false);
@@ -53,6 +61,13 @@ export const AdminPanel: React.FC = () => {
   const [grantPlanId, setGrantPlanId] = useState<'monthly' | 'yearly'>('monthly');
   const [grantDays, setGrantDays] = useState(30);
 
+  // Payments verification state
+  const [payments, setPayments] = useState<Payment[]>([]);
+  const [loadingPayments, setLoadingPayments] = useState(false);
+  const [paymentFilter, setPaymentFilter] = useState<'all' | 'pending' | 'completed' | 'rejected'>('all');
+  const [paymentSearch, setPaymentSearch] = useState('');
+  const [copiedId, setCopiedId] = useState<string | null>(null);
+
   const [providers, setProviders] = useState<AiProvider[]>([]);
   const [models, setModels] = useState<AiModel[]>([]);
   const [editingProviderId, setEditingProviderId] = useState<string | null>(null);
@@ -61,6 +76,7 @@ export const AdminPanel: React.FC = () => {
 
   const [globalSettings, setGlobalSettings] = useState<any>({});
   const [savingSettings, setSavingSettings] = useState(false);
+  const [testingPixel, setTestingPixel] = useState(false);
   const [feedback, setFeedback] = useState<string | null>(null);
 
   if (!user || user.role !== 'admin') {
@@ -111,6 +127,24 @@ export const AdminPanel: React.FC = () => {
     }
   };
 
+  const fetchPayments = async () => {
+    if (!token) return;
+    setLoadingPayments(true);
+    try {
+      const res = await fetch('/api/admin/payments', {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setPayments(data);
+      }
+    } catch (err) {
+      console.error('Failed to load payments:', err);
+    } finally {
+      setLoadingPayments(false);
+    }
+  };
+
   const fetchProvidersAndModels = async () => {
     if (!token) return;
     try {
@@ -130,8 +164,88 @@ export const AdminPanel: React.FC = () => {
   useEffect(() => {
     fetchStats();
     fetchUsers();
+    fetchPayments();
     fetchProvidersAndModels();
   }, [token]);
+
+  const handleCopyText = (text: string, id: string) => {
+    navigator.clipboard.writeText(text);
+    setCopiedId(id);
+    setTimeout(() => setCopiedId(null), 2000);
+  };
+
+  const handleApprovePayment = async (payment: Payment) => {
+    if (!token) return;
+    try {
+      const res = await fetch(`/api/admin/payments/${payment.id}/approve`, {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Failed to approve payment');
+
+      // Trigger client-side Meta Pixel Purchase event as well
+      trackMetaPurchase(
+        payment.plan_name || (payment.plan_id === 'yearly' ? 'Yearly Plan (৳9,999)' : 'Monthly Plan (৳1,299)'),
+        payment.amount,
+        payment.trx_id,
+        payment.gateway
+      );
+
+      setFeedback(`Payment approved! Subscription activated and Facebook Pixel Purchase event fired.`);
+      fetchPayments();
+      fetchUsers();
+      fetchStats();
+    } catch (err: any) {
+      setFeedback(`Error: ${err.message}`);
+    }
+  };
+
+  const handleRejectPayment = async (payment: Payment) => {
+    if (!token) return;
+    const note = window.prompt(
+      'Enter reason for rejection (optional):',
+      'Transaction ID or sender number could not be verified on MFS statement'
+    );
+    if (note === null) return; // user cancelled prompt
+
+    try {
+      const res = await fetch(`/api/admin/payments/${payment.id}/reject`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`
+        },
+        body: JSON.stringify({ note })
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Failed to reject payment');
+
+      setFeedback(`Payment marked as rejected.`);
+      fetchPayments();
+      fetchStats();
+    } catch (err: any) {
+      setFeedback(`Error: ${err.message}`);
+    }
+  };
+
+  const handleTestPixel = async () => {
+    if (!token) return;
+    setTestingPixel(true);
+    try {
+      const res = await fetch('/api/admin/pixel/test', {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Pixel test failed');
+      setFeedback(data.message);
+    } catch (err: any) {
+      setFeedback(`Pixel Error: ${err.message}`);
+    } finally {
+      setTestingPixel(false);
+    }
+  };
 
   const handleToggleUserStatus = async (targetUser: AdminUser) => {
     const newStatus = targetUser.status === 'active' ? 'suspended' : 'active';
@@ -276,7 +390,7 @@ export const AdminPanel: React.FC = () => {
         body: JSON.stringify(globalSettings)
       });
       if (res.ok) {
-        setFeedback('Platform settings and MFS payment numbers saved.');
+        setFeedback('Platform settings, MFS payment numbers, and Facebook Pixel configuration saved successfully.');
       }
     } catch (err) {
       console.error(err);
@@ -284,6 +398,21 @@ export const AdminPanel: React.FC = () => {
       setSavingSettings(false);
     }
   };
+
+  const pendingPayments = payments.filter(p => p.status === 'pending');
+  const filteredPayments = payments.filter(p => {
+    if (paymentFilter !== 'all' && p.status !== paymentFilter) return false;
+    if (paymentSearch) {
+      const q = paymentSearch.toLowerCase();
+      return (
+        p.trx_id.toLowerCase().includes(q) ||
+        p.sender_number.includes(q) ||
+        (p.user_name && p.user_name.toLowerCase().includes(q)) ||
+        (p.user_email && p.user_email.toLowerCase().includes(q))
+      );
+    }
+    return true;
+  });
 
   return (
     <div className="max-w-6xl mx-auto px-4 sm:px-6 py-12 space-y-8 animate-in fade-in">
@@ -301,7 +430,7 @@ export const AdminPanel: React.FC = () => {
               System Control Console
             </h1>
             <p className="text-xs text-gray-500 mt-0.5">
-              User governance, quotas, models catalog, and MFS payment configuration
+              MFS payment verification, Meta Pixel automation, users & AI model catalog
             </p>
           </div>
         </div>
@@ -310,6 +439,7 @@ export const AdminPanel: React.FC = () => {
           onClick={() => {
             fetchStats();
             fetchUsers();
+            fetchPayments();
             fetchProvidersAndModels();
           }}
           className="self-start sm:self-auto h-9 px-4 rounded-full border border-black/[0.12] dark:border-white/[0.15] hover:border-black/30 dark:hover:border-white/30 text-xs font-semibold text-black dark:text-white flex items-center gap-1.5 transition-colors cursor-pointer shadow-2xs"
@@ -342,7 +472,24 @@ export const AdminPanel: React.FC = () => {
           }`}
         >
           <TrendingUp className="w-3.5 h-3.5" />
-          <span>Analytics Overview</span>
+          <span>Overview</span>
+        </button>
+
+        <button
+          onClick={() => setActiveTab('payments')}
+          className={`h-9 px-4 rounded-full transition-all flex items-center gap-1.5 whitespace-nowrap cursor-pointer ${
+            activeTab === 'payments'
+              ? 'bg-black text-white dark:bg-white dark:text-black font-semibold shadow-xs'
+              : 'text-gray-500 hover:text-black dark:hover:text-white'
+          }`}
+        >
+          <CreditCard className="w-3.5 h-3.5" />
+          <span>Payments Verification</span>
+          {pendingPayments.length > 0 && (
+            <span className="px-1.5 py-0.2 rounded-full text-[10px] font-mono font-bold bg-amber-400 text-black">
+              {pendingPayments.length}
+            </span>
+          )}
         </button>
 
         <button
@@ -390,7 +537,7 @@ export const AdminPanel: React.FC = () => {
           }`}
         >
           <Settings className="w-3.5 h-3.5" />
-          <span>Platform Settings</span>
+          <span>Settings & Meta Pixel</span>
         </button>
       </div>
 
@@ -423,11 +570,16 @@ export const AdminPanel: React.FC = () => {
             </div>
 
             <div className="bg-white dark:bg-[#0c0c0c] p-5 rounded-[8px] border border-black/[0.08] dark:border-white/[0.08] shadow-xs">
-              <span className="text-[10px] text-gray-400 block font-mono uppercase tracking-wider">Tokens Generated</span>
-              <p className="text-2xl font-bold tracking-tight text-black dark:text-white mt-1 font-mono">
-                {stats ? stats.totalTokensUsed.toLocaleString() : '...'}
+              <span className="text-[10px] text-gray-400 block font-mono uppercase tracking-wider">Pending Verification</span>
+              <p className="text-2xl font-bold tracking-tight text-amber-500 mt-1 font-mono">
+                {pendingPayments.length} payments
               </p>
-              <span className="text-[11px] text-gray-500">Inference volume</span>
+              <button
+                onClick={() => setActiveTab('payments')}
+                className="text-[11px] text-black dark:text-white font-medium hover:underline inline-block mt-0.5"
+              >
+                Review in Payments tab →
+              </button>
             </div>
           </div>
 
@@ -449,6 +601,177 @@ export const AdminPanel: React.FC = () => {
               </div>
             ) : (
               <p className="text-xs text-gray-500">No token activity recorded yet.</p>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* Tab: Payments Verification (The core requested feature!) */}
+      {activeTab === 'payments' && (
+        <div className="space-y-5">
+          <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3">
+            <div className="flex items-center gap-2">
+              <div className="relative w-full sm:w-80">
+                <Search className="w-3.5 h-3.5 absolute left-3 top-3 text-gray-400" />
+                <input
+                  type="text"
+                  value={paymentSearch}
+                  onChange={e => setPaymentSearch(e.target.value)}
+                  placeholder="Search by TrxID, phone, or name..."
+                  className="w-full pl-9 pr-3 py-2 text-xs rounded-[12px] border border-black/[0.12] dark:border-white/[0.15] bg-white dark:bg-[#121212] text-black dark:text-white focus:outline-none focus:border-black dark:focus:border-white transition-colors"
+                />
+              </div>
+
+              {/* Status Filters */}
+              <div className="flex items-center gap-1 bg-black/[0.04] dark:bg-white/[0.05] p-1 rounded-full text-xs">
+                {(['all', 'pending', 'completed', 'rejected'] as const).map(f => (
+                  <button
+                    key={f}
+                    onClick={() => setPaymentFilter(f)}
+                    className={`px-3 py-1 rounded-full capitalize text-xs font-semibold cursor-pointer transition-colors ${
+                      paymentFilter === f
+                        ? 'bg-white dark:bg-[#1a1a1a] text-black dark:text-white shadow-xs'
+                        : 'text-gray-500 hover:text-black dark:hover:text-white'
+                    }`}
+                  >
+                    {f}
+                    {f === 'pending' && pendingPayments.length > 0 && ` (${pendingPayments.length})`}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            <span className="text-xs text-gray-500 font-mono">
+              Total Records: {filteredPayments.length}
+            </span>
+          </div>
+
+          <div className="bg-white dark:bg-[#0c0c0c] rounded-[8px] border border-black/[0.08] dark:border-white/[0.08] shadow-xs overflow-hidden">
+            {loadingPayments ? (
+              <div className="py-12 text-center text-xs text-gray-400">Loading payment records...</div>
+            ) : filteredPayments.length === 0 ? (
+              <div className="py-12 text-center text-xs text-gray-400">No payment requests match your criteria.</div>
+            ) : (
+              <div className="overflow-x-auto">
+                <table className="w-full text-left text-xs">
+                  <thead className="border-b border-black/[0.08] dark:border-white/[0.08] text-gray-400 font-mono text-[11px]">
+                    <tr>
+                      <th className="py-3 px-4 font-medium">User Profile</th>
+                      <th className="py-3 px-4 font-medium">MFS Gateway</th>
+                      <th className="py-3 px-4 font-medium">Sender Number</th>
+                      <th className="py-3 px-4 font-medium">Transaction ID (TrxID)</th>
+                      <th className="py-3 px-4 font-medium">Plan & Amount</th>
+                      <th className="py-3 px-4 font-medium">Status</th>
+                      <th className="py-3 px-4 font-medium text-right">Verification Action</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-black/[0.04] dark:divide-white/[0.04]">
+                    {filteredPayments.map(p => (
+                      <tr key={p.id} className="hover:bg-black/[0.02] dark:hover:bg-white/[0.02] transition-colors">
+                        <td className="py-3.5 px-4">
+                          <div className="font-semibold text-black dark:text-white">{p.user_name || 'Subscriber'}</div>
+                          <div className="text-[11px] text-gray-500">{p.user_email}</div>
+                          <div className="text-[10px] text-gray-400 font-mono">
+                            {new Date(p.created_at).toLocaleString('en-US', { dateStyle: 'short', timeStyle: 'short' })}
+                          </div>
+                        </td>
+
+                        <td className="py-3.5 px-4">
+                          <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-[10px] font-bold font-mono uppercase ${
+                            p.gateway === 'bkash'
+                              ? 'bg-pink-50 text-[#E2136E] dark:bg-pink-950/40 border border-pink-200 dark:border-pink-900'
+                              : p.gateway === 'nagad'
+                              ? 'bg-orange-50 text-[#F7941D] dark:bg-orange-950/40 border border-orange-200 dark:border-orange-900'
+                              : 'bg-purple-50 text-[#8C3494] dark:bg-purple-950/40 border border-purple-200 dark:border-purple-900'
+                          }`}>
+                            {p.gateway}
+                          </span>
+                        </td>
+
+                        <td className="py-3.5 px-4 font-mono font-bold text-black dark:text-white">
+                          <div className="flex items-center gap-1.5">
+                            <span>{p.sender_number}</span>
+                            <button
+                              type="button"
+                              onClick={() => handleCopyText(p.sender_number, `ph_${p.id}`)}
+                              className="text-gray-400 hover:text-black dark:hover:text-white cursor-pointer"
+                              title="Copy sender number"
+                            >
+                              {copiedId === `ph_${p.id}` ? <Check className="w-3 h-3 text-emerald-500" /> : <Copy className="w-3 h-3" />}
+                            </button>
+                          </div>
+                        </td>
+
+                        <td className="py-3.5 px-4">
+                          <div className="flex items-center gap-1.5 font-mono font-bold text-black dark:text-white bg-black/[0.03] dark:bg-white/[0.05] px-2 py-1 rounded-[6px] w-fit">
+                            <span>{p.trx_id}</span>
+                            <button
+                              type="button"
+                              onClick={() => handleCopyText(p.trx_id, `trx_${p.id}`)}
+                              className="text-gray-400 hover:text-black dark:hover:text-white cursor-pointer"
+                              title="Copy TrxID to check MFS statement"
+                            >
+                              {copiedId === `trx_${p.id}` ? <Check className="w-3 h-3 text-emerald-500" /> : <Copy className="w-3 h-3" />}
+                            </button>
+                          </div>
+                        </td>
+
+                        <td className="py-3.5 px-4">
+                          <div className="font-bold text-black dark:text-white">{formatBDT(p.amount)}</div>
+                          <span className="text-[10px] text-gray-500 capitalize">{p.plan_id} Plan</span>
+                        </td>
+
+                        <td className="py-3.5 px-4">
+                          <span className={`px-2.5 py-0.5 rounded-full text-[10px] font-mono font-bold uppercase inline-flex items-center gap-1 ${
+                            p.status === 'completed'
+                              ? 'bg-emerald-50 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-400 border border-emerald-200'
+                              : p.status === 'pending'
+                              ? 'bg-amber-50 text-amber-700 dark:bg-amber-950/40 dark:text-amber-300 border border-amber-200 animate-pulse'
+                              : 'bg-red-50 text-red-700 dark:bg-red-950/40 dark:text-red-400 border border-red-200'
+                          }`}>
+                            <span className={`w-1.5 h-1.5 rounded-full ${
+                              p.status === 'completed' ? 'bg-emerald-500' : p.status === 'pending' ? 'bg-amber-500' : 'bg-red-500'
+                            }`} />
+                            {p.status}
+                          </span>
+                          {p.admin_note && (
+                            <div className="text-[10px] text-gray-400 mt-0.5 line-clamp-1">{p.admin_note}</div>
+                          )}
+                        </td>
+
+                        <td className="py-3.5 px-4 text-right">
+                          {p.status === 'pending' ? (
+                            <div className="flex items-center justify-end gap-2">
+                              <button
+                                type="button"
+                                onClick={() => handleApprovePayment(p)}
+                                className="h-8 px-3.5 rounded-full bg-black hover:bg-black/90 dark:bg-white dark:hover:bg-white/90 text-white dark:text-black font-semibold text-xs flex items-center gap-1.5 transition-all shadow-xs cursor-pointer"
+                                title="Approve payment, activate subscription and fire Meta Pixel Purchase event"
+                              >
+                                <Check className="w-3.5 h-3.5 text-emerald-400 dark:text-emerald-600" />
+                                <span>Approve & Activate</span>
+                              </button>
+
+                              <button
+                                type="button"
+                                onClick={() => handleRejectPayment(p)}
+                                className="h-8 px-2.5 rounded-full border border-red-200 text-red-600 hover:bg-red-50 dark:hover:bg-red-950/30 text-xs font-semibold cursor-pointer transition-colors"
+                                title="Reject transaction if TrxID does not match"
+                              >
+                                Reject
+                              </button>
+                            </div>
+                          ) : (
+                            <span className="text-gray-400 font-mono text-[11px]">
+                              {p.status === 'completed' ? 'Verified & Active' : 'Rejected'}
+                            </span>
+                          )}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
             )}
           </div>
         </div>
@@ -758,50 +1081,105 @@ export const AdminPanel: React.FC = () => {
         </div>
       )}
 
-      {/* Tab 5: Settings */}
+      {/* Tab 5: Settings & Facebook Pixel (The requested Meta Pixel setting!) */}
       {activeTab === 'settings' && (
-        <form onSubmit={handleSaveSettings} className="bg-white dark:bg-[#0c0c0c] p-6 sm:p-8 rounded-[8px] border border-black/[0.08] dark:border-white/[0.08] shadow-xs space-y-5 max-w-xl text-xs">
+        <form onSubmit={handleSaveSettings} className="bg-white dark:bg-[#0c0c0c] p-6 sm:p-8 rounded-[8px] border border-black/[0.08] dark:border-white/[0.08] shadow-xs space-y-6 max-w-2xl text-xs">
           <div>
             <h3 className="font-bold text-base text-black dark:text-white">
-              Global Platform & Payment Settings
+              Global Platform, Payment & Meta Pixel Settings
             </h3>
             <p className="text-xs text-gray-500 mt-0.5">
-              Configure system quotas, support coordinates, and live MFS merchant numbers.
+              Configure system quotas, MFS merchant numbers, and Facebook Pixel setup.
             </p>
           </div>
 
-          <div>
-            <label className="block font-medium mb-1 text-black dark:text-white">Default Monthly Token Limit:</label>
-            <input
-              type="number"
-              value={globalSettings.global_usage_limit || 50000}
-              onChange={e => setGlobalSettings({ ...globalSettings, global_usage_limit: parseInt(e.target.value, 10) })}
-              className="w-full px-3.5 py-2.5 rounded-[12px] border border-black/[0.12] dark:border-white/[0.15] bg-white dark:bg-[#121212] font-mono text-xs focus:outline-none focus:border-black dark:focus:border-white"
-            />
-          </div>
+          {/* Facebook Pixel Setup Section */}
+          <div className="p-5 rounded-[8px] border border-black/[0.12] dark:border-white/[0.15] bg-[#FAFAFA] dark:bg-[#121212] space-y-4">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <Activity className="w-4 h-4 text-blue-600 dark:text-blue-400" />
+                <h4 className="font-bold text-sm text-black dark:text-white">
+                  Facebook / Meta Pixel Setup (Meta Ads)
+                </h4>
+              </div>
+              <label className="flex items-center gap-2 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={!!globalSettings.facebook_pixel_enabled}
+                  onChange={e => setGlobalSettings({ ...globalSettings, facebook_pixel_enabled: e.target.checked })}
+                  className="rounded w-4 h-4 text-black cursor-pointer"
+                />
+                <span className="font-semibold text-xs text-black dark:text-white">Enable Pixel</span>
+              </label>
+            </div>
 
-          <div>
-            <label className="block font-medium mb-1 text-black dark:text-white">Support Email:</label>
-            <input
-              type="email"
-              value={globalSettings.support_email || 'support@bangla.ai'}
-              onChange={e => setGlobalSettings({ ...globalSettings, support_email: e.target.value })}
-              className="w-full px-3.5 py-2.5 rounded-[12px] border border-black/[0.12] dark:border-white/[0.15] bg-white dark:bg-[#121212] text-xs focus:outline-none focus:border-black dark:focus:border-white"
-            />
-          </div>
+            <p className="text-[11px] text-gray-600 dark:text-gray-400 leading-relaxed">
+              When enabled, Bangla AI automatically tracks PageView, InitiateCheckout, AddPaymentInfo on payment submission, and fires the <strong>Purchase</strong> event with exact BDT conversion value when admin approves bKash, Nagad, or Rocket payments.
+            </p>
 
-          <div>
-            <label className="block font-medium mb-1 text-black dark:text-white">Support Phone:</label>
-            <input
-              type="text"
-              value={globalSettings.support_phone || '+880 9612-000000'}
-              onChange={e => setGlobalSettings({ ...globalSettings, support_phone: e.target.value })}
-              className="w-full px-3.5 py-2.5 rounded-[12px] border border-black/[0.12] dark:border-white/[0.15] bg-white dark:bg-[#121212] text-xs focus:outline-none focus:border-black dark:focus:border-white"
-            />
+            <div>
+              <label className="block font-medium mb-1 text-black dark:text-white">
+                Meta Pixel ID:
+              </label>
+              <input
+                type="text"
+                value={globalSettings.facebook_pixel_id || ''}
+                onChange={e => setGlobalSettings({ ...globalSettings, facebook_pixel_id: e.target.value.trim() })}
+                placeholder="e.g. 123456789012345"
+                className="w-full px-3.5 py-2.5 rounded-[12px] border border-black/[0.12] dark:border-white/[0.15] bg-white dark:bg-[#0c0c0c] font-mono text-xs focus:outline-none focus:border-black dark:focus:border-white"
+              />
+              <span className="text-[10px] text-gray-500 block mt-1">
+                Found in Meta Events Manager &gt; Data Sources &gt; Pixel Settings.
+              </span>
+            </div>
+
+            <div>
+              <label className="block font-medium mb-1 text-black dark:text-white">
+                Meta Conversions API (CAPI) Access Token (Server-Side Tracking):
+              </label>
+              <input
+                type="password"
+                value={globalSettings.facebook_pixel_access_token || ''}
+                onChange={e => setGlobalSettings({ ...globalSettings, facebook_pixel_access_token: e.target.value.trim() })}
+                placeholder="EAAB..."
+                className="w-full px-3.5 py-2.5 rounded-[12px] border border-black/[0.12] dark:border-white/[0.15] bg-white dark:bg-[#0c0c0c] font-mono text-xs focus:outline-none focus:border-black dark:focus:border-white"
+              />
+              <span className="text-[10px] text-gray-500 block mt-1">
+                Generates 100% reliable server-to-server Purchase events even if users use ad-blockers.
+              </span>
+            </div>
+
+            <div>
+              <label className="block font-medium mb-1 text-black dark:text-white">
+                Test Event Code (Optional for Meta Testing):
+              </label>
+              <input
+                type="text"
+                value={globalSettings.facebook_pixel_test_code || ''}
+                onChange={e => setGlobalSettings({ ...globalSettings, facebook_pixel_test_code: e.target.value.trim() })}
+                placeholder="e.g. TEST12345"
+                className="w-full px-3.5 py-2.5 rounded-[12px] border border-black/[0.12] dark:border-white/[0.15] bg-white dark:bg-[#0c0c0c] font-mono text-xs focus:outline-none focus:border-black dark:focus:border-white"
+              />
+            </div>
+
+            <div className="pt-1 flex items-center gap-3">
+              <button
+                type="button"
+                disabled={testingPixel || !globalSettings.facebook_pixel_id}
+                onClick={handleTestPixel}
+                className="h-8 px-4 rounded-full border border-black/[0.12] dark:border-white/[0.15] hover:border-black/30 text-xs font-semibold flex items-center gap-1.5 cursor-pointer disabled:opacity-50"
+              >
+                <Activity className="w-3.5 h-3.5 text-blue-500" />
+                <span>{testingPixel ? 'Sending Test...' : 'Send Test Purchase Event'}</span>
+              </button>
+              <span className="text-[10px] text-gray-500">
+                Check Meta Events Manager &gt; Test Events tab.
+              </span>
+            </div>
           </div>
 
           {/* MFS Payment Numbers Configuration */}
-          <div className="pt-4 border-t border-black/[0.08] dark:border-white/[0.08] space-y-3.5">
+          <div className="pt-2 border-t border-black/[0.08] dark:border-white/[0.08] space-y-3.5">
             <div>
               <h4 className="font-bold text-xs text-black dark:text-white flex items-center justify-between">
                 <span>MFS Payment Phone Numbers</span>
@@ -854,14 +1232,46 @@ export const AdminPanel: React.FC = () => {
             </div>
           </div>
 
+          <div className="pt-2 border-t border-black/[0.08] dark:border-white/[0.08] space-y-3.5">
+            <div>
+              <label className="block font-medium mb-1 text-black dark:text-white">Default Monthly Token Limit:</label>
+              <input
+                type="number"
+                value={globalSettings.global_usage_limit || 50000}
+                onChange={e => setGlobalSettings({ ...globalSettings, global_usage_limit: parseInt(e.target.value, 10) })}
+                className="w-full px-3.5 py-2.5 rounded-[12px] border border-black/[0.12] dark:border-white/[0.15] bg-white dark:bg-[#121212] font-mono text-xs focus:outline-none focus:border-black dark:focus:border-white"
+              />
+            </div>
+
+            <div>
+              <label className="block font-medium mb-1 text-black dark:text-white">Support Email:</label>
+              <input
+                type="email"
+                value={globalSettings.support_email || 'support@bangla.ai'}
+                onChange={e => setGlobalSettings({ ...globalSettings, support_email: e.target.value })}
+                className="w-full px-3.5 py-2.5 rounded-[12px] border border-black/[0.12] dark:border-white/[0.15] bg-white dark:bg-[#121212] text-xs focus:outline-none focus:border-black dark:focus:border-white"
+              />
+            </div>
+
+            <div>
+              <label className="block font-medium mb-1 text-black dark:text-white">Support Phone:</label>
+              <input
+                type="text"
+                value={globalSettings.support_phone || '+880 9612-000000'}
+                onChange={e => setGlobalSettings({ ...globalSettings, support_phone: e.target.value })}
+                className="w-full px-3.5 py-2.5 rounded-[12px] border border-black/[0.12] dark:border-white/[0.15] bg-white dark:bg-[#121212] text-xs focus:outline-none focus:border-black dark:focus:border-white"
+              />
+            </div>
+          </div>
+
           <div className="pt-2">
             <button
               type="submit"
               disabled={savingSettings}
-              className="h-10 px-5 rounded-full bg-black hover:bg-black/90 dark:bg-white dark:hover:bg-white/90 text-white dark:text-black font-semibold text-xs flex items-center gap-2 cursor-pointer shadow-xs"
+              className="h-10 px-6 rounded-full bg-black hover:bg-black/90 dark:bg-white dark:hover:bg-white/90 text-white dark:text-black font-semibold text-xs flex items-center gap-2 cursor-pointer shadow-xs"
             >
               <Save className="w-3.5 h-3.5" />
-              <span>{savingSettings ? 'Saving...' : 'Save Settings'}</span>
+              <span>{savingSettings ? 'Saving...' : 'Save Settings & Pixel'}</span>
             </button>
           </div>
         </form>

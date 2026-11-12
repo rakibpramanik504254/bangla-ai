@@ -1,6 +1,7 @@
 import express, { Request, Response } from 'express';
 import path from 'node:path';
 import fs from 'node:fs';
+import crypto from 'node:crypto';
 import dotenv from 'dotenv';
 import { db, User, verifyPassword, hashPassword } from './src/db/database.ts';
 import { authenticate, requireAdmin, generateToken, AuthenticatedRequest } from './src/server/auth.ts';
@@ -234,6 +235,19 @@ app.get('/api/subscription/plans', (_req: Request, res: Response) => {
   res.json(PLANS);
 });
 
+app.get('/api/settings/public', (_req: Request, res: Response) => {
+  const settings = db.getSettings();
+  res.json({
+    bkash_number: settings.bkash_number || '01812345678',
+    nagad_number: settings.nagad_number || '01712345678',
+    rocket_number: settings.rocket_number || '01912345678',
+    support_phone: settings.support_phone,
+    support_email: settings.support_email,
+    facebook_pixel_id: settings.facebook_pixel_id || '',
+    facebook_pixel_enabled: !!settings.facebook_pixel_enabled
+  });
+});
+
 app.get('/api/payment/settings', (_req: Request, res: Response) => {
   const settings = db.getSettings();
   res.json({
@@ -241,40 +255,57 @@ app.get('/api/payment/settings', (_req: Request, res: Response) => {
     nagad_number: settings.nagad_number || '01712345678',
     rocket_number: settings.rocket_number || '01912345678',
     support_phone: settings.support_phone,
-    support_email: settings.support_email
+    support_email: settings.support_email,
+    facebook_pixel_id: settings.facebook_pixel_id || '',
+    facebook_pixel_enabled: !!settings.facebook_pixel_enabled
   });
 });
 
-app.post('/api/subscription/checkout', authenticate, (req: AuthenticatedRequest, res: Response) => {
+// Common handler for both /api/payments/verify and /api/subscription/checkout
+const handlePaymentSubmission = (req: AuthenticatedRequest, res: Response) => {
   try {
-    const { planId, paymentMethod, trxId, senderNumber } = req.body;
-    if (!planId || !paymentMethod || !trxId) {
-      res.status(400).json({ error: 'Plan, payment gateway, and Transaction ID (TrxID) are required.' });
+    const { planId, gateway, paymentMethod, trxId, senderNumber } = req.body;
+    const selectedPlan = planId === 'yearly' ? 'yearly' : 'monthly';
+    const selectedGateway = ((gateway || paymentMethod || 'bkash') as string).toLowerCase() as 'bkash' | 'nagad' | 'rocket';
+    
+    if (!['bkash', 'nagad', 'rocket'].includes(selectedGateway)) {
+      res.status(400).json({ error: 'Valid MFS gateway (bKash, Nagad, or Rocket) is required.' });
       return;
     }
 
-    if (planId !== 'monthly' && planId !== 'yearly') {
-      res.status(400).json({ error: 'Invalid subscription plan specified.' });
+    const cleanTrx = (trxId || '').trim();
+    if (!cleanTrx || cleanTrx.length < 6) {
+      res.status(400).json({ error: 'Valid SMS Transaction ID (TrxID) is required.' });
       return;
     }
 
-    const result = db.createOrRenewSubscription({
+    const cleanSender = (senderNumber || req.user!.phone || '').trim().replace(/[^0-9]/g, '');
+    if (cleanSender.length < 11) {
+      res.status(400).json({ error: 'Valid 11-digit Bangladeshi mobile number is required.' });
+      return;
+    }
+
+    const payment = db.createPendingPayment({
       userId: req.user!.id,
-      planId,
-      paymentMethod,
-      trxId: trxId.trim(),
-      senderNumber: senderNumber || req.user!.phone
+      planId: selectedPlan,
+      gateway: selectedGateway,
+      trxId: cleanTrx,
+      senderNumber: cleanSender
     });
 
     res.json({
-      message: 'Subscription successfully activated. Welcome to Bangla AI!',
-      subscription: result.subscription,
-      payment: result.payment
+      success: true,
+      status: 'pending',
+      message: `Payment request submitted! Your Transaction ID (${payment.trx_id}) is awaiting admin verification. Access will be unlocked as soon as verified.`,
+      payment
     });
   } catch (err: any) {
-    res.status(500).json({ error: 'Payment processing error: ' + err.message });
+    res.status(400).json({ error: err.message || 'Payment submission failed.' });
   }
-});
+};
+
+app.post('/api/payments/verify', authenticate, handlePaymentSubmission);
+app.post('/api/subscription/checkout', authenticate, handlePaymentSubmission);
 
 app.get('/api/payments/history', authenticate, (req: AuthenticatedRequest, res: Response) => {
   const payments = db.listPayments(req.user!.id);
@@ -544,6 +575,133 @@ app.get('/api/admin/settings', requireAdmin, (_req: AuthenticatedRequest, res: R
 app.put('/api/admin/settings', requireAdmin, (req: AuthenticatedRequest, res: Response) => {
   const updated = db.updateSettings(req.body);
   res.json(updated);
+});
+
+// Admin Payments Verification Endpoints
+app.get('/api/admin/payments', requireAdmin, (_req: AuthenticatedRequest, res: Response) => {
+  const payments = db.listAllPayments();
+  res.json(payments);
+});
+
+// Helper to fire Meta Conversions API (CAPI) server-side Purchase event
+async function sendMetaConversionsPurchase(payment: any, settings: any): Promise<boolean> {
+  if (!settings.facebook_pixel_id || !settings.facebook_pixel_access_token || !settings.facebook_pixel_enabled) {
+    return false;
+  }
+
+  try {
+    const user = db.getUserById(payment.user_id);
+    const emailHash = user ? crypto.createHash('sha256').update(user.email.trim().toLowerCase()).digest('hex') : undefined;
+    const cleanPhone = (payment.sender_number || '').replace(/[^0-9]/g, '');
+    const phoneHash = cleanPhone ? crypto.createHash('sha256').update(cleanPhone).digest('hex') : undefined;
+
+    const payload: any = {
+      data: [
+        {
+          event_name: 'Purchase',
+          event_time: Math.floor(Date.now() / 1000),
+          event_source_url: 'https://bangla.ai',
+          action_source: 'website',
+          user_data: {
+            ...(emailHash ? { em: [emailHash] } : {}),
+            ...(phoneHash ? { ph: [phoneHash] } : {})
+          },
+          custom_data: {
+            currency: 'BDT',
+            value: Number(payment.amount),
+            content_name: payment.plan_name || (payment.plan_id === 'yearly' ? 'Yearly Plan (৳9,999)' : 'Monthly Plan (৳1,299)'),
+            content_type: 'product',
+            order_id: payment.trx_id,
+            payment_method: payment.gateway
+          }
+        }
+      ]
+    };
+
+    if (settings.facebook_pixel_test_code) {
+      payload.test_event_code = settings.facebook_pixel_test_code;
+    }
+
+    const endpoint = `https://graph.facebook.com/v19.0/${settings.facebook_pixel_id}/events?access_token=${settings.facebook_pixel_access_token}`;
+    const resp = await fetch(endpoint, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload)
+    });
+    const respData = await resp.json();
+    console.log('[Meta CAPI] Purchase event sent to Facebook Pixel:', respData);
+    return resp.ok;
+  } catch (err) {
+    console.error('[Meta CAPI] Error sending Purchase event:', err);
+    return false;
+  }
+}
+
+app.post('/api/admin/payments/:id/approve', requireAdmin, async (req: AuthenticatedRequest, res: Response) => {
+  try {
+    const { id } = req.params;
+    const result = db.approvePayment(id, req.user!.id);
+    const settings = db.getSettings();
+
+    // Trigger Meta Conversions API Purchase Event
+    const pixelFired = await sendMetaConversionsPurchase(result.payment, settings);
+
+    res.json({
+      success: true,
+      message: `Payment approved! Subscription activated for ${result.payment.user_name || 'user'}.`,
+      payment: result.payment,
+      subscription: result.subscription,
+      pixelFired
+    });
+  } catch (err: any) {
+    res.status(400).json({ error: err.message || 'Payment approval failed.' });
+  }
+});
+
+app.post('/api/admin/payments/:id/reject', requireAdmin, (req: AuthenticatedRequest, res: Response) => {
+  try {
+    const { id } = req.params;
+    const { note } = req.body;
+    const rejected = db.rejectPayment(id, req.user!.id, note);
+    res.json({
+      success: true,
+      message: 'Payment rejected.',
+      payment: rejected
+    });
+  } catch (err: any) {
+    res.status(400).json({ error: err.message || 'Payment rejection failed.' });
+  }
+});
+
+app.post('/api/admin/pixel/test', requireAdmin, async (_req: AuthenticatedRequest, res: Response) => {
+  try {
+    const settings = db.getSettings();
+    if (!settings.facebook_pixel_id) {
+      res.status(400).json({ error: 'Please enter and save your Facebook Pixel ID first.' });
+      return;
+    }
+
+    const testPayment = {
+      user_id: 'test_user',
+      amount: 1299,
+      plan_name: 'Monthly Plan (৳1,299)',
+      plan_id: 'monthly',
+      trx_id: 'TEST_TRX_' + Date.now(),
+      gateway: 'bkash',
+      sender_number: '01812345678'
+    };
+
+    const fired = await sendMetaConversionsPurchase(testPayment, settings);
+    res.json({
+      success: true,
+      pixelFired: fired,
+      message: fired
+        ? 'Meta Conversions API Purchase test event successfully delivered to Facebook!'
+        : 'Pixel test dispatched (Note: Server-side CAPI requires a valid Conversions API Access Token from Meta Events Manager).'
+    });
+  } catch (err: any) {
+    res.status(500).json({ error: err.message || 'Pixel test failed.' });
+  }
 });
 
 // ==========================================

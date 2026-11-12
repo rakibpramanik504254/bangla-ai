@@ -41,15 +41,22 @@ export interface Subscription {
 export interface Payment {
   id: string;
   user_id: string;
+  user_name?: string;
+  user_email?: string;
   subscription_id?: string;
+  plan_id?: 'monthly' | 'yearly';
+  plan_name?: string;
   amount: number;
   currency: 'BDT';
   gateway: 'bkash' | 'nagad' | 'rocket';
   trx_id: string;
   sender_number: string;
-  status: 'completed' | 'pending' | 'failed';
-  gateway_response?: string;
+  phone?: string;
+  status: 'completed' | 'pending' | 'rejected';
+  admin_note?: string;
   created_at: string;
+  approved_at?: string;
+  approved_by?: string;
 }
 
 export interface Chat {
@@ -119,6 +126,10 @@ export interface SystemSettings {
   nagad_number: string;
   rocket_number: string;
   announcement?: string;
+  facebook_pixel_id?: string;
+  facebook_pixel_enabled?: boolean;
+  facebook_pixel_access_token?: string;
+  facebook_pixel_test_code?: string;
 }
 
 interface DatabaseData {
@@ -291,14 +302,19 @@ class Database {
       {
         id: 'pay_001',
         user_id: subscriberId,
+        user_name: 'Tanvir Ahmed',
+        user_email: 'subscriber@bangla.ai',
         subscription_id: 'sub_user_002',
+        plan_id: 'monthly',
+        plan_name: 'Monthly Plan (৳1,299)',
         amount: 1299,
         currency: 'BDT',
         gateway: 'bkash',
         trx_id: 'BKB8792019X',
         sender_number: '01812345678',
         status: 'completed',
-        created_at: now
+        created_at: now,
+        approved_at: now
       }
     ];
 
@@ -789,12 +805,17 @@ class Database {
     const newPayment: Payment = {
       id: paymentId,
       user_id: params.userId,
+      user_name: user?.name,
+      user_email: user?.email,
       subscription_id: subId,
+      plan_id: params.planId,
+      plan_name: plan.name,
       amount: plan.priceBDT,
       currency: 'BDT',
       gateway: params.paymentMethod as any,
       trx_id: params.trxId,
       sender_number: params.senderNumber || user?.phone || '',
+      phone: params.senderNumber || user?.phone || '',
       status: 'completed',
       created_at: now
     };
@@ -819,6 +840,124 @@ class Database {
     Object.assign(sub, updates, { updated_at: new Date().toISOString() });
     this.save();
     return sub;
+  }
+
+  public createPendingPayment(params: {
+    userId: string;
+    planId: 'monthly' | 'yearly';
+    gateway: 'bkash' | 'nagad' | 'rocket';
+    trxId: string;
+    senderNumber: string;
+  }): Payment {
+    const cleanTrx = params.trxId.trim().toUpperCase();
+    const existing = this.data.payments.find(
+      p => p.trx_id.toUpperCase() === cleanTrx && (p.status === 'completed' || p.status === 'pending')
+    );
+    if (existing) {
+      if (existing.status === 'completed') {
+        throw new Error('This Transaction ID (TrxID) has already been approved and redeemed.');
+      } else {
+        throw new Error('This Transaction ID (TrxID) is already submitted and pending admin verification.');
+      }
+    }
+
+    const user = this.getUserById(params.userId);
+    const plan = PLANS[params.planId];
+    const now = new Date().toISOString();
+    const paymentId = `pay_${crypto.randomUUID().slice(0, 8)}`;
+
+    const newPayment: Payment = {
+      id: paymentId,
+      user_id: params.userId,
+      user_name: user?.name || 'User',
+      user_email: user?.email || '',
+      plan_id: params.planId,
+      plan_name: plan.name,
+      amount: plan.priceBDT,
+      currency: 'BDT',
+      gateway: params.gateway,
+      trx_id: cleanTrx,
+      sender_number: params.senderNumber.trim(),
+      status: 'pending',
+      created_at: now
+    };
+
+    this.data.payments.unshift(newPayment);
+    this.save();
+    return newPayment;
+  }
+
+  public approvePayment(paymentId: string, adminUserId: string): { payment: Payment; subscription: Subscription } {
+    const payment = this.data.payments.find(p => p.id === paymentId);
+    if (!payment) {
+      throw new Error('Payment record not found.');
+    }
+
+    const now = new Date().toISOString();
+    payment.status = 'completed';
+    payment.approved_at = now;
+    payment.approved_by = adminUserId;
+
+    const plan = PLANS[payment.plan_id || 'monthly'];
+    const existingSub = this.getSubscriptionByUserId(payment.user_id);
+    const expiresAt = calculateExpiryDate(
+      payment.plan_id || 'monthly',
+      existingSub && existingSub.status === 'active' ? existingSub.expires_at : null
+    ).toISOString();
+
+    const subId = payment.subscription_id || `sub_${crypto.randomUUID().slice(0, 8)}`;
+    payment.subscription_id = subId;
+
+    const newSub: Subscription = {
+      id: subId,
+      user_id: payment.user_id,
+      plan_id: payment.plan_id || 'monthly',
+      plan_name: plan.name,
+      amount: payment.amount,
+      currency: 'BDT',
+      status: 'active',
+      started_at: now,
+      expires_at: expiresAt,
+      auto_renew: true,
+      payment_method: payment.gateway,
+      trx_id: payment.trx_id,
+      created_at: now,
+      updated_at: now
+    };
+
+    this.data.subscriptions = this.data.subscriptions.filter(s => s.user_id !== payment.user_id);
+    this.data.subscriptions.push(newSub);
+
+    const user = this.getUserById(payment.user_id);
+    if (user) {
+      user.current_usage = 0;
+      user.usage_limit = payment.plan_id === 'yearly' ? 750000 : 50000;
+    }
+
+    this.save();
+    return { payment, subscription: newSub };
+  }
+
+  public rejectPayment(paymentId: string, adminUserId: string, note?: string): Payment {
+    const payment = this.data.payments.find(p => p.id === paymentId);
+    if (!payment) {
+      throw new Error('Payment record not found.');
+    }
+    payment.status = 'rejected';
+    payment.admin_note = note || 'Payment verification failed: TrxID or phone number mismatch';
+    payment.approved_by = adminUserId;
+    this.save();
+    return payment;
+  }
+
+  public getPaymentById(id: string): Payment | undefined {
+    return this.data.payments.find(p => p.id === id);
+  }
+
+  public listAllPayments(): Payment[] {
+    return [...this.data.payments].sort(
+      (a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+    );
   }
 
   public listPayments(userId?: string): Payment[] {
@@ -989,6 +1128,8 @@ class Database {
       modelUsageMap[r.model_id] = (modelUsageMap[r.model_id] || 0) + r.total_tokens;
     }
 
+    const pendingPaymentsCount = this.data.payments.filter(p => p.status === 'pending').length;
+
     return {
       totalUsers,
       activeSubscribers,
@@ -996,7 +1137,8 @@ class Database {
       totalTokensUsed,
       modelUsageMap,
       totalChats: this.data.chats.length,
-      totalMessages: this.data.messages.length
+      totalMessages: this.data.messages.length,
+      pendingPaymentsCount
     };
   }
 }

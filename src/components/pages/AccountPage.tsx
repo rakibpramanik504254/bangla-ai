@@ -208,6 +208,21 @@ export const AccountPage: React.FC = () => {
         </div>
       </div>
 
+      {/* Pending Payment Alert Banner if any exists */}
+      {payments.some((p) => p.status === 'pending') && (
+        <div className="bg-amber-500/10 border border-amber-500/30 rounded-[8px] p-4 text-xs text-amber-900 dark:text-amber-200 flex items-start gap-3">
+          <AlertCircle className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
+          <div className="space-y-1">
+            <p className="font-semibold text-black dark:text-white">
+              Payment Verification In Progress
+            </p>
+            <p className="text-gray-600 dark:text-gray-300">
+              Your transaction submission is currently in our queue. Our administrators verify bKash / Nagad / Rocket transaction IDs with Bangladesh MFS logs. Once approved, your subscription unlocks immediately and you'll receive full premium model access.
+            </p>
+          </div>
+        </div>
+      )}
+
       {/* Payment History */}
       <div className="bg-white dark:bg-[#0c0c0c] rounded-[8px] p-6 border border-black/[0.08] dark:border-white/[0.08] shadow-xs space-y-4">
         <h3 className="font-bold text-black dark:text-white text-sm">Payment History</h3>
@@ -223,32 +238,51 @@ export const AccountPage: React.FC = () => {
                   <th className="pb-3 font-medium">Date</th>
                   <th className="pb-3 font-medium">Gateway</th>
                   <th className="pb-3 font-medium">Transaction ID</th>
+                  <th className="pb-3 font-medium">Sender</th>
                   <th className="pb-3 font-medium">Amount</th>
                   <th className="pb-3 font-medium text-right">Status</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-black/[0.04] dark:divide-white/[0.04] font-mono text-[11px]">
-                {payments.map(p => (
-                  <tr key={p.id} className="hover:bg-black/[0.02] dark:hover:bg-white/[0.02] transition-colors">
-                    <td className="py-3 text-gray-600 dark:text-gray-400">
-                      {new Date(p.created_at).toLocaleDateString('en-US')}
-                    </td>
-                    <td className="py-3 font-semibold text-black dark:text-white uppercase">
-                      {p.gateway}
-                    </td>
-                    <td className="py-3 text-gray-700 dark:text-gray-300">
-                      {p.trx_id}
-                    </td>
-                    <td className="py-3 font-bold text-black dark:text-white">
-                      {formatBDT(p.amount)}
-                    </td>
-                    <td className="py-3 text-right">
-                      <span className="px-2.5 py-0.5 rounded-full bg-black/[0.05] dark:bg-white/[0.08] text-black dark:text-white text-[10px] font-bold border border-black/10">
-                        COMPLETED
-                      </span>
-                    </td>
-                  </tr>
-                ))}
+                {payments.map(p => {
+                  const status = p.status || 'completed';
+                  return (
+                    <tr key={p.id} className="hover:bg-black/[0.02] dark:hover:bg-white/[0.02] transition-colors">
+                      <td className="py-3 text-gray-600 dark:text-gray-400">
+                        {new Date(p.created_at).toLocaleDateString('en-US')}
+                      </td>
+                      <td className="py-3 font-semibold text-black dark:text-white uppercase">
+                        {p.gateway}
+                      </td>
+                      <td className="py-3 text-gray-700 dark:text-gray-300 font-bold">
+                        {p.trx_id}
+                      </td>
+                      <td className="py-3 text-gray-500">
+                        {p.sender_number || p.phone || '—'}
+                      </td>
+                      <td className="py-3 font-bold text-black dark:text-white">
+                        {formatBDT(p.amount)}
+                      </td>
+                      <td className="py-3 text-right">
+                        {status === 'completed' && (
+                          <span className="px-2.5 py-0.5 rounded-full bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 text-[10px] font-bold border border-emerald-500/20">
+                            COMPLETED
+                          </span>
+                        )}
+                        {status === 'pending' && (
+                          <span className="px-2.5 py-0.5 rounded-full bg-amber-500/10 text-amber-600 dark:text-amber-400 text-[10px] font-bold border border-amber-500/20 animate-pulse">
+                            PENDING REVIEW
+                          </span>
+                        )}
+                        {status === 'rejected' && (
+                          <span className="px-2.5 py-0.5 rounded-full bg-red-500/10 text-red-600 dark:text-red-400 text-[10px] font-bold border border-red-500/20">
+                            REJECTED
+                          </span>
+                        )}
+                      </td>
+                    </tr>
+                  );
+                })}
               </tbody>
             </table>
           </div>

@@ -32,14 +32,22 @@ export interface Subscription {
 export interface Payment {
   id: string;
   user_id: string;
+  user_name?: string;
+  user_email?: string;
   subscription_id?: string;
+  plan_id?: 'monthly' | 'yearly';
+  plan_name?: string;
   amount: number;
   currency: 'BDT';
   gateway: 'bkash' | 'nagad' | 'rocket';
   trx_id: string;
   sender_number: string;
-  status: 'completed' | 'pending' | 'failed';
+  phone?: string;
+  status: 'completed' | 'pending' | 'rejected';
+  admin_note?: string;
   created_at: string;
+  approved_at?: string;
+  approved_by?: string;
 }
 
 export interface Chat {
@@ -93,6 +101,7 @@ export interface AdminStats {
   modelUsageMap: Record<string, number>;
   totalChats: number;
   totalMessages: number;
+  pendingPaymentsCount?: number;
 }
 
 export interface UsageStats {
@@ -100,17 +109,14 @@ export interface UsageStats {
   used: number;
   remaining: number;
   percentage: number;
-  isLimitReached: boolean;
 }
 
-export interface SystemSettings {
-  global_usage_limit: number;
-  default_monthly_price: number;
-  default_yearly_price: number;
-  support_email: string;
-  support_phone: string;
+export interface PublicSettings {
   bkash_number: string;
   nagad_number: string;
   rocket_number: string;
-  announcement?: string;
+  support_phone?: string;
+  support_email?: string;
+  facebook_pixel_id?: string;
+  facebook_pixel_enabled?: boolean;
 }
