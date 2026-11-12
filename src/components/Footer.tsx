@@ -2,10 +2,14 @@ import React from 'react';
 import { ShieldCheck } from 'lucide-react';
 
 interface FooterProps {
-  setCurrentView: (view: 'home' | 'chat' | 'account' | 'admin' | 'about' | 'privacy') => void;
+  setCurrentView: (view: 'home' | 'chat' | 'account' | 'admin' | 'about' | 'privacy' | 'terms' | 'security') => void;
 }
 
 export const Footer: React.FC<FooterProps> = ({ setCurrentView }) => {
+  const handleNav = (view: 'home' | 'chat' | 'account' | 'admin' | 'about' | 'privacy' | 'terms' | 'security') => {
+    setCurrentView(view);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
   return (
     <footer className="border-t border-black/[0.08] dark:border-white/[0.08] bg-white dark:bg-[#0A0A0A] text-gray-500 text-xs transition-colors">
       <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-14">
@@ -35,8 +39,8 @@ export const Footer: React.FC<FooterProps> = ({ setCurrentView }) => {
             <ul className="space-y-2 text-xs">
               <li>
                 <button
-                  onClick={() => setCurrentView('home')}
-                  className="hover:text-black dark:hover:text-white transition-colors"
+                  onClick={() => handleNav('home')}
+                  className="hover:text-black dark:hover:text-white transition-colors cursor-pointer"
                 >
                   Overview
                 </button>
@@ -44,28 +48,28 @@ export const Footer: React.FC<FooterProps> = ({ setCurrentView }) => {
               <li>
                 <button
                   onClick={() => {
-                    setCurrentView('home');
+                    handleNav('home');
                     setTimeout(() => {
                       document.getElementById('pricing-section')?.scrollIntoView({ behavior: 'smooth' });
                     }, 100);
                   }}
-                  className="hover:text-black dark:hover:text-white transition-colors"
+                  className="hover:text-black dark:hover:text-white transition-colors cursor-pointer"
                 >
                   Subscription Plans (৳1,299)
                 </button>
               </li>
               <li>
                 <button
-                  onClick={() => setCurrentView('chat')}
-                  className="hover:text-black dark:hover:text-white transition-colors"
+                  onClick={() => handleNav('chat')}
+                  className="hover:text-black dark:hover:text-white transition-colors cursor-pointer"
                 >
                   AI Workspace
                 </button>
               </li>
               <li>
                 <button
-                  onClick={() => setCurrentView('account')}
-                  className="hover:text-black dark:hover:text-white transition-colors"
+                  onClick={() => handleNav('account')}
+                  className="hover:text-black dark:hover:text-white transition-colors cursor-pointer"
                 >
                   Account & Billing
                 </button>
@@ -81,25 +85,35 @@ export const Footer: React.FC<FooterProps> = ({ setCurrentView }) => {
             <ul className="space-y-2 text-xs">
               <li>
                 <button
-                  onClick={() => setCurrentView('about')}
-                  className="hover:text-black dark:hover:text-white transition-colors"
+                  onClick={() => handleNav('about')}
+                  className="hover:text-black dark:hover:text-white transition-colors cursor-pointer"
                 >
                   About Us
                 </button>
               </li>
               <li>
                 <button
-                  onClick={() => setCurrentView('privacy')}
-                  className="hover:text-black dark:hover:text-white transition-colors"
+                  onClick={() => handleNav('privacy')}
+                  className="hover:text-black dark:hover:text-white transition-colors cursor-pointer"
                 >
                   Privacy Policy
                 </button>
               </li>
               <li>
-                <span className="text-gray-400">Terms of Service</span>
+                <button
+                  onClick={() => handleNav('terms')}
+                  className="hover:text-black dark:hover:text-white transition-colors cursor-pointer"
+                >
+                  Terms of Service
+                </button>
               </li>
               <li>
-                <span className="text-gray-400">Security Standards</span>
+                <button
+                  onClick={() => handleNav('security')}
+                  className="hover:text-black dark:hover:text-white transition-colors cursor-pointer"
+                >
+                  Security Standards
+                </button>
               </li>
             </ul>
           </div>

@@ -5,6 +5,8 @@ import { Footer } from './components/Footer.tsx';
 import { HomePage } from './components/pages/HomePage.tsx';
 import { AboutPage } from './components/pages/AboutPage.tsx';
 import { PrivacyPolicyPage } from './components/pages/PrivacyPolicyPage.tsx';
+import { TermsPage } from './components/pages/TermsPage.tsx';
+import { SecurityPage } from './components/pages/SecurityPage.tsx';
 import { AccountPage } from './components/pages/AccountPage.tsx';
 import { ChatInterface } from './components/chat/ChatInterface.tsx';
 import { AdminPanel } from './components/admin/AdminPanel.tsx';
@@ -13,7 +15,7 @@ import { PaymentModal } from './components/billing/PaymentModal.tsx';
 import { initMetaPixel, trackMetaPageView } from './utils/metaPixel.ts';
 
 function MainApp() {
-  const [currentView, setCurrentView] = useState<'home' | 'chat' | 'account' | 'admin' | 'about' | 'privacy'>('home');
+  const [currentView, setCurrentView] = useState<'home' | 'chat' | 'account' | 'admin' | 'about' | 'privacy' | 'terms' | 'security'>('home');
   const {
     isAuthModalOpen,
     closeAuthModal,
@@ -47,6 +49,8 @@ function MainApp() {
         {currentView === 'home' && <HomePage onStartChat={() => setCurrentView('chat')} />}
         {currentView === 'about' && <AboutPage />}
         {currentView === 'privacy' && <PrivacyPolicyPage />}
+        {currentView === 'terms' && <TermsPage />}
+        {currentView === 'security' && <SecurityPage />}
         {currentView === 'account' && <AccountPage />}
         {currentView === 'chat' && <ChatInterface />}
         {currentView === 'admin' && <AdminPanel />}

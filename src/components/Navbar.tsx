@@ -15,8 +15,8 @@ import {
 import { useAuth } from '../context/AuthContext.tsx';
 
 interface NavbarProps {
-  currentView: 'home' | 'chat' | 'account' | 'admin' | 'about' | 'privacy';
-  setCurrentView: (view: 'home' | 'chat' | 'account' | 'admin' | 'about' | 'privacy') => void;
+  currentView: 'home' | 'chat' | 'account' | 'admin' | 'about' | 'privacy' | 'terms' | 'security';
+  setCurrentView: (view: 'home' | 'chat' | 'account' | 'admin' | 'about' | 'privacy' | 'terms' | 'security') => void;
 }
 
 export const Navbar: React.FC<NavbarProps> = ({ currentView, setCurrentView }) => {
