@@ -1,5 +1,6 @@
 import express, { Request, Response } from 'express';
 import path from 'node:path';
+import fs from 'node:fs';
 import dotenv from 'dotenv';
 import { db, User, verifyPassword, hashPassword } from './src/db/database.ts';
 import { authenticate, requireAdmin, generateToken, AuthenticatedRequest } from './src/server/auth.ts';
@@ -539,7 +540,14 @@ app.put('/api/admin/settings', requireAdmin, (req: AuthenticatedRequest, res: Re
 // ==========================================
 
 async function startServer() {
-  if (process.env.NODE_ENV !== 'production') {
+  const distPath = path.resolve(process.cwd(), 'dist');
+
+  if (process.env.NODE_ENV === 'production' && fs.existsSync(distPath)) {
+    app.use(express.static(distPath));
+    app.get('*', (_req, res) => {
+      res.sendFile(path.resolve(distPath, 'index.html'));
+    });
+  } else {
     const { createServer } = await import('vite');
     const vite = await createServer({
       server: {
@@ -550,12 +558,6 @@ async function startServer() {
       appType: 'spa'
     });
     app.use(vite.middlewares);
-  } else {
-    const distPath = path.resolve(process.cwd(), 'dist');
-    app.use(express.static(distPath));
-    app.get('*', (_req, res) => {
-      res.sendFile(path.resolve(distPath, 'index.html'));
-    });
   }
 
   app.listen(PORT, () => {

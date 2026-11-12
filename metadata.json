@@ -1,1 +1,6 @@
-{"name":"Bangla AI","description":"বাংলাদেশের প্রথম বহুমুখী এআই প্ল্যাটফর্ম। শীর্ষস্থানীয় এআই মডেলসমূহ (Gemini, GPT-4, Claude, DeepSeek) এক চ্যাটে, বিকাশ ও নগদে সহজ সাবস্ক্রিপশন।","requestFramePermissions":[],"majorCapabilities":["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]}
+{
+  "name": "Bangla AI",
+  "description": "বাংলাদেশের প্রথম বহুমুখী এআই প্ল্যাটফর্ম। শীর্ষস্থানীয় এআই মডেলসমূহ (Gemini, GPT-4, Claude, DeepSeek) এক চ্যাটে, বিকাশ ও নগদে সহজ সাবস্ক্রিপশন।",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
