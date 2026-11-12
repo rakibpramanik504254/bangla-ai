@@ -21,6 +21,7 @@ import {
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext.tsx';
 import { PLANS, formatBDT } from '../../utils/billing.ts';
+import { VideoDemoSection } from '../home/VideoDemoSection.tsx';
 
 interface HomePageProps {
   onStartChat: () => void;
@@ -568,6 +569,9 @@ export const HomePage: React.FC<HomePageProps> = ({ onStartChat }) => {
           </div>
         </div>
       </section>
+
+      {/* Product Video Walkthrough Section (Autoplays on scroll) */}
+      <VideoDemoSection videoId="HkkLswEAv8I" />
 
       {/* Interactive Multi-Model Output Showcase */}
       <section className="max-w-5xl mx-auto px-4 sm:px-6">
