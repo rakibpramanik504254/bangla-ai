@@ -23,6 +23,7 @@ import {
 import { useAuth } from '../../context/AuthContext.tsx';
 import { Chat, Message, AiModel } from '../../types/index.ts';
 import { formatBDT, isSubscriptionActive } from '../../utils/billing.ts';
+import { createSseLineParser, parseChatStreamPayload } from '../../utils/sse.ts';
 import { BrandLogo } from '../common/BrandLogo.tsx';
 
 const FormattedMessage: React.FC<{ content: string }> = ({ content }) => {
@@ -363,57 +364,56 @@ export const ChatInterface: React.FC = () => {
       });
 
       if (!response.ok) {
-        const errJson = await response.json();
+        const errJson = await response.json().catch(() => ({}));
         throw new Error(errJson.error || 'Failed to stream response from foundation model.');
       }
 
       const reader = response.body?.getReader();
       const decoder = new TextDecoder('utf-8');
+      const lineParser = createSseLineParser();
       let fullAssistantReply = '';
+      let finalizedMessage: Message | null = null;
+
+      const processSsePayloads = (payloads: string[]) => {
+        for (const payload of payloads) {
+          const evt = parseChatStreamPayload(payload);
+          if (evt.kind === 'error') {
+            throw new Error(evt.message);
+          }
+          if (evt.kind === 'chunk') {
+            fullAssistantReply += evt.text;
+            setStreamedText(fullAssistantReply);
+          } else if (evt.kind === 'done' && evt.assistantMessage) {
+            finalizedMessage = evt.assistantMessage;
+          }
+        }
+      };
 
       if (reader) {
         while (true) {
           const { done, value } = await reader.read();
           if (done) break;
-
-          const chunk = decoder.decode(value, { stream: true });
-          const lines = chunk.split('\n');
-
-          for (const line of lines) {
-            if (line.startsWith('data: ')) {
-              const dataStr = line.replace('data: ', '').trim();
-              if (dataStr === '[DONE]') {
-                break;
-              }
-              try {
-                const parsed = JSON.parse(dataStr);
-                if (parsed.chunk) {
-                  fullAssistantReply += parsed.chunk;
-                  setStreamedText(fullAssistantReply);
-                }
-                if (parsed.error) {
-                  throw new Error(parsed.error);
-                }
-              } catch {
-                // Ignore parse errors on raw tokens
-              }
-            }
-          }
+          const decoded = decoder.decode(value, { stream: true });
+          processSsePayloads(lineParser.feed(decoded));
         }
+        const tail = decoder.decode();
+        if (tail) {
+          processSsePayloads(lineParser.feed(tail));
+        }
+        processSsePayloads(lineParser.flush());
       }
 
-      setMessages(prev => [
-        ...prev,
-        {
-          id: 'asst-' + Date.now(),
-          chat_id: targetChatId!,
-          role: 'assistant',
-          content: fullAssistantReply || 'No response generated.',
-          model_id: selectedModelId,
-          tokens_used: Math.round(fullAssistantReply.length / 4),
-          created_at: new Date().toISOString()
-        }
-      ]);
+      const finalMsg: Message = finalizedMessage || {
+        id: 'asst-' + Date.now(),
+        chat_id: targetChatId!,
+        role: 'assistant',
+        content: fullAssistantReply || 'No response generated.',
+        model_id: selectedModelId,
+        tokens_used: Math.round(fullAssistantReply.length / 4),
+        created_at: new Date().toISOString()
+      };
+
+      setMessages(prev => [...prev, finalMsg]);
       setStreamedText('');
       refreshUser();
     } catch (err: any) {
@@ -732,9 +732,9 @@ export const ChatInterface: React.FC = () => {
               ))}
 
               {isStreaming && (
-                <div className="flex gap-3 justify-start animate-in fade-in">
+                <div className="flex gap-2.5 sm:gap-3 justify-start animate-in fade-in">
                   <BrandLogo className="w-7 h-7 mt-0.5 animate-pulse" />
-                  <div className="max-w-[85%] sm:max-w-[80%] rounded-[12px] px-4 py-3 bg-white dark:bg-[#262626] text-black dark:text-white border border-black/[0.08] dark:border-white/[0.08] shadow-xs">
+                  <div className="min-w-0 max-w-[88%] sm:max-w-[80%] rounded-[12px] px-3.5 sm:px-4 py-3 bg-white dark:bg-[#262626] text-black dark:text-white border border-black/[0.08] dark:border-white/[0.08] shadow-xs break-words">
                     {streamedText ? (
                       <FormattedMessage content={streamedText} />
                     ) : (

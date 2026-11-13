@@ -102,6 +102,7 @@ export interface AiModel {
   context_window: number;
   max_output_tokens: number;
   sort_order: number;
+  openrouter_model_id?: string;
   created_at: string;
 }
 
@@ -229,6 +230,25 @@ class Database {
           }
           if (parsed.settings.default_yearly_price === 9999) {
             parsed.settings.default_yearly_price = 5999;
+          }
+        }
+
+        // Non-destructive migration: ensure OpenRouter Unified Gateway provider exists
+        if (Array.isArray(parsed.ai_providers)) {
+          const hasOpenRouter = parsed.ai_providers.some((p: any) => p.slug === 'openrouter' || p.id === 'prov_openrouter');
+          if (!hasOpenRouter) {
+            const now = new Date().toISOString();
+            parsed.ai_providers.unshift({
+              id: 'prov_openrouter',
+              name: 'OpenRouter Unified Gateway (All Models)',
+              slug: 'openrouter',
+              api_key: process.env.OPENROUTER_API_KEY || '',
+              base_url: 'https://openrouter.ai/api/v1',
+              is_active: true,
+              created_at: now,
+              updated_at: now
+            });
+            fs.writeFileSync(this.dataFile, JSON.stringify(parsed, null, 2), 'utf-8');
           }
         }
 
@@ -363,6 +383,16 @@ class Database {
     ];
 
     const ai_providers: AiProvider[] = [
+      {
+        id: 'prov_openrouter',
+        name: 'OpenRouter Unified Gateway (All Models)',
+        slug: 'openrouter',
+        api_key: process.env.OPENROUTER_API_KEY || '',
+        base_url: 'https://openrouter.ai/api/v1',
+        is_active: true,
+        created_at: now,
+        updated_at: now
+      },
       {
         id: 'prov_gemini',
         name: 'Google Gemini',
@@ -1094,6 +1124,10 @@ class Database {
 
   public getProviderById(id: string): AiProvider | undefined {
     return this.data.ai_providers.find(p => p.id === id);
+  }
+
+  public getProviderBySlug(slug: string): AiProvider | undefined {
+    return this.data.ai_providers.find(p => p.slug === slug);
   }
 
   public updateProvider(id: string, updates: Partial<AiProvider>): AiProvider | undefined {

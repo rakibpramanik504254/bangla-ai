@@ -73,8 +73,10 @@ export const AdminPanel: React.FC = () => {
   const [editingProviderId, setEditingProviderId] = useState<string | null>(null);
   const [newApiKey, setNewApiKey] = useState('');
   const [newBaseUrl, setNewBaseUrl] = useState('');
+  const [testingProviderId, setTestingProviderId] = useState<string | null>(null);
 
   const [globalSettings, setGlobalSettings] = useState<any>({});
+  const [openrouterQuickKey, setOpenrouterQuickKey] = useState('');
   const [savingSettings, setSavingSettings] = useState(false);
   const [testingPixel, setTestingPixel] = useState(false);
   const [feedback, setFeedback] = useState<string | null>(null);
@@ -340,8 +342,8 @@ export const AdminPanel: React.FC = () => {
           Authorization: `Bearer ${token}`
         },
         body: JSON.stringify({
-          api_key: newApiKey || undefined,
-          base_url: newBaseUrl || undefined
+          api_key: newApiKey.trim() || undefined,
+          base_url: newBaseUrl.trim() || undefined
         })
       });
       if (res.ok) {
@@ -349,10 +351,81 @@ export const AdminPanel: React.FC = () => {
         setEditingProviderId(null);
         setNewApiKey('');
         setNewBaseUrl('');
-        setFeedback('Provider configuration successfully updated.');
+        setFeedback('Provider API configuration updated successfully.');
+      } else {
+        const err = await res.json().catch(() => ({}));
+        setFeedback(`Error: ${err.error || 'Failed to save provider configuration.'}`);
       }
     } catch (err) {
       console.error(err);
+    }
+  };
+
+  const handleToggleProviderActive = async (provider: AiProvider) => {
+    try {
+      const res = await fetch(`/api/admin/providers/${provider.id}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`
+        },
+        body: JSON.stringify({ is_active: !provider.is_active })
+      });
+      if (res.ok) {
+        fetchProvidersAndModels();
+        setFeedback(`${provider.name} is now ${!provider.is_active ? 'Active' : 'Paused'}.`);
+      }
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
+  const handleClearProviderKey = async (provider: AiProvider) => {
+    if (!window.confirm(`Remove saved API key for ${provider.name}?`)) return;
+    try {
+      const res = await fetch(`/api/admin/providers/${provider.id}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`
+        },
+        body: JSON.stringify({ clear_api_key: true })
+      });
+      if (res.ok) {
+        fetchProvidersAndModels();
+        setFeedback(`API key removed for ${provider.name}.`);
+      }
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
+  const handleTestProvider = async (providerId: string) => {
+    if (!token) return;
+    setTestingProviderId(providerId);
+    try {
+      const res = await fetch(`/api/admin/providers/${providerId}/test`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`
+        },
+        body: JSON.stringify(
+          editingProviderId === providerId && newApiKey.trim()
+            ? { api_key: newApiKey.trim(), base_url: newBaseUrl.trim() || undefined }
+            : {}
+        )
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        setFeedback(`Error: ${data.error || 'Provider connection test failed.'}`);
+      } else {
+        setFeedback(data.message || 'Connection test succeeded.');
+      }
+    } catch (err: any) {
+      setFeedback(`Error: ${err.message}`);
+    } finally {
+      setTestingProviderId(null);
     }
   };
 
@@ -381,16 +454,22 @@ export const AdminPanel: React.FC = () => {
     e.preventDefault();
     setSavingSettings(true);
     try {
+      const payload = {
+        ...globalSettings,
+        ...(openrouterQuickKey.trim() ? { openrouter_api_key: openrouterQuickKey.trim() } : {})
+      };
       const res = await fetch('/api/admin/settings', {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
           Authorization: `Bearer ${token}`
         },
-        body: JSON.stringify(globalSettings)
+        body: JSON.stringify(payload)
       });
       if (res.ok) {
-        setFeedback('Platform settings, MFS payment numbers, and Facebook Pixel configuration saved successfully.');
+        setOpenrouterQuickKey('');
+        fetchProvidersAndModels();
+        setFeedback('Platform settings, OpenRouter API config, MFS numbers & Meta Pixel saved successfully.');
       }
     } catch (err) {
       console.error(err);
@@ -1125,72 +1204,172 @@ export const AdminPanel: React.FC = () => {
           <div className="bg-[#FAFAFA] dark:bg-[#1F1F1F] p-4 rounded-[8px] border border-black/[0.08] dark:border-white/[0.08] text-xs text-gray-600 dark:text-gray-300 flex items-start gap-2.5">
             <Lock className="w-4 h-4 shrink-0 mt-0.5 text-black dark:text-white" />
             <span>
-              <strong>Server-Side Secret Isolation:</strong> Configured API keys are stored in encrypted server state and never transmitted to the browser client runtime.
+              <strong>Server-Side Secret Isolation:</strong> Configured API keys are stored strictly on the backend and never transmitted back to browser clients. Paste one <strong>OpenRouter API Key</strong> below to power all 10 AI Workspace models automatically.
             </span>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {providers.map(p => (
-              <div key={p.id} className="bg-white dark:bg-[#262626] p-4 sm:p-6 rounded-[8px] border border-black/[0.08] dark:border-white/[0.08] shadow-xs space-y-3 min-w-0">
-                <div className="flex flex-wrap items-center justify-between gap-2">
-                  <div className="flex items-center gap-2 min-w-0">
-                    <Key className="w-3.5 h-3.5 text-gray-500 shrink-0" />
-                    <h3 className="font-bold text-black dark:text-white text-sm truncate">{p.name}</h3>
-                  </div>
-                  <span className="text-[10px] font-mono uppercase px-2 py-0.5 rounded-full bg-black/[0.05] dark:bg-white/[0.08] text-black dark:text-white font-semibold shrink-0">
-                    Active
-                  </span>
-                </div>
-
-                <div className="text-xs space-y-1.5 text-gray-500 font-mono text-[11px]">
-                  <div className="flex items-center justify-between gap-2">
-                    <span className="shrink-0">Slug:</span>
-                    <span className="text-black dark:text-white font-semibold truncate">{p.slug}</span>
-                  </div>
-                  <div className="flex items-center justify-between gap-2">
-                    <span className="shrink-0">Base URL:</span>
-                    <span className="text-gray-600 dark:text-gray-400 truncate max-w-[160px] sm:max-w-xs">{p.base_url}</span>
-                  </div>
-                </div>
-
-                {editingProviderId === p.id ? (
-                  <div className="pt-3 border-t border-black/[0.08] dark:border-white/[0.08] space-y-2">
-                    <input
-                      type="password"
-                      placeholder="Enter new API Key..."
-                      value={newApiKey}
-                      onChange={e => setNewApiKey(e.target.value)}
-                      className="w-full px-3 py-1.5 rounded-[8px] border border-black/[0.12] dark:border-white/[0.15] bg-white dark:bg-[#1F1F1F] text-xs font-mono"
-                    />
-                    <div className="flex justify-end gap-2">
-                      <button
-                        onClick={() => setEditingProviderId(null)}
-                        className="h-8 px-3 rounded-full border text-xs cursor-pointer"
-                      >
-                        Cancel
-                      </button>
-                      <button
-                        onClick={() => handleSaveProvider(p.id)}
-                        className="h-8 px-3 rounded-full bg-black text-white dark:bg-white dark:text-black font-semibold text-xs cursor-pointer"
-                      >
-                        Save
-                      </button>
-                    </div>
-                  </div>
-                ) : (
-                  <button
-                    onClick={() => {
-                      setEditingProviderId(p.id);
-                      setNewBaseUrl(p.base_url || '');
-                    }}
-                    className="h-8 px-3 rounded-full border border-black/[0.12] dark:border-white/[0.15] hover:border-black/30 text-xs font-semibold flex items-center gap-1.5 cursor-pointer"
+            {[...providers]
+              .sort((a, b) => (a.slug === 'openrouter' ? -1 : b.slug === 'openrouter' ? 1 : 0))
+              .map(p => {
+                const isOpenRouter = p.slug === 'openrouter';
+                return (
+                  <div
+                    key={p.id}
+                    className={`bg-white dark:bg-[#262626] p-4 sm:p-6 rounded-[8px] shadow-xs space-y-3 min-w-0 ${
+                      isOpenRouter
+                        ? 'md:col-span-2 border-2 border-black dark:border-white'
+                        : 'border border-black/[0.08] dark:border-white/[0.08]'
+                    }`}
                   >
-                    <Edit className="w-3 h-3" />
-                    <span>Configure Key</span>
-                  </button>
-                )}
-              </div>
-            ))}
+                    <div className="flex flex-wrap items-center justify-between gap-2">
+                      <div className="flex items-center gap-2 min-w-0">
+                        <Key className="w-4 h-4 text-black dark:text-white shrink-0" />
+                        <div className="min-w-0">
+                          <h3 className="font-bold text-black dark:text-white text-sm truncate">{p.name}</h3>
+                          {isOpenRouter && (
+                            <p className="text-[11px] text-gray-500 dark:text-gray-400">
+                              1 API Key = Access Claude, Gemini, GPT, DeepSeek, Grok &amp; Kimi in Workspace
+                            </p>
+                          )}
+                        </div>
+                      </div>
+                      <div className="flex flex-wrap items-center gap-1.5 shrink-0">
+                        <span
+                          className={`text-[10px] font-mono uppercase px-2 py-0.5 rounded-full font-semibold ${
+                            p.has_api_key
+                              ? 'bg-emerald-50 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-800'
+                              : 'bg-black/[0.05] dark:bg-white/[0.08] text-gray-500'
+                          }`}
+                        >
+                          {p.has_api_key ? 'Key Saved' : 'Not Set'}
+                        </span>
+                        <button
+                          type="button"
+                          onClick={() => handleToggleProviderActive(p)}
+                          className={`text-[10px] font-mono uppercase px-2 py-0.5 rounded-full font-semibold cursor-pointer ${
+                            p.is_active
+                              ? 'bg-black text-white dark:bg-white dark:text-black'
+                              : 'bg-red-50 text-red-700 dark:bg-red-950/40 dark:text-red-400 border border-red-200'
+                          }`}
+                        >
+                          {p.is_active ? 'Active' : 'Paused'}
+                        </button>
+                      </div>
+                    </div>
+
+                    <div className="text-xs space-y-1.5 text-gray-500 font-mono text-[11px]">
+                      <div className="flex items-center justify-between gap-2">
+                        <span className="shrink-0">Slug:</span>
+                        <span className="text-black dark:text-white font-semibold truncate">{p.slug}</span>
+                      </div>
+                      <div className="flex items-center justify-between gap-2">
+                        <span className="shrink-0">Base URL:</span>
+                        <span className="text-gray-600 dark:text-gray-400 truncate max-w-[180px] sm:max-w-md">{p.base_url}</span>
+                      </div>
+                      <div className="flex items-center justify-between gap-2">
+                        <span className="shrink-0">API Key:</span>
+                        <span className="text-black dark:text-white truncate">
+                          {p.api_key_masked || 'Not configured'}
+                        </span>
+                      </div>
+                    </div>
+
+                    {editingProviderId === p.id ? (
+                      <div className="pt-3 border-t border-black/[0.08] dark:border-white/[0.08] space-y-2.5">
+                        <div>
+                          <label className="block text-[11px] font-medium text-gray-600 dark:text-gray-300 mb-1">
+                            {isOpenRouter ? 'OpenRouter API Key (sk-or-v1-...)' : `${p.name} API Key`}
+                          </label>
+                          <input
+                            type="password"
+                            placeholder={isOpenRouter ? 'sk-or-v1-...' : 'Enter new API Key...'}
+                            value={newApiKey}
+                            onChange={e => setNewApiKey(e.target.value)}
+                            className="w-full px-3 py-2 rounded-[8px] border border-black/[0.12] dark:border-white/[0.15] bg-white dark:bg-[#1F1F1F] text-xs font-mono"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-[11px] font-medium text-gray-600 dark:text-gray-300 mb-1">
+                            Base URL
+                          </label>
+                          <input
+                            type="text"
+                            placeholder="https://openrouter.ai/api/v1"
+                            value={newBaseUrl}
+                            onChange={e => setNewBaseUrl(e.target.value)}
+                            className="w-full px-3 py-2 rounded-[8px] border border-black/[0.12] dark:border-white/[0.15] bg-white dark:bg-[#1F1F1F] text-xs font-mono"
+                          />
+                        </div>
+                        <div className="flex flex-wrap justify-end gap-2">
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setEditingProviderId(null);
+                              setNewApiKey('');
+                              setNewBaseUrl('');
+                            }}
+                            className="h-8 px-3 rounded-full border border-black/[0.12] dark:border-white/[0.15] text-xs cursor-pointer"
+                          >
+                            Cancel
+                          </button>
+                          {isOpenRouter && (
+                            <button
+                              type="button"
+                              disabled={testingProviderId === p.id}
+                              onClick={() => handleTestProvider(p.id)}
+                              className="h-8 px-3 rounded-full border border-black/[0.12] dark:border-white/[0.15] text-xs font-semibold cursor-pointer disabled:opacity-50"
+                            >
+                              {testingProviderId === p.id ? 'Testing...' : 'Test Key'}
+                            </button>
+                          )}
+                          <button
+                            type="button"
+                            onClick={() => handleSaveProvider(p.id)}
+                            className="h-8 px-4 rounded-full bg-black text-white dark:bg-white dark:text-black font-semibold text-xs cursor-pointer"
+                          >
+                            Save Key
+                          </button>
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="flex flex-wrap items-center gap-2 pt-1">
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setEditingProviderId(p.id);
+                            setNewApiKey('');
+                            setNewBaseUrl(p.base_url || '');
+                          }}
+                          className="h-8 px-3.5 rounded-full border border-black/[0.12] dark:border-white/[0.15] hover:border-black/30 text-xs font-semibold flex items-center gap-1.5 cursor-pointer"
+                        >
+                          <Edit className="w-3 h-3" />
+                          <span>{p.has_api_key ? 'Update Key' : 'Add API Key'}</span>
+                        </button>
+                        {isOpenRouter && p.has_api_key && (
+                          <button
+                            type="button"
+                            disabled={testingProviderId === p.id}
+                            onClick={() => handleTestProvider(p.id)}
+                            className="h-8 px-3.5 rounded-full border border-black/[0.12] dark:border-white/[0.15] hover:border-black/30 text-xs font-semibold cursor-pointer disabled:opacity-50"
+                          >
+                            {testingProviderId === p.id ? 'Testing...' : 'Verify Connection'}
+                          </button>
+                        )}
+                        {p.has_api_key && (
+                          <button
+                            type="button"
+                            onClick={() => handleClearProviderKey(p)}
+                            className="h-8 px-3 rounded-full text-xs text-red-600 hover:bg-red-50 dark:hover:bg-red-950/40 cursor-pointer"
+                          >
+                            Remove
+                          </button>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
           </div>
         </div>
       )}
@@ -1301,11 +1480,56 @@ export const AdminPanel: React.FC = () => {
         <form onSubmit={handleSaveSettings} className="bg-white dark:bg-[#262626] p-4 sm:p-8 rounded-[8px] border border-black/[0.08] dark:border-white/[0.08] shadow-xs space-y-6 max-w-2xl text-xs">
           <div>
             <h3 className="font-bold text-base text-black dark:text-white">
-              Global Platform, Payment & Meta Pixel Settings
+              Global Platform, OpenRouter API, Payment &amp; Meta Pixel Settings
             </h3>
             <p className="text-xs text-gray-500 mt-0.5">
-              Configure system quotas, MFS merchant numbers, and Facebook Pixel setup.
+              Configure OpenRouter unified AI gateway, system quotas, MFS numbers, and Facebook Pixel.
             </p>
+          </div>
+
+          {/* OpenRouter Unified Gateway Quick Section */}
+          <div className="p-4 sm:p-5 rounded-[8px] border border-black/[0.15] dark:border-white/[0.2] bg-[#FAFAFA] dark:bg-[#1F1F1F] space-y-3.5">
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <div className="flex items-center gap-2 min-w-0">
+                <Key className="w-4 h-4 text-black dark:text-white shrink-0" />
+                <h4 className="font-bold text-sm text-black dark:text-white">
+                  OpenRouter Unified API (All Workspace Models)
+                </h4>
+              </div>
+              <label className="flex items-center gap-2 cursor-pointer shrink-0">
+                <input
+                  type="checkbox"
+                  checked={globalSettings.openrouter_enabled !== false}
+                  onChange={e => setGlobalSettings({ ...globalSettings, openrouter_enabled: e.target.checked })}
+                  className="rounded w-4 h-4 text-black cursor-pointer"
+                />
+                <span className="font-semibold text-xs text-black dark:text-white">Active</span>
+              </label>
+            </div>
+
+            <p className="text-[11px] text-gray-600 dark:text-gray-400 leading-relaxed">
+              Enter one OpenRouter API key (<span className="font-mono">sk-or-v1-...</span>) to power all 10 models in the AI Workspace (Claude, Gemini, GPT, DeepSeek, Grok &amp; Kimi).
+            </p>
+
+            <div>
+              <div className="flex items-center justify-between gap-2 mb-1">
+                <label className="block font-medium text-black dark:text-white">
+                  OpenRouter API Key:
+                </label>
+                {globalSettings.openrouter_configured && (
+                  <span className="text-[10px] font-mono text-emerald-600 dark:text-emerald-400">
+                    Saved: {globalSettings.openrouter_key_masked}
+                  </span>
+                )}
+              </div>
+              <input
+                type="password"
+                value={openrouterQuickKey}
+                onChange={e => setOpenrouterQuickKey(e.target.value)}
+                placeholder={globalSettings.openrouter_configured ? 'Enter new key to replace saved key...' : 'sk-or-v1-...'}
+                className="w-full px-3.5 py-2.5 rounded-[12px] border border-black/[0.12] dark:border-white/[0.15] bg-white dark:bg-[#262626] font-mono text-xs focus:outline-none focus:border-black dark:focus:border-white"
+              />
+            </div>
           </div>
 
           {/* Facebook Pixel Setup Section */}

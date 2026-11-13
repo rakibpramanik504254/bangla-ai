@@ -82,6 +82,7 @@ export interface AiModel {
   context_window: number;
   max_output_tokens: number;
   sort_order: number;
+  openrouter_model_id?: string;
 }
 
 export interface AiProvider {
@@ -89,6 +90,7 @@ export interface AiProvider {
   name: string;
   slug: string;
   api_key_masked?: string;
+  has_api_key?: boolean;
   base_url?: string;
   is_active: boolean;
 }

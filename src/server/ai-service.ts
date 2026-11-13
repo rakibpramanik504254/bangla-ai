@@ -1,6 +1,14 @@
 import { GoogleGenAI } from '@google/genai';
 import { db, User, AiModel, AiProvider } from '../db/database.ts';
 import { isSubscriptionActive, estimateTokens } from '../utils/billing.ts';
+import { createSseLineParser } from '../utils/sse.ts';
+import {
+  OPENROUTER_DEFAULT_BASE_URL,
+  isValidApiKey,
+  resolveOpenRouterModels,
+  buildOpenRouterRequestBody,
+  parseOpenRouterStreamPayload
+} from './openrouter.ts';
 
 export interface ChatMessageParam {
   role: 'user' | 'assistant' | 'system';
@@ -12,6 +20,10 @@ export interface StreamCallbacks {
   onDone: (fullText: string, promptTokens: number, completionTokens: number) => void;
   onError: (error: Error) => void;
 }
+
+const DEFAULT_SYSTEM_PROMPT = `You are Bangla AI, a premium, intelligent, and highly articulate multi-model AI assistant designed for professionals, developers, and businesses in Bangladesh and globally.
+Respond in clear, structured, and modern professional English by default (or fluent Bengali if the user requests it).
+Provide well-formatted markdown with clear headings, lists, code snippets with syntax highlighting, and actionable insights.`;
 
 export class AiService {
   /**
@@ -50,11 +62,133 @@ export class AiService {
     return { allowed: true };
   }
 
+  private static getEnvKeyForProvider(slug: string): string {
+    switch (slug) {
+      case 'openrouter':
+        return process.env.OPENROUTER_API_KEY || '';
+      case 'gemini':
+        return process.env.GEMINI_API_KEY || '';
+      case 'openai':
+        return process.env.OPENAI_API_KEY || '';
+      case 'anthropic':
+        return process.env.ANTHROPIC_API_KEY || '';
+      case 'deepseek':
+        return process.env.DEEPSEEK_API_KEY || '';
+      case 'xai':
+        return process.env.XAI_API_KEY || '';
+      case 'moonshot':
+        return process.env.MOONSHOT_API_KEY || '';
+      default:
+        return '';
+    }
+  }
+
   /**
-   * Generates a streaming AI response using the selected model
+   * Streams completion from an OpenAI-compatible SSE endpoint (used for OpenRouter and direct OpenAI/DeepSeek/xAI/Moonshot providers).
+   */
+  private static async streamOpenAiCompatibleEndpoint(params: {
+    endpointUrl: string;
+    apiKey: string;
+    modelSlug: string;
+    fallbackSlug?: string;
+    messages: ChatMessageParam[];
+    maxTokens?: number;
+    extraHeaders?: Record<string, string>;
+    callbacks: StreamCallbacks;
+    lastUserMsg: string;
+  }): Promise<void> {
+    const attemptRequest = async (targetModel: string) => {
+      return fetch(params.endpointUrl, {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${params.apiKey}`,
+          'Content-Type': 'application/json',
+          ...(params.extraHeaders || {})
+        },
+        body: JSON.stringify(
+          buildOpenRouterRequestBody(
+            targetModel,
+            params.messages,
+            DEFAULT_SYSTEM_PROMPT,
+            params.maxTokens
+          )
+        )
+      });
+    };
+
+    let response = await attemptRequest(params.modelSlug);
+
+    // Retry once with mapped fallback slug if primary slug is unavailable on user's OpenRouter tier
+    if (!response.ok && (response.status === 400 || response.status === 404) && params.fallbackSlug && params.fallbackSlug !== params.modelSlug) {
+      console.warn(`[OpenRouter] Primary model "${params.modelSlug}" returned ${response.status}, retrying with fallback "${params.fallbackSlug}"`);
+      response = await attemptRequest(params.fallbackSlug);
+    }
+
+    if (!response.ok) {
+      let errMsg = `Upstream AI API error (${response.status})`;
+      try {
+        const errText = await response.text();
+        const parsedErr = JSON.parse(errText);
+        errMsg = parsedErr?.error?.message || parsedErr?.message || errMsg;
+      } catch {
+        // Keep status message
+      }
+      throw new Error(errMsg);
+    }
+
+    const reader = response.body?.getReader();
+    if (!reader) {
+      throw new Error('Streaming response body unavailable from AI gateway.');
+    }
+
+    const decoder = new TextDecoder('utf-8');
+    const lineParser = createSseLineParser();
+    let accumulatedText = '';
+    let upstreamUsage: { promptTokens: number; completionTokens: number } | undefined;
+
+    const handlePayloads = (payloads: string[]) => {
+      for (const payload of payloads) {
+        const evt = parseOpenRouterStreamPayload(payload);
+        if (evt.error) {
+          throw new Error(evt.error);
+        }
+        if (evt.usage) {
+          upstreamUsage = evt.usage;
+        }
+        if (evt.textDelta) {
+          accumulatedText += evt.textDelta;
+          params.callbacks.onChunk(evt.textDelta);
+        }
+      }
+    };
+
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      const chunkStr = decoder.decode(value, { stream: true });
+      handlePayloads(lineParser.feed(chunkStr));
+    }
+    const tail = decoder.decode();
+    if (tail) {
+      handlePayloads(lineParser.feed(tail));
+    }
+    handlePayloads(lineParser.flush());
+
+    if (!accumulatedText.trim()) {
+      throw new Error('Upstream model completed without returning text content.');
+    }
+
+    const estimated = estimateTokens(params.lastUserMsg, accumulatedText);
+    const promptTokens = upstreamUsage?.promptTokens || estimated.promptTokens;
+    const completionTokens = upstreamUsage?.completionTokens || estimated.completionTokens;
+    params.callbacks.onDone(accumulatedText, promptTokens, completionTokens);
+  }
+
+  /**
+   * Generates a streaming AI response using OpenRouter unified gateway, direct provider SDKs, or local fallback.
    */
   public static async streamCompletion(
-    user: User,
+    _user: User,
     model: AiModel,
     provider: AiProvider,
     messages: ChatMessageParam[],
@@ -63,56 +197,74 @@ export class AiService {
     const lastUserMsg = messages[messages.length - 1]?.content || '';
     let accumulatedText = '';
 
-    // Check if we can use Google GenAI SDK (Gemini)
-    const geminiKey = provider.slug === 'gemini' ? (provider.api_key || process.env.GEMINI_API_KEY) : null;
+    // 1. Check OpenRouter Unified Gateway (1 API key accesses all workspace models)
+    const openRouterProvider = db.getProviderBySlug('openrouter');
+    const openRouterKey = (openRouterProvider?.api_key || process.env.OPENROUTER_API_KEY || '').trim();
+    const isOpenRouterEnabled = openRouterProvider ? openRouterProvider.is_active : true;
 
-    if (provider.slug === 'gemini' && geminiKey && geminiKey.length > 10 && !geminiKey.includes('YOUR_GEMINI')) {
+    if (isOpenRouterEnabled && isValidApiKey(openRouterKey)) {
+      const baseUrl = (openRouterProvider?.base_url || OPENROUTER_DEFAULT_BASE_URL).replace(/\/+$/, '');
+      const candidates = resolveOpenRouterModels(model);
       try {
-        const ai = new GoogleGenAI({ apiKey: geminiKey });
-        const systemPrompt = `You are Bangla AI, a premium, intelligent, and highly articulate multi-model AI assistant designed for professionals, developers, and businesses in Bangladesh and globally.
-Respond in clear, structured, and modern professional English by default (or fluent Bengali if the user requests it).
-Provide well-formatted markdown with clear headings, lists, code snippets with syntax highlighting, and actionable insights.`;
+        await this.streamOpenAiCompatibleEndpoint({
+          endpointUrl: `${baseUrl}/chat/completions`,
+          apiKey: openRouterKey,
+          modelSlug: candidates.primary,
+          fallbackSlug: candidates.fallback,
+          messages,
+          maxTokens: model.max_output_tokens,
+          extraHeaders: {
+            'HTTP-Referer': process.env.APP_URL || 'https://bangla-ai.pro',
+            'X-Title': 'Bangla AI'
+          },
+          callbacks,
+          lastUserMsg
+        });
+        return;
+      } catch (err: any) {
+        console.error('[OpenRouter Stream Error]:', err?.message || err);
+        callbacks.onError(err instanceof Error ? err : new Error(String(err)));
+        return;
+      }
+    }
 
+    // 2. Direct Provider Keys (Gemini SDK or OpenAI-compatible direct endpoints)
+    const directKey = (provider.api_key || this.getEnvKeyForProvider(provider.slug)).trim();
+
+    if (provider.slug === 'gemini' && isValidApiKey(directKey)) {
+      try {
+        const ai = new GoogleGenAI({ apiKey: directKey });
         const formattedContents = messages.map(m => ({
           role: m.role === 'assistant' ? 'model' : 'user',
           parts: [{ text: m.content }]
         }));
 
-        // Determine the target model name from Gemini fleet
-        let targetModel = 'gemini-2.5-flash';
-        if (model.model_name === 'gemini-4-carbon') {
-          targetModel = 'gemini-4-carbon';
-        } else if (model.model_name.includes('flash')) {
-          targetModel = 'gemini-2.5-flash';
-        } else {
-          // Use gemini-3.1-pro-preview per Google GenAI specification (gemini-2.5-pro is retired)
-          targetModel = 'gemini-3.1-pro-preview';
-        }
+        const candidateModels = model.model_name.includes('flash')
+          ? ['gemini-3.8-flash', 'gemini-2.5-flash']
+          : ['gemini-3.1-pro-preview', 'gemini-3.8-flash', 'gemini-2.5-flash'];
 
         let responseStream: any = null;
-        try {
-          responseStream = await ai.models.generateContentStream({
-            model: targetModel,
-            contents: formattedContents,
-            config: {
-              systemInstruction: systemPrompt
-            }
-          });
-        } catch (modelErr: any) {
-          // If model is 404 or unsupported for this key tier, fall back gracefully to gemini-2.5-flash
-          if (targetModel !== 'gemini-2.5-flash') {
-            console.warn(`[Google GenAI] Model ${targetModel} unavailable, falling back to gemini-2.5-flash:`, modelErr?.message);
-            targetModel = 'gemini-2.5-flash';
+        let lastModelErr: any = null;
+        for (const candidateModel of candidateModels) {
+          try {
             responseStream = await ai.models.generateContentStream({
-              model: targetModel,
+              model: candidateModel,
               contents: formattedContents,
-              config: {
-                systemInstruction: systemPrompt
-              }
+              config: { systemInstruction: DEFAULT_SYSTEM_PROMPT }
             });
-          } else {
-            throw modelErr;
+            break;
+          } catch (modelErr: any) {
+            lastModelErr = modelErr;
+            const msg = String(modelErr?.message || '');
+            console.warn(`[Google GenAI] Model ${candidateModel} unavailable, trying next fallback:`, msg);
+            if (!msg.includes('NOT_FOUND') && !msg.includes('404') && !msg.includes('no longer available')) {
+              break;
+            }
           }
+        }
+
+        if (!responseStream) {
+          throw lastModelErr || new Error('All Gemini models failed for this API key.');
         }
 
         for await (const chunk of responseStream) {
@@ -127,11 +279,55 @@ Provide well-formatted markdown with clear headings, lists, code snippets with s
         callbacks.onDone(accumulatedText, tokenStats.promptTokens, tokenStats.completionTokens);
         return;
       } catch (err: any) {
-        console.warn('Google GenAI API call failed or key invalid, falling back to intelligent synthesizer:', err?.message);
+        let readableMsg = err?.message || 'Gemini API call failed.';
+        try {
+          const outer = JSON.parse(readableMsg);
+          const innerStr = outer?.error?.message;
+          if (typeof innerStr === 'string' && innerStr.trim().startsWith('{')) {
+            const inner = JSON.parse(innerStr);
+            readableMsg = inner?.error?.message || innerStr;
+          } else if (innerStr) {
+            readableMsg = innerStr;
+          }
+        } catch {
+          // Keep original readable message
+        }
+        console.warn('Google GenAI API call failed:', readableMsg);
+        const isUnmodifiedEnvKey = Boolean(process.env.GEMINI_API_KEY && directKey === process.env.GEMINI_API_KEY.trim());
+        if (!isUnmodifiedEnvKey) {
+          callbacks.onError(new Error(readableMsg));
+          return;
+        }
       }
     }
 
-    // High-intelligence response synthesizer for all top models (OpenAI, Anthropic, DeepSeek, Gemini fallback)
+    if (
+      ['openai', 'deepseek', 'xai', 'moonshot'].includes(provider.slug) &&
+      provider.is_active &&
+      isValidApiKey(directKey)
+    ) {
+      const baseUrl = (provider.base_url || '').replace(/\/+$/, '');
+      if (baseUrl) {
+        try {
+          await this.streamOpenAiCompatibleEndpoint({
+            endpointUrl: `${baseUrl}/chat/completions`,
+            apiKey: directKey,
+            modelSlug: model.model_name,
+            messages,
+            maxTokens: model.max_output_tokens,
+            callbacks,
+            lastUserMsg
+          });
+          return;
+        } catch (err: any) {
+          console.error(`[${provider.name} Direct Error]:`, err?.message || err);
+          callbacks.onError(err instanceof Error ? err : new Error(String(err)));
+          return;
+        }
+      }
+    }
+
+    // 3. Offline / Unconfigured Demo Synthesizer (used only when no API key is configured)
     const generatedResponse = this.generateContextualResponse(model, lastUserMsg);
     const chunks = this.splitIntoNaturalChunks(generatedResponse);
 
@@ -146,14 +342,14 @@ Provide well-formatted markdown with clear headings, lists, code snippets with s
     callbacks.onDone(accumulatedText, tokenStats.promptTokens, tokenStats.completionTokens);
   }
 
-  private static splitIntoNaturalChunks(text: string): string[] {
+  public static splitIntoNaturalChunks(text: string): string[] {
+    const tokens = text.split(/(?<=\s)/);
     const chunks: string[] = [];
-    const words = text.split(' ');
     let current = '';
 
-    for (const w of words) {
-      current += (current ? ' ' : '') + w;
-      if (current.length >= 8 || w.includes('\n')) {
+    for (const tok of tokens) {
+      current += tok;
+      if (current.length >= 10 || tok.includes('\n')) {
         chunks.push(current);
         current = '';
       }

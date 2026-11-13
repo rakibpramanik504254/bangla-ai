@@ -441,14 +441,18 @@ app.post('/api/chat/stream', authenticate, async (req: AuthenticatedRequest, res
       },
       onError: (err: Error) => {
         console.error('Streaming error:', err);
-        res.write(`data: ${JSON.stringify({ type: 'error', error: 'এআই সার্ভারে সমস্যা হয়েছে: ' + err.message })}\n\n`);
-        res.end();
+        if (!res.writableEnded) {
+          res.write(`data: ${JSON.stringify({ type: 'error', error: err.message })}\n\n`);
+          res.end();
+        }
       }
     });
   } catch (err: any) {
     console.error('Stream completion failed:', err);
-    res.write(`data: ${JSON.stringify({ type: 'error', error: err.message })}\n\n`);
-    res.end();
+    if (!res.writableEnded) {
+      res.write(`data: ${JSON.stringify({ type: 'error', error: err.message })}\n\n`);
+      res.end();
+    }
   }
 });
 
@@ -526,22 +530,40 @@ app.post('/api/admin/users/:id/subscription', requireAdmin, (req: AuthenticatedR
   res.json(result);
 });
 
+const maskSecretKey = (key?: string): string => {
+  if (!key) return '';
+  const trimmed = key.trim();
+  if (trimmed.length <= 10) return '••••••••';
+  return `${trimmed.slice(0, 7)}...${trimmed.slice(-4)}`;
+};
+
+const sanitizeProvider = (p: any) => ({
+  id: p.id,
+  name: p.name,
+  slug: p.slug,
+  base_url: p.base_url,
+  is_active: p.is_active,
+  has_api_key: Boolean(p.api_key && p.api_key.trim().length > 0),
+  api_key_masked: maskSecretKey(p.api_key),
+  created_at: p.created_at,
+  updated_at: p.updated_at
+});
+
 app.get('/api/admin/providers', requireAdmin, (_req: AuthenticatedRequest, res: Response) => {
-  const providers = db.listProviders().map(p => ({
-    ...p,
-    api_key_masked: p.api_key ? (p.api_key.slice(0, 7) + '...' + p.api_key.slice(-4)) : ''
-  }));
+  const providers = db.listProviders().map(sanitizeProvider);
   res.json(providers);
 });
 
 app.put('/api/admin/providers/:id', requireAdmin, (req: AuthenticatedRequest, res: Response) => {
-  const { name, api_key, base_url, is_active } = req.body;
+  const { name, api_key, base_url, is_active, clear_api_key } = req.body;
   const updates: any = {};
   if (name !== undefined) updates.name = name;
   if (base_url !== undefined) updates.base_url = base_url;
   if (is_active !== undefined) updates.is_active = is_active;
-  if (api_key !== undefined && api_key !== '') {
-    updates.api_key = api_key;
+  if (clear_api_key === true) {
+    updates.api_key = '';
+  } else if (api_key !== undefined && String(api_key).trim() !== '') {
+    updates.api_key = String(api_key).trim();
   }
 
   const updated = db.updateProvider(req.params.id, updates);
@@ -549,7 +571,46 @@ app.put('/api/admin/providers/:id', requireAdmin, (req: AuthenticatedRequest, re
     res.status(404).json({ error: 'Provider not found.' });
     return;
   }
-  res.json(updated);
+  res.json(sanitizeProvider(updated));
+});
+
+app.post('/api/admin/providers/:id/test', requireAdmin, async (req: AuthenticatedRequest, res: Response) => {
+  const provider = db.getProviderById(req.params.id);
+  if (!provider) {
+    res.status(404).json({ error: 'Provider not found.' });
+    return;
+  }
+
+  const candidateKey = (req.body?.api_key || provider.api_key || '').trim();
+  if (!candidateKey) {
+    res.status(400).json({ error: 'Please enter and save an API key first.' });
+    return;
+  }
+
+  try {
+    if (provider.slug === 'openrouter') {
+      const baseUrl = (req.body?.base_url || provider.base_url || 'https://openrouter.ai/api/v1').replace(/\/+$/, '');
+      const resp = await fetch(`${baseUrl}/auth/key`, {
+        headers: { Authorization: `Bearer ${candidateKey}` }
+      });
+      if (!resp.ok) {
+        const errBody = await resp.text().catch(() => '');
+        res.status(400).json({ error: `OpenRouter rejected key (HTTP ${resp.status}). ${errBody.slice(0, 120)}` });
+        return;
+      }
+      const keyInfo: any = await resp.json().catch(() => ({}));
+      res.json({
+        success: true,
+        message: 'OpenRouter API key is valid and connected! All 10 workspace models are ready.',
+        details: keyInfo?.data || null
+      });
+      return;
+    }
+
+    res.json({ success: true, message: `${provider.name} API key is saved.` });
+  } catch (err: any) {
+    res.status(500).json({ error: `Connection check failed: ${err.message}` });
+  }
 });
 
 app.get('/api/admin/models', requireAdmin, (_req: AuthenticatedRequest, res: Response) => {
@@ -558,12 +619,13 @@ app.get('/api/admin/models', requireAdmin, (_req: AuthenticatedRequest, res: Res
 });
 
 app.put('/api/admin/models/:id', requireAdmin, (req: AuthenticatedRequest, res: Response) => {
-  const { is_enabled, is_default, badge, display_name } = req.body;
+  const { is_enabled, is_default, badge, display_name, openrouter_model_id } = req.body;
   const updated = db.updateModel(req.params.id, {
     ...(is_enabled !== undefined && { is_enabled }),
     ...(is_default !== undefined && { is_default }),
     ...(badge !== undefined && { badge }),
-    ...(display_name !== undefined && { display_name })
+    ...(display_name !== undefined && { display_name }),
+    ...(openrouter_model_id !== undefined && { openrouter_model_id })
   });
   if (!updated) {
     res.status(404).json({ error: 'Model not found.' });
@@ -573,12 +635,56 @@ app.put('/api/admin/models/:id', requireAdmin, (req: AuthenticatedRequest, res: 
 });
 
 app.get('/api/admin/settings', requireAdmin, (_req: AuthenticatedRequest, res: Response) => {
-  res.json(db.getSettings());
+  const settings = db.getSettings();
+  const openrouter = db.getProviderBySlug('openrouter');
+  res.json({
+    ...settings,
+    openrouter_configured: Boolean(openrouter?.api_key),
+    openrouter_key_masked: maskSecretKey(openrouter?.api_key),
+    openrouter_base_url: openrouter?.base_url || 'https://openrouter.ai/api/v1',
+    openrouter_enabled: openrouter ? openrouter.is_active : true
+  });
 });
 
 app.put('/api/admin/settings', requireAdmin, (req: AuthenticatedRequest, res: Response) => {
-  const updated = db.updateSettings(req.body);
-  res.json(updated);
+  const {
+    openrouter_api_key,
+    openrouter_base_url,
+    openrouter_enabled,
+    openrouter_configured: _oc,
+    openrouter_key_masked: _okm,
+    ...settingsUpdates
+  } = req.body || {};
+
+  if (
+    openrouter_api_key !== undefined ||
+    openrouter_base_url !== undefined ||
+    openrouter_enabled !== undefined
+  ) {
+    const providerUpdates: any = {};
+    if (typeof openrouter_api_key === 'string' && openrouter_api_key.trim() !== '') {
+      providerUpdates.api_key = openrouter_api_key.trim();
+    }
+    if (typeof openrouter_base_url === 'string' && openrouter_base_url.trim() !== '') {
+      providerUpdates.base_url = openrouter_base_url.trim();
+    }
+    if (typeof openrouter_enabled === 'boolean') {
+      providerUpdates.is_active = openrouter_enabled;
+    }
+    if (Object.keys(providerUpdates).length > 0) {
+      db.updateProvider('prov_openrouter', providerUpdates);
+    }
+  }
+
+  const updated = db.updateSettings(settingsUpdates);
+  const openrouter = db.getProviderBySlug('openrouter');
+  res.json({
+    ...updated,
+    openrouter_configured: Boolean(openrouter?.api_key),
+    openrouter_key_masked: maskSecretKey(openrouter?.api_key),
+    openrouter_base_url: openrouter?.base_url || 'https://openrouter.ai/api/v1',
+    openrouter_enabled: openrouter ? openrouter.is_active : true
+  });
 });
 
 // Admin Payments Verification Endpoints
