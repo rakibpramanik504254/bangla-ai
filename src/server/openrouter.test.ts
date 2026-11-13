@@ -40,6 +40,22 @@ test('resolveOpenRouterModels maps all Bangla AI workspace models and respects o
     resolveOpenRouterModels({ model_name: 'claude-fable-5-2', openrouter_model_id: 'anthropic/claude-opus-4' }),
     { primary: 'anthropic/claude-opus-4', fallback: 'openrouter/auto' }
   );
+  assert.deepEqual(
+    resolveOpenRouterModels({
+      model_name: 'google/gemma-4-31b-it:free',
+      openrouter_model_id: 'google/gemma-4-31b-it:free',
+      is_free: true
+    }),
+    { primary: 'google/gemma-4-31b-it:free', fallback: 'openrouter/free' }
+  );
+  assert.deepEqual(
+    resolveOpenRouterModels({
+      model_name: 'openrouter/free',
+      openrouter_model_id: 'openrouter/free',
+      is_free: true
+    }),
+    { primary: 'openrouter/free', fallback: 'openrouter/free' }
+  );
 });
 
 test('buildOpenRouterRequestBody sets stream true and prepends system message', () => {

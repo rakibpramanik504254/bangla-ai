@@ -114,12 +114,16 @@ export function resolveOpenRouterModels(model: {
   id?: string;
   model_name: string;
   openrouter_model_id?: string;
+  is_free?: boolean;
 }): OpenRouterModelCandidate {
+  const isFreeModel = Boolean(model.is_free || model.model_name.endsWith(':free') || model.model_name === 'openrouter/free');
+  const safeFallback = isFreeModel ? 'openrouter/free' : 'openrouter/auto';
+
   const customSlug = model.openrouter_model_id?.trim();
   if (customSlug) {
     return {
       primary: customSlug,
-      fallback: 'openrouter/auto'
+      fallback: safeFallback
     };
   }
 
@@ -134,13 +138,13 @@ export function resolveOpenRouterModels(model: {
   if (model.model_name.includes('/')) {
     return {
       primary: model.model_name,
-      fallback: 'openrouter/auto'
+      fallback: safeFallback
     };
   }
 
   return {
-    primary: 'openrouter/auto',
-    fallback: 'google/gemini-2.5-flash'
+    primary: safeFallback,
+    fallback: isFreeModel ? 'openrouter/free' : 'google/gemini-2.5-flash'
   };
 }
 

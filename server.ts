@@ -6,6 +6,7 @@ import dotenv from 'dotenv';
 import { db, User, verifyPassword, hashPassword } from './src/db/database.ts';
 import { authenticate, requireAdmin, generateToken, AuthenticatedRequest } from './src/server/auth.ts';
 import { AiService } from './src/server/ai-service.ts';
+import { buildNewFreeModelsFromOpenRouterApi } from './src/server/openrouter-free-models.ts';
 import { isSubscriptionActive, calculateUsageStats, PLANS } from './src/utils/billing.ts';
 
 dotenv.config();
@@ -632,6 +633,45 @@ app.put('/api/admin/models/:id', requireAdmin, (req: AuthenticatedRequest, res: 
     return;
   }
   res.json(updated);
+});
+
+app.post('/api/admin/models/sync-openrouter-free', requireAdmin, async (_req: AuthenticatedRequest, res: Response) => {
+  try {
+    const openrouter = db.getProviderBySlug('openrouter');
+    const baseUrl = (openrouter?.base_url || 'https://openrouter.ai/api/v1').replace(/\/+$/, '');
+    const resp = await fetch(`${baseUrl}/models`);
+    if (!resp.ok) {
+      res.status(502).json({ error: `Failed to fetch OpenRouter catalog (HTTP ${resp.status}).` });
+      return;
+    }
+    const payload: any = await resp.json();
+    const apiModels = Array.isArray(payload?.data) ? payload.data : [];
+    const now = new Date().toISOString();
+    const newFreeModels = buildNewFreeModelsFromOpenRouterApi(apiModels, db.listModels(false), now);
+    const addedCount = db.addModels(newFreeModels);
+    res.json({
+      success: true,
+      addedCount,
+      models: db.listModels(false),
+      message: addedCount > 0
+        ? `Synced ${addedCount} new OpenRouter free model(s) (turned OFF by default).`
+        : 'All live OpenRouter free models are already in your catalog.'
+    });
+  } catch (err: any) {
+    res.status(500).json({ error: `OpenRouter sync failed: ${err.message}` });
+  }
+});
+
+app.post('/api/admin/models/free/toggle-all', requireAdmin, (req: AuthenticatedRequest, res: Response) => {
+  const enabled = Boolean(req.body?.is_enabled);
+  const updatedCount = db.bulkToggleFreeModels(enabled);
+  res.json({
+    success: true,
+    updatedCount,
+    is_enabled: enabled,
+    models: db.listModels(false),
+    message: `${updatedCount} OpenRouter free model(s) turned ${enabled ? 'ON' : 'OFF'} for Workspace.`
+  });
 });
 
 app.get('/api/admin/settings', requireAdmin, (_req: AuthenticatedRequest, res: Response) => {

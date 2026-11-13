@@ -76,9 +76,10 @@ export interface AiModel {
   model_name: string;
   display_name: string;
   description_en: string;
-  badge: 'super_fast' | 'reasoning' | 'coding' | 'balanced' | 'max' | 'high' | 'xhigh';
+  badge: 'super_fast' | 'reasoning' | 'coding' | 'balanced' | 'max' | 'high' | 'xhigh' | 'free';
   is_enabled: boolean;
   is_default: boolean;
+  is_free?: boolean;
   context_window: number;
   max_output_tokens: number;
   sort_order: number;

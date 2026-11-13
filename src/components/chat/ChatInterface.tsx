@@ -632,7 +632,14 @@ export const ChatInterface: React.FC = () => {
                         </div>
                         <div className="flex-1 min-w-0">
                           <div className="flex items-center justify-between gap-2">
-                            <span className="font-semibold truncate">{m.display_name}</span>
+                            <div className="flex items-center gap-1.5 min-w-0">
+                              <span className="font-semibold truncate">{m.display_name}</span>
+                              {(m.is_free || m.badge === 'free') && (
+                                <span className="shrink-0 text-[9px] font-mono uppercase font-bold px-1.5 py-0.2 rounded bg-emerald-100 text-emerald-700 dark:bg-emerald-950/60 dark:text-emerald-400">
+                                  FREE
+                                </span>
+                              )}
+                            </div>
                             {selectedModelId === m.id && <Check className="w-3.5 h-3.5 text-black dark:text-white shrink-0" />}
                           </div>
                           <p className="text-[10px] text-gray-500 line-clamp-1 mt-0.5 font-normal">

@@ -79,6 +79,8 @@ export const AdminPanel: React.FC = () => {
   const [openrouterQuickKey, setOpenrouterQuickKey] = useState('');
   const [savingSettings, setSavingSettings] = useState(false);
   const [testingPixel, setTestingPixel] = useState(false);
+  const [modelFilter, setModelFilter] = useState<'all' | 'flagship' | 'free'>('all');
+  const [syncingFreeModels, setSyncingFreeModels] = useState(false);
   const [feedback, setFeedback] = useState<string | null>(null);
 
   if (!user || user.role !== 'admin') {
@@ -447,6 +449,61 @@ export const AdminPanel: React.FC = () => {
       }
     } catch (err) {
       console.error(err);
+    }
+  };
+
+  const handleSyncFreeModels = async () => {
+    if (!token) return;
+    setSyncingFreeModels(true);
+    try {
+      const res = await fetch('/api/admin/models/sync-openrouter-free', {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${token}`
+        }
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        setFeedback(`Error: ${data.error || 'Failed to sync OpenRouter free models.'}`);
+      } else {
+        if (Array.isArray(data.models)) {
+          setModels(data.models);
+        } else {
+          fetchProvidersAndModels();
+        }
+        setFeedback(data.message || 'OpenRouter free models synced.');
+      }
+    } catch (err: any) {
+      setFeedback(`Error: ${err.message || 'Failed to sync OpenRouter free models.'}`);
+    } finally {
+      setSyncingFreeModels(false);
+    }
+  };
+
+  const handleBulkToggleFreeModels = async (enableAll: boolean) => {
+    if (!token) return;
+    try {
+      const res = await fetch('/api/admin/models/free/toggle-all', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`
+        },
+        body: JSON.stringify({ is_enabled: enableAll })
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        setFeedback(`Error: ${data.error || 'Failed to update OpenRouter free models.'}`);
+      } else {
+        if (Array.isArray(data.models)) {
+          setModels(data.models);
+        } else {
+          fetchProvidersAndModels();
+        }
+        setFeedback(data.message || `All OpenRouter free models turned ${enableAll ? 'ON' : 'OFF'}.`);
+      }
+    } catch (err: any) {
+      setFeedback(`Error: ${err.message || 'Failed to update OpenRouter free models.'}`);
     }
   };
 
@@ -1375,105 +1432,203 @@ export const AdminPanel: React.FC = () => {
       )}
 
       {/* Tab 4: Models */}
-      {activeTab === 'models' && (
-        <div className="bg-white dark:bg-[#262626] rounded-[8px] border border-black/[0.08] dark:border-white/[0.08] shadow-xs overflow-hidden">
-          {/* Mobile Card Layout */}
-          <div className="md:hidden divide-y divide-black/[0.06] dark:divide-white/[0.06] text-xs">
-            {models.map(m => (
-              <div key={m.id} className="p-4 space-y-2.5">
-                <div className="flex flex-wrap items-start justify-between gap-2">
-                  <div className="min-w-0">
-                    <div className="font-semibold text-black dark:text-white truncate">{m.display_name}</div>
-                    <div className="text-[10px] font-mono text-gray-400 break-all">{m.model_name}</div>
-                  </div>
-                  <span className="px-2 py-0.5 rounded-full text-[10px] font-mono uppercase font-bold bg-black/[0.05] dark:bg-white/[0.08] text-black dark:text-white shrink-0">
-                    {m.badge}
-                  </span>
-                </div>
+      {activeTab === 'models' && (() => {
+        const isFreeModel = (m: AiModel) =>
+          Boolean(m.is_free || m.badge === 'free' || m.model_name.endsWith(':free') || m.model_name === 'openrouter/free');
+        const freeModelsList = models.filter(isFreeModel);
+        const freeOnCount = freeModelsList.filter(m => m.is_enabled).length;
+        const flagshipModelsList = models.filter(m => !isFreeModel(m));
+        const visibleModels =
+          modelFilter === 'free' ? freeModelsList :
+          modelFilter === 'flagship' ? flagshipModelsList : models;
 
-                <div className="flex flex-wrap items-center justify-between gap-2 text-[11px] font-mono text-gray-500">
-                  <span>Ctx: {m.context_window.toLocaleString()}</span>
-                  <span>Out: {m.max_output_tokens.toLocaleString()}</span>
-                </div>
-
-                <div className="flex items-center justify-between gap-2 pt-1">
-                  <span className={`px-2 py-0.5 rounded-full text-[10px] font-mono uppercase ${
-                    m.is_enabled
-                      ? 'bg-emerald-50 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-400'
-                      : 'bg-black/[0.05] text-gray-500'
-                  }`}>
-                    {m.is_enabled ? 'Enabled' : 'Disabled'}
-                  </span>
-                  <button
-                    onClick={() => handleToggleModel(m)}
-                    className={`h-7 px-3 rounded-full text-xs font-semibold cursor-pointer border border-black/[0.08] dark:border-white/[0.1] ${
-                      m.is_enabled
-                        ? 'text-red-600 hover:bg-red-50 dark:hover:bg-red-950/40'
-                        : 'text-emerald-600 hover:bg-emerald-50 dark:hover:bg-emerald-950/40'
-                    }`}
-                  >
-                    {m.is_enabled ? 'Disable' : 'Enable'}
-                  </button>
-                </div>
+        return (
+          <div className="space-y-4">
+            {/* Free Models Toolbar & Filter Controls */}
+            <div className="bg-white dark:bg-[#262626] p-4 rounded-[8px] border border-black/[0.08] dark:border-white/[0.08] shadow-xs flex flex-col lg:flex-row lg:items-center justify-between gap-3 text-xs">
+              <div className="flex flex-wrap items-center gap-1.5">
+                <button
+                  type="button"
+                  onClick={() => setModelFilter('all')}
+                  className={`h-8 px-3 rounded-full font-medium cursor-pointer transition-colors ${
+                    modelFilter === 'all'
+                      ? 'bg-black text-white dark:bg-white dark:text-black font-semibold'
+                      : 'bg-black/[0.04] dark:bg-white/[0.06] text-gray-600 dark:text-gray-300'
+                  }`}
+                >
+                  All Models ({models.length})
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setModelFilter('flagship')}
+                  className={`h-8 px-3 rounded-full font-medium cursor-pointer transition-colors ${
+                    modelFilter === 'flagship'
+                      ? 'bg-black text-white dark:bg-white dark:text-black font-semibold'
+                      : 'bg-black/[0.04] dark:bg-white/[0.06] text-gray-600 dark:text-gray-300'
+                  }`}
+                >
+                  Flagship ({flagshipModelsList.length})
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setModelFilter('free')}
+                  className={`h-8 px-3 rounded-full font-medium cursor-pointer transition-colors ${
+                    modelFilter === 'free'
+                      ? 'bg-black text-white dark:bg-white dark:text-black font-semibold'
+                      : 'bg-black/[0.04] dark:bg-white/[0.06] text-gray-600 dark:text-gray-300'
+                  }`}
+                >
+                  OpenRouter Free ({freeOnCount}/{freeModelsList.length} ON)
+                </button>
               </div>
-            ))}
-          </div>
 
-          {/* Desktop Table Layout */}
-          <div className="hidden md:block overflow-x-auto">
-            <table className="w-full text-left text-xs">
-              <thead className="border-b border-black/[0.08] dark:border-white/[0.08] text-gray-400 font-mono text-[11px]">
-                <tr>
-                  <th className="py-3 px-4 font-medium">Model Name</th>
-                  <th className="py-3 px-4 font-medium">Badge</th>
-                  <th className="py-3 px-4 font-medium">Context Window</th>
-                  <th className="py-3 px-4 font-medium">Max Output</th>
-                  <th className="py-3 px-4 font-medium">Status</th>
-                  <th className="py-3 px-4 font-medium text-right">Toggle</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-black/[0.04] dark:divide-white/[0.04]">
-                {models.map(m => (
-                  <tr key={m.id} className="hover:bg-black/[0.02] dark:hover:bg-white/[0.02] transition-colors">
-                    <td className="py-3 px-4">
-                      <div className="font-semibold text-black dark:text-white">{m.display_name}</div>
-                      <div className="text-[10px] font-mono text-gray-400">{m.model_name}</div>
-                    </td>
-                    <td className="py-3 px-4">
-                      <span className="px-2 py-0.5 rounded-full text-[10px] font-mono uppercase font-bold bg-black/[0.05] dark:bg-white/[0.08] text-black dark:text-white">
-                        {m.badge}
+              <div className="flex flex-wrap items-center gap-2">
+                <button
+                  type="button"
+                  disabled={syncingFreeModels}
+                  onClick={handleSyncFreeModels}
+                  className="h-8 px-3.5 rounded-full border border-black/[0.12] dark:border-white/[0.15] hover:border-black/30 font-semibold flex items-center gap-1.5 cursor-pointer disabled:opacity-50"
+                >
+                  <RefreshCw className={`w-3.5 h-3.5 ${syncingFreeModels ? 'animate-spin' : ''}`} />
+                  <span>{syncingFreeModels ? 'Syncing...' : 'Sync Free Models'}</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => handleBulkToggleFreeModels(true)}
+                  className="h-8 px-3 rounded-full bg-emerald-600 hover:bg-emerald-700 text-white font-semibold cursor-pointer"
+                >
+                  Turn All Free ON
+                </button>
+                <button
+                  type="button"
+                  onClick={() => handleBulkToggleFreeModels(false)}
+                  className="h-8 px-3 rounded-full border border-black/[0.12] dark:border-white/[0.15] text-gray-600 dark:text-gray-300 hover:text-red-600 font-semibold cursor-pointer"
+                >
+                  Turn All Free OFF
+                </button>
+              </div>
+            </div>
+
+            <div className="bg-white dark:bg-[#262626] rounded-[8px] border border-black/[0.08] dark:border-white/[0.08] shadow-xs overflow-hidden">
+              {/* Mobile Card Layout */}
+              <div className="md:hidden divide-y divide-black/[0.06] dark:divide-white/[0.06] text-xs">
+                {visibleModels.map(m => (
+                  <div key={m.id} className="p-4 space-y-2.5">
+                    <div className="flex flex-wrap items-start justify-between gap-2">
+                      <div className="min-w-0 flex-1">
+                        <div className="font-semibold text-black dark:text-white break-words">{m.display_name}</div>
+                        <div className="text-[10px] font-mono text-gray-400 break-all">{m.openrouter_model_id || m.model_name}</div>
+                      </div>
+                      <span className={`px-2 py-0.5 rounded-full text-[10px] font-mono uppercase font-bold shrink-0 ${
+                        isFreeModel(m)
+                          ? 'bg-emerald-50 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-800'
+                          : 'bg-black/[0.05] dark:bg-white/[0.08] text-black dark:text-white'
+                      }`}>
+                        {isFreeModel(m) ? 'FREE' : m.badge}
                       </span>
-                    </td>
-                    <td className="py-3 px-4 font-mono">{m.context_window.toLocaleString()}</td>
-                    <td className="py-3 px-4 font-mono">{m.max_output_tokens.toLocaleString()}</td>
-                    <td className="py-3 px-4">
+                    </div>
+
+                    <div className="flex flex-wrap items-center justify-between gap-2 text-[11px] font-mono text-gray-500">
+                      <span>Ctx: {m.context_window.toLocaleString()}</span>
+                      <span>Out: {m.max_output_tokens.toLocaleString()}</span>
+                    </div>
+
+                    <div className="flex items-center justify-between gap-2 pt-1">
                       <span className={`px-2 py-0.5 rounded-full text-[10px] font-mono uppercase ${
                         m.is_enabled
                           ? 'bg-emerald-50 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-400'
                           : 'bg-black/[0.05] text-gray-500'
                       }`}>
-                        {m.is_enabled ? 'Enabled' : 'Disabled'}
+                        {m.is_enabled ? 'ON in Workspace' : 'OFF'}
                       </span>
-                    </td>
-                    <td className="py-3 px-4 text-right">
                       <button
+                        type="button"
+                        role="switch"
+                        aria-checked={m.is_enabled}
+                        aria-label={`Toggle ${m.display_name}`}
                         onClick={() => handleToggleModel(m)}
-                        className={`h-7 px-3 rounded-full text-xs font-semibold cursor-pointer ${
-                          m.is_enabled
-                            ? 'text-red-600 hover:bg-red-50 dark:hover:bg-red-950/40'
-                            : 'text-emerald-600 hover:bg-emerald-50 dark:hover:bg-emerald-950/40'
+                        className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer items-center rounded-full transition-colors ${
+                          m.is_enabled ? 'bg-emerald-600' : 'bg-gray-300 dark:bg-gray-600'
                         }`}
                       >
-                        {m.is_enabled ? 'Disable' : 'Enable'}
+                        <span
+                          className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
+                            m.is_enabled ? 'translate-x-6' : 'translate-x-1'
+                          }`}
+                        />
                       </button>
-                    </td>
-                  </tr>
+                    </div>
+                  </div>
                 ))}
-              </tbody>
-            </table>
+              </div>
+
+              {/* Desktop Table Layout */}
+              <div className="hidden md:block overflow-x-auto">
+                <table className="w-full text-left text-xs">
+                  <thead className="border-b border-black/[0.08] dark:border-white/[0.08] text-gray-400 font-mono text-[11px]">
+                    <tr>
+                      <th className="py-3 px-4 font-medium">Model Name &amp; Slug</th>
+                      <th className="py-3 px-4 font-medium">Tier</th>
+                      <th className="py-3 px-4 font-medium">Context Window</th>
+                      <th className="py-3 px-4 font-medium">Max Output</th>
+                      <th className="py-3 px-4 font-medium">Workspace Status</th>
+                      <th className="py-3 px-4 font-medium text-right">ON / OFF Toggle</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-black/[0.04] dark:divide-white/[0.04]">
+                    {visibleModels.map(m => (
+                      <tr key={m.id} className="hover:bg-black/[0.02] dark:hover:bg-white/[0.02] transition-colors">
+                        <td className="py-3 px-4">
+                          <div className="font-semibold text-black dark:text-white">{m.display_name}</div>
+                          <div className="text-[10px] font-mono text-gray-400">{m.openrouter_model_id || m.model_name}</div>
+                        </td>
+                        <td className="py-3 px-4">
+                          <span className={`px-2 py-0.5 rounded-full text-[10px] font-mono uppercase font-bold ${
+                            isFreeModel(m)
+                              ? 'bg-emerald-50 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-800'
+                              : 'bg-black/[0.05] dark:bg-white/[0.08] text-black dark:text-white'
+                          }`}>
+                            {isFreeModel(m) ? 'FREE' : m.badge}
+                          </span>
+                        </td>
+                        <td className="py-3 px-4 font-mono">{m.context_window.toLocaleString()}</td>
+                        <td className="py-3 px-4 font-mono">{m.max_output_tokens.toLocaleString()}</td>
+                        <td className="py-3 px-4">
+                          <span className={`px-2 py-0.5 rounded-full text-[10px] font-mono uppercase ${
+                            m.is_enabled
+                              ? 'bg-emerald-50 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-400'
+                              : 'bg-black/[0.05] text-gray-500'
+                          }`}>
+                            {m.is_enabled ? 'ON in Workspace' : 'OFF'}
+                          </span>
+                        </td>
+                        <td className="py-3 px-4 text-right">
+                          <button
+                            type="button"
+                            role="switch"
+                            aria-checked={m.is_enabled}
+                            aria-label={`Toggle ${m.display_name}`}
+                            onClick={() => handleToggleModel(m)}
+                            className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer items-center rounded-full transition-colors ${
+                              m.is_enabled ? 'bg-emerald-600' : 'bg-gray-300 dark:bg-gray-600'
+                            }`}
+                          >
+                            <span
+                              className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
+                                m.is_enabled ? 'translate-x-6' : 'translate-x-1'
+                              }`}
+                            />
+                          </button>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
           </div>
-        </div>
-      )}
+        );
+      })()}
 
       {/* Tab 5: Settings & Facebook Pixel (The requested Meta Pixel setting!) */}
       {activeTab === 'settings' && (

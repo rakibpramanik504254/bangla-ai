@@ -2,6 +2,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import crypto from 'node:crypto';
 import { PLANS, calculateExpiryDate } from '../utils/billing.ts';
+import { createSeededFreeModels } from '../server/openrouter-free-models.ts';
 
 export interface User {
   id: string;
@@ -96,9 +97,10 @@ export interface AiModel {
   model_name: string;
   display_name: string;
   description_en: string;
-  badge: 'super_fast' | 'reasoning' | 'coding' | 'balanced' | 'max' | 'high' | 'xhigh';
+  badge: 'super_fast' | 'reasoning' | 'coding' | 'balanced' | 'max' | 'high' | 'xhigh' | 'free';
   is_enabled: boolean;
   is_default: boolean;
+  is_free?: boolean;
   context_window: number;
   max_output_tokens: number;
   sort_order: number;
@@ -248,6 +250,20 @@ class Database {
               created_at: now,
               updated_at: now
             });
+            fs.writeFileSync(this.dataFile, JSON.stringify(parsed, null, 2), 'utf-8');
+          }
+        }
+
+        // Non-destructive migration: add curated OpenRouter free models (turned OFF by default) if missing
+        if (Array.isArray(parsed.ai_models)) {
+          const now = new Date().toISOString();
+          const existingIds = new Set(parsed.ai_models.map((m: any) => m.id));
+          const existingSlugs = new Set(parsed.ai_models.map((m: any) => m.model_name));
+          const missingFree = createSeededFreeModels(now).filter(
+            fm => !existingIds.has(fm.id) && !existingSlugs.has(fm.model_name)
+          );
+          if (missingFree.length > 0) {
+            parsed.ai_models.push(...missingFree);
             fs.writeFileSync(this.dataFile, JSON.stringify(parsed, null, 2), 'utf-8');
           }
         }
@@ -595,7 +611,8 @@ class Database {
         max_output_tokens: 4096,
         sort_order: 10,
         created_at: now
-      }
+      },
+      ...createSeededFreeModels(now)
     ];
 
     const demoChatId = 'chat_demo_001';
@@ -1156,6 +1173,25 @@ class Database {
     Object.assign(model, updates);
     this.save();
     return model;
+  }
+
+  public addModels(newModels: AiModel[]): number {
+    if (!newModels.length) return 0;
+    this.data.ai_models.push(...newModels);
+    this.save();
+    return newModels.length;
+  }
+
+  public bulkToggleFreeModels(enabled: boolean): number {
+    let count = 0;
+    for (const m of this.data.ai_models) {
+      if (m.is_free || m.badge === 'free' || m.model_name.endsWith(':free') || m.model_name === 'openrouter/free') {
+        m.is_enabled = enabled;
+        count++;
+      }
+    }
+    this.save();
+    return count;
   }
 
   // --- Usage Tracking ---
