@@ -16,6 +16,7 @@ const TOKEN_CLASSES: Record<TokenType, string> = {
   number: 'text-[#D19A66]',
   operator: 'text-[#56B6C2]',
   punctuation: 'text-[#848B98]',
+  property: 'text-[#E06C75]',
   plain: 'text-[#E4E7EF]'
 };
 

@@ -398,7 +398,40 @@ Warm regards,
 [Mobile / WhatsApp] | [Website URL]`;
     }
 
-    if (p.includes('code') || p.includes('javascript') || p.includes('python') || p.includes('react') || p.includes('api')) {
+    if (p.includes('python') || p.includes('fastapi')) {
+      return `${modelBadge}Here is a clean, production-ready FastAPI endpoint with Pydantic validation and structured error handling:
+
+\`\`\`python
+from fastapi import FastAPI, HTTPException
+from pydantic import BaseModel, Field
+
+app = FastAPI(title="Bangla AI Service")
+
+class PhoneRequest(BaseModel):
+    phone: str = Field(..., min_length=11, max_length=15)
+
+@app.post("/api/validate-phone")
+async def validate_bd_phone(payload: PhoneRequest) -> dict:
+    sanitized = payload.phone.strip().replace("-", "").replace(" ", "")
+    if not sanitized.startswith(("01", "+8801")):
+        raise HTTPException(status_code=400, detail="Invalid BD mobile prefix")
+    return {"valid": True, "normalized": sanitized}
+\`\`\`
+
+### Architectural Highlights:
+* **Pydantic Validation:** Rejects malformed payloads automatically before reaching business logic.
+* **Async Execution:** Non-blocking route handler optimized for high concurrency.`;
+    }
+
+    if (
+      p.includes('code') ||
+      p.includes('javascript') ||
+      p.includes('typescript') ||
+      p.includes('react') ||
+      p.includes('hook') ||
+      p.includes('function') ||
+      p.includes('api')
+    ) {
       return `${modelBadge}Here is an elegant, production-ready solution with clean architectural patterns and input validation:
 
 \`\`\`typescript

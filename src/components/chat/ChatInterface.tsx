@@ -6,7 +6,6 @@ import {
   Trash2,
   Edit2,
   Check,
-  X,
   Sparkles,
   Bot,
   Brain,
@@ -14,138 +13,189 @@ import {
   ChevronDown,
   Lock,
   Copy,
-  Zap,
   PanelLeftClose,
   PanelLeftOpen,
   ArrowRight,
-  Search
+  Search,
+  RotateCcw,
+  Volume2,
+  VolumeX,
+  Download,
+  ThumbsUp,
+  ThumbsDown
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext.tsx';
 import { Chat, Message, AiModel } from '../../types/index.ts';
-import { formatBDT, isSubscriptionActive } from '../../utils/billing.ts';
 import { createSseLineParser, parseChatStreamPayload } from '../../utils/sse.ts';
+import {
+  parseMarkdownBlocks,
+  parseInlineSegments,
+  estimateReadingStats
+} from '../../utils/markdownBlocks.ts';
+import { WorkspaceCodeBlock } from './WorkspaceCodeBlock.tsx';
+import { copyTextSafely } from '../../utils/clipboard.ts';
 import { BrandLogo } from '../common/BrandLogo.tsx';
 
+function renderInlineSegments(text: string): React.ReactNode {
+  const segments = parseInlineSegments(text);
+  return segments.map((seg, i) => {
+    switch (seg.type) {
+      case 'code':
+        return (
+          <code
+            key={i}
+            className="px-1.5 py-0.5 mx-0.5 rounded-[5px] bg-black/[0.06] dark:bg-white/[0.1] text-[#9D2E87] dark:text-[#61AFEF] font-mono text-[12px] break-all"
+          >
+            {seg.value}
+          </code>
+        );
+      case 'bold':
+        return (
+          <strong key={i} className="font-semibold text-black dark:text-white">
+            {seg.value}
+          </strong>
+        );
+      case 'italic':
+        return (
+          <em key={i} className="italic text-gray-600 dark:text-gray-300">
+            {seg.value}
+          </em>
+        );
+      case 'link':
+        return (
+          <a
+            key={i}
+            href={seg.href}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="underline decoration-black/30 dark:decoration-white/40 hover:text-black dark:hover:text-white font-medium"
+          >
+            {seg.label}
+          </a>
+        );
+      default:
+        return <React.Fragment key={i}>{seg.value}</React.Fragment>;
+    }
+  });
+}
+
 const FormattedMessage: React.FC<{ content: string }> = ({ content }) => {
-  const [copiedIndex, setCopiedIndex] = useState<number | null>(null);
-
-  const handleCopyCode = (code: string, idx: number) => {
-    navigator.clipboard.writeText(code);
-    setCopiedIndex(idx);
-    setTimeout(() => setCopiedIndex(null), 2000);
-  };
-
-  const parts = content.split(/(```[\s\S]*?```)/g);
+  const blocks = parseMarkdownBlocks(content);
 
   return (
-    <div className="space-y-3 leading-relaxed text-sm min-w-0 break-words">
-      {parts.map((part, index) => {
-        if (part.startsWith('```') && part.endsWith('```')) {
-          const firstLineEnd = part.indexOf('\n');
-          const lang = part.substring(3, firstLineEnd).trim() || 'code';
-          const code = part.substring(firstLineEnd + 1, part.length - 3);
-
+    <div className="space-y-3 leading-relaxed text-[13.5px] sm:text-sm min-w-0 max-w-full break-words">
+      {blocks.map((block, index) => {
+        if (block.type === 'code') {
           return (
-            <div
+            <WorkspaceCodeBlock
               key={index}
-              className="rounded-[8px] overflow-hidden border border-black/10 dark:border-white/10 bg-[#262626] text-white my-3 font-mono text-xs shadow-xs max-w-full"
+              code={block.code}
+              language={block.language}
+              index={index}
+              isStreaming={block.isStreaming}
+            />
+          );
+        }
+
+        if (block.type === 'heading') {
+          const headingClasses: Record<1 | 2 | 3 | 4, string> = {
+            1: 'text-lg font-bold text-black dark:text-white pt-2',
+            2: 'text-base font-bold text-black dark:text-white pt-2',
+            3: 'text-[14.5px] font-bold text-black dark:text-white pt-1.5',
+            4: 'text-sm font-semibold text-black dark:text-white pt-1'
+          };
+          return (
+            <h4 key={index} className={headingClasses[block.level]}>
+              {renderInlineSegments(block.text)}
+            </h4>
+          );
+        }
+
+        if (block.type === 'blockquote') {
+          return (
+            <blockquote
+              key={index}
+              className="rounded-[8px] bg-black/[0.03] dark:bg-white/[0.05] border border-black/[0.07] dark:border-white/[0.08] px-3.5 py-2.5 text-black/80 dark:text-white/85 italic space-y-1"
             >
-              <div className="flex items-center justify-between px-3.5 py-1.5 bg-[#1F1F1F] border-b border-white/10 text-[11px] text-gray-400">
-                <span className="font-sans uppercase text-[10px] tracking-wider text-gray-400">{lang}</span>
-                <button
-                  type="button"
-                  onClick={() => handleCopyCode(code, index)}
-                  className="flex items-center gap-1 hover:text-white px-2 py-0.5 rounded-full hover:bg-white/10 transition-colors font-sans text-[11px]"
-                >
-                  {copiedIndex === index ? (
-                    <>
-                      <Check className="w-3 h-3 text-emerald-400" />
-                      <span className="text-emerald-400">Copied</span>
-                    </>
+              {block.lines.map((qLine, qIdx) => (
+                <p key={qIdx}>{renderInlineSegments(qLine)}</p>
+              ))}
+            </blockquote>
+          );
+        }
+
+        if (block.type === 'hr') {
+          return <hr key={index} className="border-black/[0.08] dark:border-white/[0.08] my-2" />;
+        }
+
+        if (block.type === 'list') {
+          return (
+            <div key={index} className="space-y-1.5 pl-1">
+              {block.items.map((item, itemIdx) => (
+                <div key={itemIdx} className="flex items-start gap-2.5 min-w-0">
+                  {block.ordered ? (
+                    <span className="text-xs font-mono font-semibold text-gray-500 dark:text-gray-400 mt-0.5 shrink-0 tabular-nums">
+                      {itemIdx + 1}.
+                    </span>
                   ) : (
-                    <>
-                      <Copy className="w-3 h-3" />
-                      <span>Copy</span>
-                    </>
+                    <span className="w-1.5 h-1.5 rounded-full bg-black/45 dark:bg-white/45 mt-2 shrink-0" />
                   )}
-                </button>
-              </div>
-              <pre className="p-3 sm:p-4 overflow-x-auto leading-relaxed text-gray-200 max-w-full">
-                <code>{code}</code>
-              </pre>
+                  <div className="min-w-0 flex-1 text-black/85 dark:text-white/85">
+                    {renderInlineSegments(item)}
+                  </div>
+                </div>
+              ))}
             </div>
           );
         }
 
-        const lines = part.split('\n');
+        if (block.type === 'table') {
+          return (
+            <div
+              key={index}
+              className="my-2 overflow-x-auto max-w-full rounded-[8px] border border-black/[0.09] dark:border-white/[0.1]"
+            >
+              <table className="w-full text-left text-xs border-collapse">
+                <thead className="bg-black/[0.03] dark:bg-white/[0.05] border-b border-black/[0.08] dark:border-white/[0.08]">
+                  <tr>
+                    {block.headers.map((header, hIdx) => (
+                      <th
+                        key={hIdx}
+                        className="px-3 py-2 font-semibold text-black dark:text-white whitespace-nowrap"
+                      >
+                        {renderInlineSegments(header)}
+                      </th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-black/[0.05] dark:divide-white/[0.06]">
+                  {block.rows.map((row, rIdx) => (
+                    <tr key={rIdx} className="hover:bg-black/[0.015] dark:hover:bg-white/[0.02]">
+                      {row.map((cell, cIdx) => (
+                        <td
+                          key={cIdx}
+                          className="px-3 py-2 text-black/80 dark:text-white/80 align-top"
+                        >
+                          {renderInlineSegments(cell)}
+                        </td>
+                      ))}
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          );
+        }
+
         return (
-          <div key={index} className="space-y-1.5">
-            {lines.map((line, lIdx) => {
-              if (line.startsWith('### ')) {
-                return (
-                  <h4 key={lIdx} className="text-sm font-bold text-black dark:text-white pt-2">
-                    {line.substring(4)}
-                  </h4>
-                );
-              }
-              if (line.startsWith('## ')) {
-                return (
-                  <h3 key={lIdx} className="text-base font-bold text-black dark:text-white pt-2.5">
-                    {line.substring(3)}
-                  </h3>
-                );
-              }
-              if (line.startsWith('* ') || line.startsWith('- ')) {
-                return (
-                  <div key={lIdx} className="flex items-start gap-2 pl-2">
-                    <span className="w-1.5 h-1.5 rounded-full bg-black/40 dark:bg-white/40 mt-2 shrink-0" />
-                    <span>{parseBold(line.substring(2))}</span>
-                  </div>
-                );
-              }
-              if (/^\d+\.\s/.test(line)) {
-                return (
-                  <div key={lIdx} className="pl-2 font-medium">
-                    {parseBold(line)}
-                  </div>
-                );
-              }
-              if (line.trim() === '') {
-                return <div key={lIdx} className="h-1" />;
-              }
-              return (
-                <p key={lIdx} className="text-black/85 dark:text-white/85">
-                  {parseBold(line)}
-                </p>
-              );
-            })}
-          </div>
+          <p key={index} className="text-black/85 dark:text-white/85 whitespace-pre-wrap break-words">
+            {renderInlineSegments(block.text)}
+          </p>
         );
       })}
     </div>
   );
 };
-
-function parseBold(text: string) {
-  const segments = text.split(/(\*\*.*?\*\*)/g);
-  return segments.map((seg, i) => {
-    if (seg.startsWith('**') && seg.endsWith('**')) {
-      return (
-        <strong key={i} className="font-semibold text-black dark:text-white">
-          {seg.slice(2, -2)}
-        </strong>
-      );
-    }
-    if (seg.startsWith('*') && seg.endsWith('*')) {
-      return (
-        <em key={i} className="italic text-gray-500 dark:text-gray-400">
-          {seg.slice(1, -1)}
-        </em>
-      );
-    }
-    return seg;
-  });
-}
 
 export const ChatInterface: React.FC = () => {
   const { user, token, refreshUser, openPaymentModal } = useAuth();
@@ -166,6 +216,9 @@ export const ChatInterface: React.FC = () => {
 
   const [editingChatId, setEditingChatId] = useState<string | null>(null);
   const [editTitle, setEditTitle] = useState('');
+  const [copiedMessageId, setCopiedMessageId] = useState<string | null>(null);
+  const [speakingMessageId, setSpeakingMessageId] = useState<string | null>(null);
+  const [messageFeedback, setMessageFeedback] = useState<Record<string, 'up' | 'down'>>({});
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
@@ -226,6 +279,14 @@ export const ChatInterface: React.FC = () => {
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages, streamedText]);
+
+  useEffect(() => {
+    return () => {
+      if (typeof window !== 'undefined' && 'speechSynthesis' in window) {
+        window.speechSynthesis.cancel();
+      }
+    };
+  }, []);
 
   const handleCreateNewChat = async () => {
     if (!token) return;
@@ -438,11 +499,100 @@ export const ChatInterface: React.FC = () => {
   const selectedModel = models.find(m => m.id === selectedModelId) || models[0];
   const filteredChats = chats.filter(c => c.title.toLowerCase().includes(searchQuery.toLowerCase()));
 
+  const handleCopyResponse = async (msgId: string, content: string) => {
+    await copyTextSafely(content);
+    setCopiedMessageId(msgId);
+    setTimeout(() => {
+      setCopiedMessageId(prev => (prev === msgId ? null : prev));
+    }, 1800);
+  };
+
+  const handleDownloadResponse = (msgId: string, content: string, modelLabel: string) => {
+    const header = `<!-- Generated via Bangla AI (${modelLabel}) -->\n\n`;
+    const blob = new Blob([header + content], { type: 'text/markdown;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `bangla-ai-${msgId.slice(-8)}.md`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  };
+
+  const handleExportFullChat = () => {
+    if (messages.length === 0) return;
+    const activeChat = chats.find(c => c.id === activeChatId);
+    const lines = [
+      `# ${activeChat?.title || 'Bangla AI Conversation'}`,
+      '',
+      ...messages.map(m => {
+        const speaker = m.role === 'user' ? 'User' : `Assistant (${getModelDisplayName(m.model_id)})`;
+        return `## ${speaker}\n\n${m.content}\n`;
+      })
+    ];
+    const blob = new Blob([lines.join('\n')], { type: 'text/markdown;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `bangla-ai-chat-${(activeChatId || 'export').slice(-8)}.md`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  };
+
+  const handleToggleSpeak = (msgId: string, content: string) => {
+    if (typeof window === 'undefined' || !('speechSynthesis' in window)) return;
+    const synth = window.speechSynthesis;
+    if (speakingMessageId === msgId) {
+      synth.cancel();
+      setSpeakingMessageId(null);
+      return;
+    }
+    synth.cancel();
+    const plainText = content
+      .replace(/```[\s\S]*?```/g, ' Code snippet omitted. ')
+      .replace(/[*_`#>-]/g, ' ')
+      .trim();
+    if (!plainText) return;
+    const utterance = new SpeechSynthesisUtterance(plainText);
+    utterance.lang = /[\u0980-\u09FF]/.test(plainText) ? 'bn-BD' : 'en-US';
+    utterance.onend = () => setSpeakingMessageId(prev => (prev === msgId ? null : prev));
+    utterance.onerror = () => setSpeakingMessageId(prev => (prev === msgId ? null : prev));
+    setSpeakingMessageId(msgId);
+    synth.speak(utterance);
+  };
+
+  const handleToggleFeedback = (msgId: string, vote: 'up' | 'down') => {
+    setMessageFeedback(prev => {
+      if (prev[msgId] === vote) {
+        const next = { ...prev };
+        delete next[msgId];
+        return next;
+      }
+      return { ...prev, [msgId]: vote };
+    });
+  };
+
+  const handleRegenerate = (assistantIdx: number) => {
+    if (isStreaming) return;
+    for (let i = assistantIdx - 1; i >= 0; i--) {
+      if (messages[i]?.role === 'user') {
+        handleSendMessage(messages[i].content);
+        return;
+      }
+    }
+  };
+
+  const getModelDisplayName = (modelId: string) =>
+    models.find(m => m.id === modelId)?.display_name || selectedModel?.display_name || 'Bangla AI';
+
   const suggestions = [
+    'Write a TypeScript React hook for debounced search with AbortController',
+    'Write a Python FastAPI endpoint with Pydantic validation and async error handling',
     'Draft a strategic B2B technology partnership proposal',
-    'Write a TypeScript function to validate Bangladeshi phone numbers',
-    'Outline a 90-day growth playbook for an e-commerce platform',
-    'Analyze time complexity and space trade-offs for graph algorithms'
+    'Compare PostgreSQL vs MongoDB trade-offs in a Markdown comparison table'
   ];
 
   return (
@@ -654,14 +804,29 @@ export const ChatInterface: React.FC = () => {
             </div>
           </div>
 
-          {user && (
-            <div className="flex items-center gap-1.5 text-[11px] sm:text-xs font-mono shrink-0">
-              <span className="text-gray-500 hidden sm:inline">Tokens:</span>
-              <span className="font-semibold text-black dark:text-white">
-                {Math.max(0, (user.usage_limit || 0) - (user.current_usage || 0)).toLocaleString()}
-              </span>
-            </div>
-          )}
+          <div className="flex items-center gap-2 sm:gap-3 shrink-0">
+            {messages.length > 0 && (
+              <button
+                type="button"
+                onClick={handleExportFullChat}
+                aria-label="Export conversation as Markdown"
+                title="Export conversation (.md)"
+                className="h-8 px-2.5 rounded-full border border-black/[0.1] dark:border-white/[0.12] hover:border-black/30 dark:hover:border-white/30 text-[11px] font-medium text-gray-600 dark:text-gray-300 hover:text-black dark:hover:text-white flex items-center gap-1.5 transition-colors cursor-pointer whitespace-nowrap shrink-0"
+              >
+                <Download className="w-3.5 h-3.5 shrink-0" />
+                <span className="hidden sm:inline">Export Chat</span>
+              </button>
+            )}
+
+            {user && (
+              <div className="flex items-center gap-1.5 text-[11px] sm:text-xs font-mono tabular-nums shrink-0">
+                <span className="text-gray-500 hidden sm:inline">Tokens:</span>
+                <span className="font-semibold text-black dark:text-white">
+                  {Math.max(0, (user.usage_limit || 0) - (user.current_usage || 0)).toLocaleString()}
+                </span>
+              </div>
+            )}
+          </div>
         </div>
 
         {/* Gating Banner if unpaid */}
@@ -713,40 +878,194 @@ export const ChatInterface: React.FC = () => {
             </div>
           ) : (
             <div className="max-w-3xl mx-auto space-y-6">
-              {messages.map((m, idx) => (
-                <div
-                  key={m.id || idx}
-                  className={`flex gap-2.5 sm:gap-3 ${m.role === 'user' ? 'justify-end' : 'justify-start'}`}
-                >
-                  {m.role === 'assistant' && (
-                    <BrandLogo className="w-7 h-7 mt-0.5" />
-                  )}
+              {messages.map((m, idx) => {
+                const msgId = m.id || `msg-${idx}`;
+                const modelLabel = getModelDisplayName(m.model_id);
+                const stats = m.role === 'assistant' ? estimateReadingStats(m.content) : null;
+                const feedbackVote = messageFeedback[msgId];
 
+                return (
                   <div
-                    className={`min-w-0 max-w-[88%] sm:max-w-[80%] rounded-[12px] px-3.5 sm:px-4 py-3 text-sm leading-relaxed break-words ${
-                      m.role === 'user'
-                        ? 'bg-black text-white dark:bg-white dark:text-black font-normal'
-                        : 'bg-white dark:bg-[#262626] text-black dark:text-white border border-black/[0.08] dark:border-white/[0.08] shadow-xs'
-                    }`}
+                    key={msgId}
+                    className={`flex gap-2.5 sm:gap-3 ${m.role === 'user' ? 'justify-end' : 'justify-start'}`}
                   >
-                    {m.role === 'user' ? (
-                      <p className="whitespace-pre-wrap break-words">{m.content}</p>
-                    ) : (
-                      <FormattedMessage content={m.content} />
+                    {m.role === 'assistant' && (
+                      <BrandLogo className="w-7 h-7 mt-0.5 shrink-0" />
                     )}
+
+                    <div
+                      className={`min-w-0 ${
+                        m.role === 'user'
+                          ? 'max-w-[88%] sm:max-w-[78%] flex flex-col items-end gap-1.5'
+                          : 'flex-1 max-w-[calc(100%-2.25rem)] sm:max-w-[90%] space-y-2'
+                      }`}
+                    >
+                      <div
+                        className={`w-full min-w-0 rounded-[12px] px-3.5 sm:px-4 py-3 text-sm leading-relaxed break-words ${
+                          m.role === 'user'
+                            ? 'bg-black text-white dark:bg-white dark:text-black font-normal'
+                            : 'bg-white dark:bg-[#262626] text-black dark:text-white border border-black/[0.08] dark:border-white/[0.08] shadow-xs'
+                        }`}
+                      >
+                        {m.role === 'user' ? (
+                          <p className="whitespace-pre-wrap break-words">{m.content}</p>
+                        ) : (
+                          <FormattedMessage content={m.content} />
+                        )}
+                      </div>
+
+                      {m.role === 'user' ? (
+                        <button
+                          type="button"
+                          onClick={() => handleCopyResponse(msgId, m.content)}
+                          aria-label="Copy prompt"
+                          className="h-6 px-2 rounded-md text-[11px] text-gray-400 hover:text-black dark:hover:text-white hover:bg-black/[0.04] dark:hover:bg-white/[0.06] flex items-center gap-1 transition-colors cursor-pointer"
+                        >
+                          {copiedMessageId === msgId ? (
+                            <>
+                              <Check className="w-3 h-3 text-emerald-500" />
+                              <span className="text-emerald-600 dark:text-emerald-400">Copied</span>
+                            </>
+                          ) : (
+                            <>
+                              <Copy className="w-3 h-3" />
+                              <span>Copy</span>
+                            </>
+                          )}
+                        </button>
+                      ) : (
+                        <div
+                          data-testid="response-action-bar"
+                          className="flex flex-wrap items-center justify-between gap-y-1.5 gap-x-2 px-1"
+                        >
+                          <div className="flex flex-wrap items-center gap-1">
+                            <button
+                              type="button"
+                              onClick={() => handleCopyResponse(msgId, m.content)}
+                              aria-label="Copy response"
+                              className={`h-7 px-2.5 rounded-md text-[11.5px] font-medium flex items-center gap-1.5 transition-colors cursor-pointer whitespace-nowrap shrink-0 ${
+                                copiedMessageId === msgId
+                                  ? 'bg-emerald-50 text-emerald-700 dark:bg-emerald-950/50 dark:text-emerald-400'
+                                  : 'text-gray-600 dark:text-gray-300 hover:text-black dark:hover:text-white hover:bg-black/[0.05] dark:hover:bg-white/[0.07]'
+                              }`}
+                            >
+                              {copiedMessageId === msgId ? (
+                                <>
+                                  <Check className="w-3.5 h-3.5 shrink-0" />
+                                  <span>Copied</span>
+                                </>
+                              ) : (
+                                <>
+                                  <Copy className="w-3.5 h-3.5 shrink-0" />
+                                  <span>Copy</span>
+                                </>
+                              )}
+                            </button>
+
+                            <button
+                              type="button"
+                              onClick={() => handleRegenerate(idx)}
+                              disabled={isStreaming}
+                              aria-label="Regenerate response"
+                              className="h-7 px-2.5 rounded-md text-[11.5px] font-medium text-gray-600 dark:text-gray-300 hover:text-black dark:hover:text-white hover:bg-black/[0.05] dark:hover:bg-white/[0.07] flex items-center gap-1.5 transition-colors cursor-pointer disabled:opacity-40 whitespace-nowrap shrink-0"
+                            >
+                              <RotateCcw className="w-3.5 h-3.5 shrink-0" />
+                              <span>Regenerate</span>
+                            </button>
+
+                            <button
+                              type="button"
+                              onClick={() => handleToggleSpeak(msgId, m.content)}
+                              aria-label={speakingMessageId === msgId ? 'Stop reading aloud' : 'Listen to response'}
+                              className={`h-7 px-2.5 rounded-md text-[11.5px] font-medium flex items-center gap-1.5 transition-colors cursor-pointer whitespace-nowrap shrink-0 ${
+                                speakingMessageId === msgId
+                                  ? 'bg-black text-white dark:bg-white dark:text-black'
+                                  : 'text-gray-600 dark:text-gray-300 hover:text-black dark:hover:text-white hover:bg-black/[0.05] dark:hover:bg-white/[0.07]'
+                              }`}
+                            >
+                              {speakingMessageId === msgId ? (
+                                <>
+                                  <VolumeX className="w-3.5 h-3.5 shrink-0" />
+                                  <span>Stop</span>
+                                </>
+                              ) : (
+                                <>
+                                  <Volume2 className="w-3.5 h-3.5 shrink-0" />
+                                  <span>Listen</span>
+                                </>
+                              )}
+                            </button>
+
+                            <button
+                              type="button"
+                              onClick={() => handleDownloadResponse(msgId, m.content, modelLabel)}
+                              aria-label="Download response as Markdown"
+                              className="h-7 px-2.5 rounded-md text-[11.5px] font-medium text-gray-600 dark:text-gray-300 hover:text-black dark:hover:text-white hover:bg-black/[0.05] dark:hover:bg-white/[0.07] flex items-center gap-1.5 transition-colors cursor-pointer whitespace-nowrap shrink-0"
+                            >
+                              <Download className="w-3.5 h-3.5 shrink-0" />
+                              <span className="hidden sm:inline">Save .md</span>
+                            </button>
+
+                            <div className="flex items-center gap-0.5 pl-1 border-l border-black/[0.08] dark:border-white/[0.08]">
+                              <button
+                                type="button"
+                                onClick={() => handleToggleFeedback(msgId, 'up')}
+                                aria-label="Mark response helpful"
+                                aria-pressed={feedbackVote === 'up'}
+                                className={`w-7 h-7 rounded-md flex items-center justify-center transition-colors cursor-pointer ${
+                                  feedbackVote === 'up'
+                                    ? 'text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/50'
+                                    : 'text-gray-400 hover:text-black dark:hover:text-white hover:bg-black/[0.04] dark:hover:bg-white/[0.06]'
+                                }`}
+                              >
+                                <ThumbsUp className="w-3.5 h-3.5" />
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => handleToggleFeedback(msgId, 'down')}
+                                aria-label="Mark response unhelpful"
+                                aria-pressed={feedbackVote === 'down'}
+                                className={`w-7 h-7 rounded-md flex items-center justify-center transition-colors cursor-pointer ${
+                                  feedbackVote === 'down'
+                                    ? 'text-rose-600 dark:text-rose-400 bg-rose-50 dark:bg-rose-950/50'
+                                    : 'text-gray-400 hover:text-black dark:hover:text-white hover:bg-black/[0.04] dark:hover:bg-white/[0.06]'
+                                }`}
+                              >
+                                <ThumbsDown className="w-3.5 h-3.5" />
+                              </button>
+                            </div>
+                          </div>
+
+                          <div className="flex items-center gap-1.5 text-[11px] font-mono text-gray-400 tabular-nums">
+                            <span className="truncate max-w-[140px]">{modelLabel}</span>
+                            {m.tokens_used > 0 && (
+                              <>
+                                <span aria-hidden="true">·</span>
+                                <span>{m.tokens_used.toLocaleString()} tok</span>
+                              </>
+                            )}
+                            {stats && stats.words > 0 && (
+                              <>
+                                <span aria-hidden="true" className="hidden sm:inline">·</span>
+                                <span className="hidden sm:inline">{stats.words}w</span>
+                              </>
+                            )}
+                          </div>
+                        </div>
+                      )}
+                    </div>
                   </div>
-                </div>
-              ))}
+                );
+              })}
 
               {isStreaming && (
                 <div className="flex gap-2.5 sm:gap-3 justify-start animate-in fade-in">
-                  <BrandLogo className="w-7 h-7 mt-0.5 animate-pulse" />
-                  <div className="min-w-0 max-w-[88%] sm:max-w-[80%] rounded-[12px] px-3.5 sm:px-4 py-3 bg-white dark:bg-[#262626] text-black dark:text-white border border-black/[0.08] dark:border-white/[0.08] shadow-xs break-words">
+                  <BrandLogo className="w-7 h-7 mt-0.5 shrink-0" />
+                  <div className="flex-1 min-w-0 max-w-[calc(100%-2.25rem)] sm:max-w-[90%] rounded-[12px] px-3.5 sm:px-4 py-3 bg-white dark:bg-[#262626] text-black dark:text-white border border-black/[0.08] dark:border-white/[0.08] shadow-xs break-words">
                     {streamedText ? (
                       <FormattedMessage content={streamedText} />
                     ) : (
                       <div className="flex items-center gap-2 text-xs text-gray-500 py-1">
-                        <span className="w-1.5 h-1.5 rounded-full bg-black dark:bg-white animate-ping" />
                         <span>Generating response with {selectedModel?.display_name}...</span>
                       </div>
                     )}
