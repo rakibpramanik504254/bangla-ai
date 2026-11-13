@@ -411,7 +411,7 @@ export const PaymentModal: React.FC<PaymentModalProps> = ({
 
                 <ol className="list-decimal list-inside space-y-1 text-[11px] text-gray-500 dark:text-gray-400 px-0.5">
                   <li>Open your <strong>{activeGateway.name}</strong> app on your mobile device.</li>
-                  <li>Select <strong>Send Money</strong> or <strong>Payment</strong> to: <code className="font-mono font-bold text-xs text-black dark:text-white">{activeMerchantNumber}</code></li>
+                  <li>Select <strong className="font-bold text-black dark:text-white">Send Money</strong> to: <code className="font-mono font-bold text-xs text-black dark:text-white">{activeMerchantNumber}</code></li>
                   <li>Send exact amount: <strong className="font-mono text-black dark:text-white">{formatBDT(plan.priceBDT)}</strong></li>
                   <li>Copy the <strong>Transaction ID (TrxID)</strong> from your SMS receipt and submit below.</li>
                 </ol>
