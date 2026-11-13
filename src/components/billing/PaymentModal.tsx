@@ -375,35 +375,38 @@ export const PaymentModal: React.FC<PaymentModalProps> = ({
               {/* Payment Instructions Box with Prominent Big Number */}
               <div className="bg-[#F8F9FA] dark:bg-[#1F1F1F] rounded-[12px] p-4 border border-black/[0.08] dark:border-white/[0.08] text-xs text-gray-600 dark:text-gray-400 space-y-3.5">
                 {/* Highlighted Large Merchant Number Card */}
-                <div className="bg-white dark:bg-[#2A2A2A] rounded-[10px] p-3.5 border border-black/[0.08] dark:border-white/[0.1] shadow-xs flex items-center justify-between gap-3">
-                  <div className="flex items-center gap-3 min-w-0">
-                    <img
-                      src={activeGateway.icon}
-                      alt={activeGateway.name}
-                      className="w-10 h-10 object-contain rounded-lg bg-white p-1 border border-black/[0.08] shrink-0 shadow-2xs"
-                    />
-                    <div className="min-w-0">
-                      <span className="text-[11px] font-medium text-gray-500 dark:text-gray-400 block">
+                <div className="bg-white dark:bg-[#2A2A2A] rounded-[10px] p-3.5 border border-black/[0.08] dark:border-white/[0.1] shadow-xs space-y-2.5">
+                  <div className="flex items-center justify-between gap-3">
+                    <div className="flex items-center gap-2.5 min-w-0">
+                      <img
+                        src={activeGateway.icon}
+                        alt={activeGateway.name}
+                        className="w-8 h-8 object-contain rounded-lg bg-white p-0.5 border border-black/[0.08] shrink-0 shadow-2xs"
+                      />
+                      <span className="text-xs font-medium text-gray-500 dark:text-gray-400">
                         Send <strong className="text-black dark:text-white font-mono">{formatBDT(plan.priceBDT)}</strong> to {activeGateway.name}
                       </span>
-                      <p className="text-xl sm:text-2xl font-extrabold font-mono tracking-wider text-black dark:text-white mt-0.5 select-all truncate">
-                        {activeMerchantNumber}
-                      </p>
                     </div>
+                    <button
+                      type="button"
+                      onClick={handleCopyMerchant}
+                      className={`shrink-0 px-3.5 py-1.5 text-xs rounded-full border font-semibold flex items-center gap-1.5 transition-all cursor-pointer shadow-2xs ${
+                        copied
+                          ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-600 dark:text-emerald-400'
+                          : 'bg-[#F8F9FA] dark:bg-[#1F1F1F] border-black/[0.12] dark:border-white/[0.15] text-black dark:text-white hover:border-black/30 dark:hover:border-white/30'
+                      }`}
+                      title="Click to copy number"
+                    >
+                      {copied ? <Check className="w-3.5 h-3.5 text-emerald-500" /> : <Copy className="w-3.5 h-3.5 text-gray-500 dark:text-gray-400" />}
+                      <span>{copied ? 'Copied' : 'Copy'}</span>
+                    </button>
                   </div>
-                  <button
-                    type="button"
-                    onClick={handleCopyMerchant}
-                    className={`shrink-0 px-3.5 py-2 text-xs rounded-full border font-semibold flex items-center gap-1.5 transition-all cursor-pointer shadow-2xs ${
-                      copied
-                        ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-600 dark:text-emerald-400'
-                        : 'bg-[#F8F9FA] dark:bg-[#1F1F1F] border-black/[0.12] dark:border-white/[0.15] text-black dark:text-white hover:border-black/30 dark:hover:border-white/30'
-                    }`}
-                    title="Click to copy number"
-                  >
-                    {copied ? <Check className="w-3.5 h-3.5 text-emerald-500" /> : <Copy className="w-3.5 h-3.5 text-gray-500 dark:text-gray-400" />}
-                    <span>{copied ? 'Copied' : 'Copy'}</span>
-                  </button>
+
+                  <div className="pt-2 border-t border-black/[0.06] dark:border-white/[0.08]">
+                    <p className="text-xl sm:text-2xl font-extrabold font-mono tracking-wider text-black dark:text-white select-all break-words leading-snug">
+                      {activeMerchantNumber}
+                    </p>
+                  </div>
                 </div>
 
                 <ol className="list-decimal list-inside space-y-1 text-[11px] text-gray-500 dark:text-gray-400 px-0.5">
