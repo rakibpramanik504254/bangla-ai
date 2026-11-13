@@ -12,6 +12,7 @@ import { ChatInterface } from './components/chat/ChatInterface.tsx';
 import { AdminPanel } from './components/admin/AdminPanel.tsx';
 import { AuthModal } from './components/auth/AuthModal.tsx';
 import { PaymentModal } from './components/billing/PaymentModal.tsx';
+import { WhatsAppSupportWidget } from './components/common/WhatsAppSupportWidget.tsx';
 import { initMetaPixel, trackMetaPageView } from './utils/metaPixel.ts';
 
 function MainApp() {
@@ -57,6 +58,9 @@ function MainApp() {
       </div>
 
       {currentView !== 'chat' && <Footer setCurrentView={setCurrentView} />}
+
+      {/* Floating WhatsApp Live Chat (Non-subscribers only) */}
+      <WhatsAppSupportWidget />
 
       {/* Global Modals */}
       <AuthModal isOpen={isAuthModalOpen} onClose={closeAuthModal} />
