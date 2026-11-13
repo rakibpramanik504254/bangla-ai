@@ -157,10 +157,10 @@ export const WhatsAppSupportWidget: React.FC = () => {
         onClick={() => setIsOpen((prev) => !prev)}
         aria-label={isOpen ? 'Close WhatsApp live chat' : 'Open WhatsApp live chat'}
         aria-expanded={isOpen}
-        className="group flex items-center gap-2.5 px-4 py-3 rounded-full bg-[#25D366] hover:bg-[#20BD5A] text-white shadow-lg shadow-black/15 dark:shadow-black/40 transition-all hover:scale-[1.03] active:scale-[0.98] cursor-pointer"
+        className="group flex items-center justify-center sm:gap-2.5 w-12 h-12 sm:w-auto sm:h-auto sm:px-4 sm:py-3 rounded-full bg-[#25D366] hover:bg-[#20BD5A] text-white shadow-lg shadow-black/15 dark:shadow-black/40 transition-all hover:scale-[1.03] active:scale-[0.98] cursor-pointer"
       >
         <WhatsAppLogo className="w-6 h-6 shrink-0" />
-        <span className="text-xs font-bold tracking-tight whitespace-nowrap">
+        <span className="hidden sm:inline text-xs font-bold tracking-tight whitespace-nowrap">
           {isOpen ? 'Close Chat' : 'Live Support'}
         </span>
       </button>
