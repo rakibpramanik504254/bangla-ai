@@ -31,9 +31,9 @@ export const SmarterWorkflowsSection: React.FC = () => {
       {/* 2x2 Grid matching the user's reference design */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 sm:gap-8">
         {/* Card 1: All AI-Models in One Platform */}
-        <div className="rounded-2xl border border-black/[0.08] dark:border-white/[0.08] bg-white dark:bg-[#0D0D0D] overflow-hidden shadow-xs hover:border-black/20 dark:hover:border-white/20 transition-all group flex flex-col">
+        <div className="rounded-2xl border border-black/[0.08] dark:border-white/[0.08] bg-white dark:bg-[#262626] overflow-hidden shadow-xs hover:border-black/20 dark:hover:border-white/20 transition-all group flex flex-col">
           {/* Visual Canvas */}
-          <div className="h-64 sm:h-72 bg-gradient-to-b from-[#EEF4FF] via-[#F4F7FC] to-[#FAFBFE] dark:from-[#111827] dark:via-[#0F1420] dark:to-[#0A0D14] p-6 flex items-center justify-center relative overflow-hidden">
+          <div className="h-64 sm:h-72 bg-gradient-to-b from-[#EEF4FF] via-[#F4F7FC] to-[#FAFBFE] dark:from-[#262A33] dark:via-[#22252C] dark:to-[#1F1F1F] p-6 flex items-center justify-center relative overflow-hidden">
             {/* Soft decorative background circles */}
             <div className="absolute w-64 h-64 rounded-full bg-blue-500/5 blur-2xl pointer-events-none" />
 
@@ -56,7 +56,7 @@ export const SmarterWorkflowsSection: React.FC = () => {
               <div className="h-[2px] w-6 bg-gradient-to-r from-blue-500 to-blue-400 shrink-0 hidden sm:block" />
 
               {/* Right Model Selection Card */}
-              <div className="flex-1 bg-white dark:bg-[#161C2A] rounded-xl border border-black/[0.08] dark:border-white/[0.08] p-2.5 shadow-md space-y-1.5 text-xs">
+              <div className="flex-1 bg-white dark:bg-[#2D313B] rounded-xl border border-black/[0.08] dark:border-white/[0.08] p-2.5 shadow-md space-y-1.5 text-xs">
                 <div className="flex items-center gap-2 px-2.5 py-1 rounded-md text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-white/5 transition-colors">
                   <span className="w-2 h-2 rounded-full bg-amber-500" />
                   <span className="font-medium text-[11px]">Claude Opus 4.7</span>
@@ -97,10 +97,10 @@ export const SmarterWorkflowsSection: React.FC = () => {
         </div>
 
         {/* Card 2: Generate images in seconds */}
-        <div className="rounded-2xl border border-black/[0.08] dark:border-white/[0.08] bg-white dark:bg-[#0D0D0D] overflow-hidden shadow-xs hover:border-black/20 dark:hover:border-white/20 transition-all group flex flex-col">
+        <div className="rounded-2xl border border-black/[0.08] dark:border-white/[0.08] bg-white dark:bg-[#262626] overflow-hidden shadow-xs hover:border-black/20 dark:hover:border-white/20 transition-all group flex flex-col">
           {/* Visual Canvas */}
-          <div className="h-64 sm:h-72 bg-gradient-to-b from-[#EEF4FF] via-[#F4F7FC] to-[#FAFBFE] dark:from-[#111827] dark:via-[#0F1420] dark:to-[#0A0D14] p-5 sm:p-6 flex items-center justify-center relative overflow-hidden">
-            <div className="w-full max-w-sm bg-white dark:bg-[#161C2A] rounded-xl border border-black/[0.08] dark:border-white/[0.08] p-3.5 shadow-md space-y-3">
+          <div className="h-64 sm:h-72 bg-gradient-to-b from-[#EEF4FF] via-[#F4F7FC] to-[#FAFBFE] dark:from-[#262A33] dark:via-[#22252C] dark:to-[#1F1F1F] p-5 sm:p-6 flex items-center justify-center relative overflow-hidden">
+            <div className="w-full max-w-sm bg-white dark:bg-[#2D313B] rounded-xl border border-black/[0.08] dark:border-white/[0.08] p-3.5 shadow-md space-y-3">
               {/* Header */}
               <div className="flex items-center gap-2 border-b border-black/[0.05] dark:border-white/[0.05] pb-2">
                 <div className="w-4 h-4 rounded-full bg-blue-600 flex items-center justify-center text-[9px] text-white font-bold">
@@ -157,9 +157,9 @@ export const SmarterWorkflowsSection: React.FC = () => {
         </div>
 
         {/* Card 3: Research Faster with AI */}
-        <div className="rounded-2xl border border-black/[0.08] dark:border-white/[0.08] bg-white dark:bg-[#0D0D0D] overflow-hidden shadow-xs hover:border-black/20 dark:hover:border-white/20 transition-all group flex flex-col">
+        <div className="rounded-2xl border border-black/[0.08] dark:border-white/[0.08] bg-white dark:bg-[#262626] overflow-hidden shadow-xs hover:border-black/20 dark:hover:border-white/20 transition-all group flex flex-col">
           {/* Visual Canvas */}
-          <div className="h-64 sm:h-72 bg-gradient-to-b from-[#EEF4FF] via-[#F4F7FC] to-[#FAFBFE] dark:from-[#111827] dark:via-[#0F1420] dark:to-[#0A0D14] p-5 sm:p-6 flex flex-col items-center justify-center relative overflow-hidden">
+          <div className="h-64 sm:h-72 bg-gradient-to-b from-[#EEF4FF] via-[#F4F7FC] to-[#FAFBFE] dark:from-[#262A33] dark:via-[#22252C] dark:to-[#1F1F1F] p-5 sm:p-6 flex flex-col items-center justify-center relative overflow-hidden">
             {/* Top Root Node */}
             <div className="w-12 h-12 rounded-full bg-gradient-to-tr from-blue-600 to-indigo-600 text-white flex items-center justify-center shadow-lg relative z-10">
               <Network className="w-6 h-6 text-white" />
@@ -182,19 +182,19 @@ export const SmarterWorkflowsSection: React.FC = () => {
 
             {/* Structured Concept Cards */}
             <div className="grid grid-cols-4 gap-2 w-full max-w-sm">
-              <div className="bg-white dark:bg-[#161C2A] p-2 rounded-lg border border-black/10 dark:border-white/10 text-center shadow-xs">
+              <div className="bg-white dark:bg-[#2D313B] p-2 rounded-lg border border-black/10 dark:border-white/10 text-center shadow-xs">
                 <span className="text-[10px] font-mono text-gray-500 block truncate">Task 01</span>
                 <span className="text-[9px] text-gray-400 block truncate">Synthesis</span>
               </div>
-              <div className="bg-white dark:bg-[#161C2A] p-2 rounded-lg border border-black/10 dark:border-white/10 text-center shadow-xs">
+              <div className="bg-white dark:bg-[#2D313B] p-2 rounded-lg border border-black/10 dark:border-white/10 text-center shadow-xs">
                 <span className="text-[10px] font-mono text-gray-500 block truncate">Task 02</span>
                 <span className="text-[9px] text-gray-400 block truncate">Analysis</span>
               </div>
-              <div className="bg-white dark:bg-[#161C2A] p-2 rounded-lg border border-black/10 dark:border-white/10 text-center shadow-xs">
+              <div className="bg-white dark:bg-[#2D313B] p-2 rounded-lg border border-black/10 dark:border-white/10 text-center shadow-xs">
                 <span className="text-[10px] font-mono text-gray-500 block truncate">Task 03</span>
                 <span className="text-[9px] text-gray-400 block truncate">Report</span>
               </div>
-              <div className="bg-white dark:bg-[#161C2A] p-2 rounded-lg border border-black/10 dark:border-white/10 text-center shadow-xs">
+              <div className="bg-white dark:bg-[#2D313B] p-2 rounded-lg border border-black/10 dark:border-white/10 text-center shadow-xs">
                 <span className="text-[10px] font-mono text-gray-500 block truncate">Task 04</span>
                 <span className="text-[9px] text-gray-400 block truncate">Outline</span>
               </div>
@@ -213,10 +213,10 @@ export const SmarterWorkflowsSection: React.FC = () => {
         </div>
 
         {/* Card 4: Write Code More Easily Than Ever */}
-        <div className="rounded-2xl border border-black/[0.08] dark:border-white/[0.08] bg-white dark:bg-[#0D0D0D] overflow-hidden shadow-xs hover:border-black/20 dark:hover:border-white/20 transition-all group flex flex-col">
+        <div className="rounded-2xl border border-black/[0.08] dark:border-white/[0.08] bg-white dark:bg-[#262626] overflow-hidden shadow-xs hover:border-black/20 dark:hover:border-white/20 transition-all group flex flex-col">
           {/* Visual Canvas */}
-          <div className="h-64 sm:h-72 bg-gradient-to-b from-[#EEF4FF] via-[#F4F7FC] to-[#FAFBFE] dark:from-[#111827] dark:via-[#0F1420] dark:to-[#0A0D14] p-5 sm:p-6 flex items-center justify-center relative overflow-hidden">
-            <div className="w-full max-w-sm bg-white dark:bg-[#161C2A] rounded-xl border border-black/[0.08] dark:border-white/[0.08] p-3.5 shadow-md space-y-2.5">
+          <div className="h-64 sm:h-72 bg-gradient-to-b from-[#EEF4FF] via-[#F4F7FC] to-[#FAFBFE] dark:from-[#262A33] dark:via-[#22252C] dark:to-[#1F1F1F] p-5 sm:p-6 flex items-center justify-center relative overflow-hidden">
+            <div className="w-full max-w-sm bg-white dark:bg-[#2D313B] rounded-xl border border-black/[0.08] dark:border-white/[0.08] p-3.5 shadow-md space-y-2.5">
               {/* Header */}
               <div className="flex items-center gap-2 border-b border-black/[0.05] dark:border-white/[0.05] pb-2">
                 <div className="w-4 h-4 rounded-full bg-blue-600 flex items-center justify-center text-[9px] text-white font-bold">
@@ -230,7 +230,7 @@ export const SmarterWorkflowsSection: React.FC = () => {
               </p>
 
               {/* Code Snippet Box */}
-              <div className="bg-[#0B0F19] text-gray-200 rounded-lg p-3 font-mono text-[10px] leading-relaxed shadow-inner">
+              <div className="bg-[#1F1F1F] text-gray-200 rounded-lg p-3 font-mono text-[10px] leading-relaxed shadow-inner border border-white/[0.06]">
                 <div className="flex items-center justify-between border-b border-white/10 pb-1.5 mb-2 text-[10px] text-gray-400">
                   <div className="flex items-center gap-1.5">
                     <Code2 className="w-3 h-3 text-blue-400" />

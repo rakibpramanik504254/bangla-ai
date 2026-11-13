@@ -81,7 +81,7 @@ export const AccountPage: React.FC = () => {
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         {/* Profile Card */}
-        <div className="bg-white dark:bg-[#0c0c0c] rounded-[8px] p-6 border border-black/[0.08] dark:border-white/[0.08] shadow-xs space-y-5">
+        <div className="bg-white dark:bg-[#262626] rounded-[8px] p-6 border border-black/[0.08] dark:border-white/[0.08] shadow-xs space-y-5">
           <div className="flex items-center gap-3.5">
             {user.avatar_url ? (
               <img src={user.avatar_url} alt={user.name} className="w-11 h-11 rounded-full object-cover shrink-0 border border-black/10" />
@@ -115,7 +115,7 @@ export const AccountPage: React.FC = () => {
         </div>
 
         {/* Subscription Status Card */}
-        <div className="md:col-span-2 bg-white dark:bg-[#0c0c0c] rounded-[8px] p-6 border border-black/[0.08] dark:border-white/[0.08] shadow-xs flex flex-col justify-between">
+        <div className="md:col-span-2 bg-white dark:bg-[#262626] rounded-[8px] p-6 border border-black/[0.08] dark:border-white/[0.08] shadow-xs flex flex-col justify-between">
           <div>
             <div className="flex items-center justify-between mb-5">
               <div className="flex items-center gap-2">
@@ -135,7 +135,7 @@ export const AccountPage: React.FC = () => {
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-1">
-              <div className="bg-[#FAFAFA] dark:bg-[#141414] p-3.5 rounded-[8px] border border-black/[0.06] dark:border-white/[0.06]">
+              <div className="bg-[#FAFAFA] dark:bg-[#1F1F1F] p-3.5 rounded-[8px] border border-black/[0.06] dark:border-white/[0.06]">
                 <span className="text-[10px] uppercase font-mono text-gray-400 block">Plan</span>
                 <p className="font-bold text-sm text-black dark:text-white mt-1">
                   {sub ? sub.plan_name : 'Free Tier'}
@@ -147,7 +147,7 @@ export const AccountPage: React.FC = () => {
                 )}
               </div>
 
-              <div className="bg-[#FAFAFA] dark:bg-[#141414] p-3.5 rounded-[8px] border border-black/[0.06] dark:border-white/[0.06]">
+              <div className="bg-[#FAFAFA] dark:bg-[#1F1F1F] p-3.5 rounded-[8px] border border-black/[0.06] dark:border-white/[0.06]">
                 <span className="text-[10px] uppercase font-mono text-gray-400 block">Renewal / Expiry</span>
                 <p className="font-bold text-sm text-black dark:text-white mt-1 font-mono">
                   {sub?.expires_at ? new Date(sub.expires_at).toLocaleDateString('en-US', {
@@ -158,7 +158,7 @@ export const AccountPage: React.FC = () => {
                 </p>
               </div>
 
-              <div className="bg-[#FAFAFA] dark:bg-[#141414] p-3.5 rounded-[8px] border border-black/[0.06] dark:border-white/[0.06]">
+              <div className="bg-[#FAFAFA] dark:bg-[#1F1F1F] p-3.5 rounded-[8px] border border-black/[0.06] dark:border-white/[0.06]">
                 <span className="text-[10px] uppercase font-mono text-gray-400 block">Gateway</span>
                 <p className="font-bold text-sm text-black dark:text-white mt-1 uppercase">
                   {sub?.payment_method || '—'}
@@ -180,7 +180,7 @@ export const AccountPage: React.FC = () => {
                     </>
                   ) : (
                     <span className="text-amber-600 dark:text-amber-400 font-sans font-medium text-xs">
-                      0 tokens • Subscribe to activate 50,000 tokens
+                      0 tokens • Subscribe to activate 1,000,000 (1M) tokens
                     </span>
                   )}
                 </span>
@@ -198,20 +198,20 @@ export const AccountPage: React.FC = () => {
 
           <div className="mt-6 pt-5 border-t border-black/[0.08] dark:border-white/[0.08] flex flex-wrap items-center justify-between gap-3 text-xs">
             <span className="text-gray-500">
-              {!active ? 'Subscribe to activate your 50,000 token quota:' : 'Need more quota or want to renew early?'}
+              {!active ? 'Subscribe to activate your 1M token quota:' : 'Need more quota or want to renew early?'}
             </span>
             <div className="flex items-center gap-2">
               <button
                 onClick={() => openPaymentModal('monthly')}
                 className="h-9 px-4 rounded-full text-xs font-semibold border border-black/[0.12] dark:border-white/[0.15] hover:border-black/30 dark:hover:border-white/30 text-black dark:text-white transition-colors cursor-pointer"
               >
-                {!active ? 'Subscribe Monthly (৳1,299)' : 'Renew Monthly (৳1,299)'}
+                {!active ? 'Subscribe Monthly (৳699)' : 'Renew Monthly (৳699)'}
               </button>
               <button
                 onClick={() => openPaymentModal('yearly')}
                 className="h-9 px-4 rounded-full text-xs font-semibold bg-black hover:bg-black/90 dark:bg-white dark:hover:bg-white/90 text-white dark:text-black transition-all cursor-pointer shadow-xs"
               >
-                {!active ? 'Subscribe Yearly (৳9,999)' : 'Upgrade Yearly (৳9,999)'}
+                {!active ? 'Subscribe Yearly (৳5,999)' : 'Upgrade Yearly (৳5,999)'}
               </button>
             </div>
           </div>
@@ -234,7 +234,7 @@ export const AccountPage: React.FC = () => {
       )}
 
       {/* Payment History */}
-      <div className="bg-white dark:bg-[#0c0c0c] rounded-[8px] p-6 border border-black/[0.08] dark:border-white/[0.08] shadow-xs space-y-4">
+      <div className="bg-white dark:bg-[#262626] rounded-[8px] p-6 border border-black/[0.08] dark:border-white/[0.08] shadow-xs space-y-4">
         <h3 className="font-bold text-black dark:text-white text-sm">Payment History</h3>
         {loadingPayments ? (
           <div className="py-8 text-center text-xs text-gray-500">Loading payment history...</div>

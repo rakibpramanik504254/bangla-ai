@@ -186,7 +186,7 @@ export const AdminPanel: React.FC = () => {
 
       // Trigger client-side Meta Pixel Purchase event as well
       trackMetaPurchase(
-        payment.plan_name || (payment.plan_id === 'yearly' ? 'Yearly Plan (৳9,999)' : 'Monthly Plan (৳1,299)'),
+        payment.plan_name || (payment.plan_id === 'yearly' ? 'Yearly Plan (৳5,999)' : 'Monthly Plan (৳699)'),
         payment.amount,
         payment.trx_id,
         payment.gateway
@@ -419,7 +419,7 @@ export const AdminPanel: React.FC = () => {
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-black/[0.08] dark:border-white/[0.08] pb-6">
         <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-full border border-black/10 dark:border-white/10 bg-white dark:bg-[#121212] flex items-center justify-center text-black dark:text-white">
+          <div className="w-10 h-10 rounded-full border border-black/10 dark:border-white/10 bg-white dark:bg-[#1F1F1F] flex items-center justify-center text-black dark:text-white">
             <Shield className="w-5 h-5" />
           </div>
           <div>
@@ -450,7 +450,7 @@ export const AdminPanel: React.FC = () => {
       </div>
 
       {feedback && (
-        <div className="p-3.5 text-xs bg-[#FAFAFA] dark:bg-[#121212] border border-black/[0.1] dark:border-white/[0.1] rounded-[8px] flex items-center justify-between">
+        <div className="p-3.5 text-xs bg-[#FAFAFA] dark:bg-[#1F1F1F] border border-black/[0.1] dark:border-white/[0.1] rounded-[8px] flex items-center justify-between">
           <div className="flex items-center gap-2">
             <CheckCircle2 className="w-4 h-4 text-emerald-500 shrink-0" />
             <span className="text-black dark:text-white font-medium">{feedback}</span>
@@ -545,7 +545,7 @@ export const AdminPanel: React.FC = () => {
       {activeTab === 'overview' && (
         <div className="space-y-6">
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-            <div className="bg-white dark:bg-[#0c0c0c] p-5 rounded-[8px] border border-black/[0.08] dark:border-white/[0.08] shadow-xs">
+            <div className="bg-white dark:bg-[#262626] p-5 rounded-[8px] border border-black/[0.08] dark:border-white/[0.08] shadow-xs">
               <span className="text-[10px] text-gray-400 block font-mono uppercase tracking-wider">Total Registered</span>
               <p className="text-2xl font-bold tracking-tight text-black dark:text-white mt-1">
                 {stats ? stats.totalUsers : '...'} users
@@ -553,7 +553,7 @@ export const AdminPanel: React.FC = () => {
               <span className="text-[11px] text-gray-500">Active accounts</span>
             </div>
 
-            <div className="bg-white dark:bg-[#0c0c0c] p-5 rounded-[8px] border border-black/[0.08] dark:border-white/[0.08] shadow-xs">
+            <div className="bg-white dark:bg-[#262626] p-5 rounded-[8px] border border-black/[0.08] dark:border-white/[0.08] shadow-xs">
               <span className="text-[10px] text-gray-400 block font-mono uppercase tracking-wider">Paid Subscribers</span>
               <p className="text-2xl font-bold tracking-tight text-black dark:text-white mt-1">
                 {stats ? stats.activeSubscribers : '...'} subscribers
@@ -561,7 +561,7 @@ export const AdminPanel: React.FC = () => {
               <span className="text-[11px] text-gray-500">Active workspace access</span>
             </div>
 
-            <div className="bg-white dark:bg-[#0c0c0c] p-5 rounded-[8px] border border-black/[0.08] dark:border-white/[0.08] shadow-xs">
+            <div className="bg-white dark:bg-[#262626] p-5 rounded-[8px] border border-black/[0.08] dark:border-white/[0.08] shadow-xs">
               <span className="text-[10px] text-gray-400 block font-mono uppercase tracking-wider">Cumulative Revenue</span>
               <p className="text-2xl font-bold tracking-tight text-black dark:text-white mt-1 font-mono">
                 {stats ? formatBDT(stats.totalRevenue) : '...'}
@@ -569,7 +569,7 @@ export const AdminPanel: React.FC = () => {
               <span className="text-[11px] text-gray-500">bKash, Nagad & Rocket</span>
             </div>
 
-            <div className="bg-white dark:bg-[#0c0c0c] p-5 rounded-[8px] border border-black/[0.08] dark:border-white/[0.08] shadow-xs">
+            <div className="bg-white dark:bg-[#262626] p-5 rounded-[8px] border border-black/[0.08] dark:border-white/[0.08] shadow-xs">
               <span className="text-[10px] text-gray-400 block font-mono uppercase tracking-wider">Pending Verification</span>
               <p className="text-2xl font-bold tracking-tight text-amber-500 mt-1 font-mono">
                 {pendingPayments.length} payments
@@ -583,7 +583,7 @@ export const AdminPanel: React.FC = () => {
             </div>
           </div>
 
-          <div className="bg-white dark:bg-[#0c0c0c] p-6 rounded-[8px] border border-black/[0.08] dark:border-white/[0.08] shadow-xs">
+          <div className="bg-white dark:bg-[#262626] p-6 rounded-[8px] border border-black/[0.08] dark:border-white/[0.08] shadow-xs">
             <h3 className="font-bold text-black dark:text-white text-sm mb-4">
               Model Token Consumption Breakdown
             </h3>
@@ -618,7 +618,7 @@ export const AdminPanel: React.FC = () => {
                   value={paymentSearch}
                   onChange={e => setPaymentSearch(e.target.value)}
                   placeholder="Search by TrxID, phone, or name..."
-                  className="w-full pl-9 pr-3 py-2 text-xs rounded-[12px] border border-black/[0.12] dark:border-white/[0.15] bg-white dark:bg-[#121212] text-black dark:text-white focus:outline-none focus:border-black dark:focus:border-white transition-colors"
+                  className="w-full pl-9 pr-3 py-2 text-xs rounded-[12px] border border-black/[0.12] dark:border-white/[0.15] bg-white dark:bg-[#1F1F1F] text-black dark:text-white focus:outline-none focus:border-black dark:focus:border-white transition-colors"
                 />
               </div>
 
@@ -630,7 +630,7 @@ export const AdminPanel: React.FC = () => {
                     onClick={() => setPaymentFilter(f)}
                     className={`px-3 py-1 rounded-full capitalize text-xs font-semibold cursor-pointer transition-colors ${
                       paymentFilter === f
-                        ? 'bg-white dark:bg-[#1a1a1a] text-black dark:text-white shadow-xs'
+                        ? 'bg-white dark:bg-[#2D2D2D] text-black dark:text-white shadow-xs'
                         : 'text-gray-500 hover:text-black dark:hover:text-white'
                     }`}
                   >
@@ -646,7 +646,7 @@ export const AdminPanel: React.FC = () => {
             </span>
           </div>
 
-          <div className="bg-white dark:bg-[#0c0c0c] rounded-[8px] border border-black/[0.08] dark:border-white/[0.08] shadow-xs overflow-hidden">
+          <div className="bg-white dark:bg-[#262626] rounded-[8px] border border-black/[0.08] dark:border-white/[0.08] shadow-xs overflow-hidden">
             {loadingPayments ? (
               <div className="py-12 text-center text-xs text-gray-400">Loading payment records...</div>
             ) : filteredPayments.length === 0 ? (
@@ -789,7 +789,7 @@ export const AdminPanel: React.FC = () => {
                 onChange={e => setUserSearch(e.target.value)}
                 onKeyDown={e => e.key === 'Enter' && fetchUsers()}
                 placeholder="Search by name or email..."
-                className="w-full pl-9 pr-3 py-2 text-xs rounded-[12px] border border-black/[0.12] dark:border-white/[0.15] bg-white dark:bg-[#121212] text-black dark:text-white focus:outline-none focus:border-black dark:focus:border-white transition-colors"
+                className="w-full pl-9 pr-3 py-2 text-xs rounded-[12px] border border-black/[0.12] dark:border-white/[0.15] bg-white dark:bg-[#1F1F1F] text-black dark:text-white focus:outline-none focus:border-black dark:focus:border-white transition-colors"
               />
             </div>
             <span className="text-xs text-gray-500 font-mono self-end sm:self-auto">
@@ -797,7 +797,7 @@ export const AdminPanel: React.FC = () => {
             </span>
           </div>
 
-          <div className="bg-white dark:bg-[#0c0c0c] rounded-[8px] border border-black/[0.08] dark:border-white/[0.08] shadow-xs overflow-hidden">
+          <div className="bg-white dark:bg-[#262626] rounded-[8px] border border-black/[0.08] dark:border-white/[0.08] shadow-xs overflow-hidden">
             <div className="overflow-x-auto">
               <table className="w-full text-left text-xs">
                 <thead className="border-b border-black/[0.08] dark:border-white/[0.08] text-gray-400 font-mono text-[11px]">
@@ -847,7 +847,7 @@ export const AdminPanel: React.FC = () => {
                             type="number"
                             defaultValue={u.usage_limit}
                             onBlur={e => handleUpdateUserLimit(u.id, e.target.value)}
-                            className="w-20 px-1.5 py-0.5 rounded-[4px] border border-black/[0.1] dark:border-white/[0.1] bg-white dark:bg-[#121212] text-[11px] font-mono"
+                            className="w-20 px-1.5 py-0.5 rounded-[4px] border border-black/[0.1] dark:border-white/[0.1] bg-white dark:bg-[#1F1F1F] text-[11px] font-mono"
                           />
                         </div>
                       </td>
@@ -890,7 +890,7 @@ export const AdminPanel: React.FC = () => {
           {/* Grant Modal */}
           {selectedUserForSub && (
             <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
-              <div className="bg-white dark:bg-[#0c0c0c] rounded-[16px] p-6 max-w-sm w-full border border-black/[0.12] dark:border-white/[0.15] shadow-2xl">
+              <div className="bg-white dark:bg-[#262626] rounded-[16px] p-6 max-w-sm w-full border border-black/[0.12] dark:border-white/[0.15] shadow-2xl">
                 <h3 className="font-bold text-base text-black dark:text-white mb-1">
                   Grant Subscription
                 </h3>
@@ -908,7 +908,7 @@ export const AdminPanel: React.FC = () => {
                         setGrantPlanId(val);
                         setGrantDays(val === 'yearly' ? 365 : 30);
                       }}
-                      className="w-full p-2.5 rounded-[12px] border border-black/[0.12] dark:border-white/[0.15] bg-white dark:bg-[#121212]"
+                      className="w-full p-2.5 rounded-[12px] border border-black/[0.12] dark:border-white/[0.15] bg-white dark:bg-[#1F1F1F]"
                     >
                       <option value="monthly">Monthly Plan (30 Days)</option>
                       <option value="yearly">Yearly Plan (365 Days)</option>
@@ -921,7 +921,7 @@ export const AdminPanel: React.FC = () => {
                       type="number"
                       value={grantDays}
                       onChange={e => setGrantDays(parseInt(e.target.value, 10))}
-                      className="w-full p-2.5 rounded-[12px] border border-black/[0.12] dark:border-white/[0.15] bg-white dark:bg-[#121212] font-mono"
+                      className="w-full p-2.5 rounded-[12px] border border-black/[0.12] dark:border-white/[0.15] bg-white dark:bg-[#1F1F1F] font-mono"
                     />
                   </div>
 
@@ -950,7 +950,7 @@ export const AdminPanel: React.FC = () => {
       {/* Tab 3: Providers */}
       {activeTab === 'providers' && (
         <div className="space-y-4">
-          <div className="bg-[#FAFAFA] dark:bg-[#121212] p-4 rounded-[8px] border border-black/[0.08] dark:border-white/[0.08] text-xs text-gray-600 dark:text-gray-300 flex items-start gap-2.5">
+          <div className="bg-[#FAFAFA] dark:bg-[#1F1F1F] p-4 rounded-[8px] border border-black/[0.08] dark:border-white/[0.08] text-xs text-gray-600 dark:text-gray-300 flex items-start gap-2.5">
             <Lock className="w-4 h-4 shrink-0 mt-0.5 text-black dark:text-white" />
             <span>
               <strong>Server-Side Secret Isolation:</strong> Configured API keys are stored in encrypted server state and never transmitted to the browser client runtime.
@@ -959,7 +959,7 @@ export const AdminPanel: React.FC = () => {
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {providers.map(p => (
-              <div key={p.id} className="bg-white dark:bg-[#0c0c0c] p-6 rounded-[8px] border border-black/[0.08] dark:border-white/[0.08] shadow-xs space-y-3">
+              <div key={p.id} className="bg-white dark:bg-[#262626] p-6 rounded-[8px] border border-black/[0.08] dark:border-white/[0.08] shadow-xs space-y-3">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
                     <Key className="w-3.5 h-3.5 text-gray-500" />
@@ -988,7 +988,7 @@ export const AdminPanel: React.FC = () => {
                       placeholder="Enter new API Key..."
                       value={newApiKey}
                       onChange={e => setNewApiKey(e.target.value)}
-                      className="w-full px-3 py-1.5 rounded-[8px] border border-black/[0.12] dark:border-white/[0.15] bg-white dark:bg-[#121212] text-xs font-mono"
+                      className="w-full px-3 py-1.5 rounded-[8px] border border-black/[0.12] dark:border-white/[0.15] bg-white dark:bg-[#1F1F1F] text-xs font-mono"
                     />
                     <div className="flex justify-end gap-2">
                       <button
@@ -1025,7 +1025,7 @@ export const AdminPanel: React.FC = () => {
 
       {/* Tab 4: Models */}
       {activeTab === 'models' && (
-        <div className="bg-white dark:bg-[#0c0c0c] rounded-[8px] border border-black/[0.08] dark:border-white/[0.08] shadow-xs overflow-hidden">
+        <div className="bg-white dark:bg-[#262626] rounded-[8px] border border-black/[0.08] dark:border-white/[0.08] shadow-xs overflow-hidden">
           <div className="overflow-x-auto">
             <table className="w-full text-left text-xs">
               <thead className="border-b border-black/[0.08] dark:border-white/[0.08] text-gray-400 font-mono text-[11px]">
@@ -1083,7 +1083,7 @@ export const AdminPanel: React.FC = () => {
 
       {/* Tab 5: Settings & Facebook Pixel (The requested Meta Pixel setting!) */}
       {activeTab === 'settings' && (
-        <form onSubmit={handleSaveSettings} className="bg-white dark:bg-[#0c0c0c] p-6 sm:p-8 rounded-[8px] border border-black/[0.08] dark:border-white/[0.08] shadow-xs space-y-6 max-w-2xl text-xs">
+        <form onSubmit={handleSaveSettings} className="bg-white dark:bg-[#262626] p-6 sm:p-8 rounded-[8px] border border-black/[0.08] dark:border-white/[0.08] shadow-xs space-y-6 max-w-2xl text-xs">
           <div>
             <h3 className="font-bold text-base text-black dark:text-white">
               Global Platform, Payment & Meta Pixel Settings
@@ -1094,7 +1094,7 @@ export const AdminPanel: React.FC = () => {
           </div>
 
           {/* Facebook Pixel Setup Section */}
-          <div className="p-5 rounded-[8px] border border-black/[0.12] dark:border-white/[0.15] bg-[#FAFAFA] dark:bg-[#121212] space-y-4">
+          <div className="p-5 rounded-[8px] border border-black/[0.12] dark:border-white/[0.15] bg-[#FAFAFA] dark:bg-[#1F1F1F] space-y-4">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
                 <Activity className="w-4 h-4 text-blue-600 dark:text-blue-400" />
@@ -1126,7 +1126,7 @@ export const AdminPanel: React.FC = () => {
                 value={globalSettings.facebook_pixel_id || ''}
                 onChange={e => setGlobalSettings({ ...globalSettings, facebook_pixel_id: e.target.value.trim() })}
                 placeholder="e.g. 123456789012345"
-                className="w-full px-3.5 py-2.5 rounded-[12px] border border-black/[0.12] dark:border-white/[0.15] bg-white dark:bg-[#0c0c0c] font-mono text-xs focus:outline-none focus:border-black dark:focus:border-white"
+                className="w-full px-3.5 py-2.5 rounded-[12px] border border-black/[0.12] dark:border-white/[0.15] bg-white dark:bg-[#262626] font-mono text-xs focus:outline-none focus:border-black dark:focus:border-white"
               />
               <span className="text-[10px] text-gray-500 block mt-1">
                 Found in Meta Events Manager &gt; Data Sources &gt; Pixel Settings.
@@ -1142,7 +1142,7 @@ export const AdminPanel: React.FC = () => {
                 value={globalSettings.facebook_pixel_access_token || ''}
                 onChange={e => setGlobalSettings({ ...globalSettings, facebook_pixel_access_token: e.target.value.trim() })}
                 placeholder="EAAB..."
-                className="w-full px-3.5 py-2.5 rounded-[12px] border border-black/[0.12] dark:border-white/[0.15] bg-white dark:bg-[#0c0c0c] font-mono text-xs focus:outline-none focus:border-black dark:focus:border-white"
+                className="w-full px-3.5 py-2.5 rounded-[12px] border border-black/[0.12] dark:border-white/[0.15] bg-white dark:bg-[#262626] font-mono text-xs focus:outline-none focus:border-black dark:focus:border-white"
               />
               <span className="text-[10px] text-gray-500 block mt-1">
                 Generates 100% reliable server-to-server Purchase events even if users use ad-blockers.
@@ -1158,7 +1158,7 @@ export const AdminPanel: React.FC = () => {
                 value={globalSettings.facebook_pixel_test_code || ''}
                 onChange={e => setGlobalSettings({ ...globalSettings, facebook_pixel_test_code: e.target.value.trim() })}
                 placeholder="e.g. TEST12345"
-                className="w-full px-3.5 py-2.5 rounded-[12px] border border-black/[0.12] dark:border-white/[0.15] bg-white dark:bg-[#0c0c0c] font-mono text-xs focus:outline-none focus:border-black dark:focus:border-white"
+                className="w-full px-3.5 py-2.5 rounded-[12px] border border-black/[0.12] dark:border-white/[0.15] bg-white dark:bg-[#262626] font-mono text-xs focus:outline-none focus:border-black dark:focus:border-white"
               />
             </div>
 
@@ -1201,7 +1201,7 @@ export const AdminPanel: React.FC = () => {
                 value={globalSettings.bkash_number || ''}
                 onChange={e => setGlobalSettings({ ...globalSettings, bkash_number: e.target.value })}
                 placeholder="01812345678"
-                className="w-full px-3.5 py-2.5 rounded-[12px] border border-black/[0.12] dark:border-white/[0.15] bg-white dark:bg-[#121212] font-mono text-xs focus:outline-none focus:border-black dark:focus:border-white"
+                className="w-full px-3.5 py-2.5 rounded-[12px] border border-black/[0.12] dark:border-white/[0.15] bg-white dark:bg-[#1F1F1F] font-mono text-xs focus:outline-none focus:border-black dark:focus:border-white"
               />
             </div>
 
@@ -1214,7 +1214,7 @@ export const AdminPanel: React.FC = () => {
                 value={globalSettings.nagad_number || ''}
                 onChange={e => setGlobalSettings({ ...globalSettings, nagad_number: e.target.value })}
                 placeholder="01712345678"
-                className="w-full px-3.5 py-2.5 rounded-[12px] border border-black/[0.12] dark:border-white/[0.15] bg-white dark:bg-[#121212] font-mono text-xs focus:outline-none focus:border-black dark:focus:border-white"
+                className="w-full px-3.5 py-2.5 rounded-[12px] border border-black/[0.12] dark:border-white/[0.15] bg-white dark:bg-[#1F1F1F] font-mono text-xs focus:outline-none focus:border-black dark:focus:border-white"
               />
             </div>
 
@@ -1227,7 +1227,7 @@ export const AdminPanel: React.FC = () => {
                 value={globalSettings.rocket_number || ''}
                 onChange={e => setGlobalSettings({ ...globalSettings, rocket_number: e.target.value })}
                 placeholder="01912345678"
-                className="w-full px-3.5 py-2.5 rounded-[12px] border border-black/[0.12] dark:border-white/[0.15] bg-white dark:bg-[#121212] font-mono text-xs focus:outline-none focus:border-black dark:focus:border-white"
+                className="w-full px-3.5 py-2.5 rounded-[12px] border border-black/[0.12] dark:border-white/[0.15] bg-white dark:bg-[#1F1F1F] font-mono text-xs focus:outline-none focus:border-black dark:focus:border-white"
               />
             </div>
           </div>
@@ -1237,9 +1237,9 @@ export const AdminPanel: React.FC = () => {
               <label className="block font-medium mb-1 text-black dark:text-white">Default Monthly Token Limit:</label>
               <input
                 type="number"
-                value={globalSettings.global_usage_limit || 50000}
+                value={globalSettings.global_usage_limit || 1000000}
                 onChange={e => setGlobalSettings({ ...globalSettings, global_usage_limit: parseInt(e.target.value, 10) })}
-                className="w-full px-3.5 py-2.5 rounded-[12px] border border-black/[0.12] dark:border-white/[0.15] bg-white dark:bg-[#121212] font-mono text-xs focus:outline-none focus:border-black dark:focus:border-white"
+                className="w-full px-3.5 py-2.5 rounded-[12px] border border-black/[0.12] dark:border-white/[0.15] bg-white dark:bg-[#1F1F1F] font-mono text-xs focus:outline-none focus:border-black dark:focus:border-white"
               />
             </div>
 
@@ -1249,7 +1249,7 @@ export const AdminPanel: React.FC = () => {
                 type="email"
                 value={globalSettings.support_email || 'ourbangla.ai@gmail.com'}
                 onChange={e => setGlobalSettings({ ...globalSettings, support_email: e.target.value })}
-                className="w-full px-3.5 py-2.5 rounded-[12px] border border-black/[0.12] dark:border-white/[0.15] bg-white dark:bg-[#121212] text-xs focus:outline-none focus:border-black dark:focus:border-white"
+                className="w-full px-3.5 py-2.5 rounded-[12px] border border-black/[0.12] dark:border-white/[0.15] bg-white dark:bg-[#1F1F1F] text-xs focus:outline-none focus:border-black dark:focus:border-white"
               />
             </div>
 
@@ -1259,7 +1259,7 @@ export const AdminPanel: React.FC = () => {
                 type="text"
                 value={globalSettings.support_phone || '+880 1622-860128'}
                 onChange={e => setGlobalSettings({ ...globalSettings, support_phone: e.target.value })}
-                className="w-full px-3.5 py-2.5 rounded-[12px] border border-black/[0.12] dark:border-white/[0.15] bg-white dark:bg-[#121212] text-xs focus:outline-none focus:border-black dark:focus:border-white"
+                className="w-full px-3.5 py-2.5 rounded-[12px] border border-black/[0.12] dark:border-white/[0.15] bg-white dark:bg-[#1F1F1F] text-xs focus:outline-none focus:border-black dark:focus:border-white"
               />
             </div>
 
@@ -1269,7 +1269,7 @@ export const AdminPanel: React.FC = () => {
                 type="text"
                 value={globalSettings.facebook_page_url || 'https://www.facebook.com/profile.php?id=61596472081766'}
                 onChange={e => setGlobalSettings({ ...globalSettings, facebook_page_url: e.target.value })}
-                className="w-full px-3.5 py-2.5 rounded-[12px] border border-black/[0.12] dark:border-white/[0.15] bg-white dark:bg-[#121212] text-xs font-mono focus:outline-none focus:border-black dark:focus:border-white"
+                className="w-full px-3.5 py-2.5 rounded-[12px] border border-black/[0.12] dark:border-white/[0.15] bg-white dark:bg-[#1F1F1F] text-xs font-mono focus:outline-none focus:border-black dark:focus:border-white"
                 placeholder="https://www.facebook.com/..."
               />
             </div>

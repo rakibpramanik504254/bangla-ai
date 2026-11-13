@@ -14,9 +14,9 @@
 .dark {
   --color-primary: #FFFFFF;
   --color-secondary: rgba(255, 255, 255, 0.15);
-  --color-tertiary: #262626;
+  --color-tertiary: #2A2A2A;
   --color-muted: #9CA3AF;
-  --color-surface: #0A0A0A;
+  --color-surface: #1F1F1F;
   --color-on-surface: #FFFFFF;
 }
 
@@ -89,13 +89,13 @@
 }
 
 .dark .btn-pill-secondary {
-  background-color: #0A0A0A;
+  background-color: #1F1F1F;
   color: #FFFFFF;
   border-color: rgba(255, 255, 255, 0.18);
 }
 
 .dark .btn-pill-secondary:hover {
-  background-color: #171717;
+  background-color: #2A2A2A;
   border-color: rgba(255, 255, 255, 0.3);
 }
 
@@ -122,7 +122,7 @@
 }
 
 .dark .btn-chip {
-  background-color: #0A0A0A;
+  background-color: #1F1F1F;
   color: #9CA3AF;
   border-color: rgba(255, 255, 255, 0.14);
 }
@@ -130,7 +130,7 @@
 .dark .btn-chip:hover {
   color: #FFFFFF;
   border-color: rgba(255, 255, 255, 0.3);
-  background-color: #171717;
+  background-color: #2A2A2A;
 }
 
 /* Minimal Card Spec */
@@ -144,7 +144,7 @@
 }
 
 .dark .card-minimal {
-  background-color: #0D0D0D;
+  background-color: #262626;
   color: #FFFFFF;
   border-color: rgba(255, 255, 255, 0.1);
 }

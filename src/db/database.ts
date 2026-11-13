@@ -213,11 +213,23 @@ class Database {
               );
               if (!activeSub) {
                 u.usage_limit = 0;
-              } else if (!u.usage_limit || u.usage_limit === 0) {
-                u.usage_limit = activeSub.plan_id === 'yearly' ? 750000 : 50000;
+              } else if (!u.usage_limit || u.usage_limit === 0 || u.usage_limit === 50000 || u.usage_limit === 750000) {
+                u.usage_limit = activeSub.plan_id === 'yearly' ? 15000000 : 1000000;
               }
             }
           });
+        }
+
+        if (parsed.settings) {
+          if (parsed.settings.global_usage_limit === 50000) {
+            parsed.settings.global_usage_limit = 1000000;
+          }
+          if (parsed.settings.default_monthly_price === 1299) {
+            parsed.settings.default_monthly_price = 699;
+          }
+          if (parsed.settings.default_yearly_price === 9999) {
+            parsed.settings.default_yearly_price = 5999;
+          }
         }
 
         return parsed;
@@ -275,7 +287,7 @@ class Database {
         phone: '+8801812345678',
         role: 'user',
         status: 'active',
-        usage_limit: 50000,
+        usage_limit: 1000000,
         current_usage: 4850,
         created_at: now,
         updated_at: now
@@ -301,7 +313,7 @@ class Database {
         user_id: adminId,
         plan_id: 'yearly',
         plan_name: 'Admin Enterprise Plan',
-        amount: 9999,
+        amount: 5999,
         currency: 'BDT',
         status: 'active',
         started_at: now,
@@ -316,8 +328,8 @@ class Database {
         id: 'sub_user_002',
         user_id: subscriberId,
         plan_id: 'monthly',
-        plan_name: 'Monthly Plan (৳1,299)',
-        amount: 1299,
+        plan_name: 'Monthly Plan (৳699)',
+        amount: 699,
         currency: 'BDT',
         status: 'active',
         started_at: now,
@@ -338,8 +350,8 @@ class Database {
         user_email: 'subscriber@bangla.ai',
         subscription_id: 'sub_user_002',
         plan_id: 'monthly',
-        plan_name: 'Monthly Plan (৳1,299)',
-        amount: 1299,
+        plan_name: 'Monthly Plan (৳699)',
+        amount: 699,
         currency: 'BDT',
         gateway: 'bkash',
         trx_id: 'BKB8792019X',
@@ -621,9 +633,9 @@ class Database {
     ];
 
     const settings: SystemSettings = {
-      global_usage_limit: 50000,
-      default_monthly_price: 1299,
-      default_yearly_price: 9999,
+      global_usage_limit: 1000000,
+      default_monthly_price: 699,
+      default_yearly_price: 5999,
       support_email: 'ourbangla.ai@gmail.com',
       support_phone: '+880 1622-860128',
       facebook_page_url: 'https://www.facebook.com/profile.php?id=61596472081766',
@@ -716,7 +728,7 @@ class Database {
         user_id: newUser.id,
         plan_id: 'yearly',
         plan_name: 'Admin Enterprise Plan',
-        amount: 9999,
+        amount: 5999,
         currency: 'BDT',
         status: 'active',
         started_at: now,
@@ -857,9 +869,9 @@ class Database {
     if (user) {
       user.current_usage = 0;
       if (params.planId === 'yearly') {
-        user.usage_limit = 750000;
+        user.usage_limit = 15000000;
       } else {
-        user.usage_limit = 50000;
+        user.usage_limit = 1000000;
       }
     }
 
@@ -964,7 +976,7 @@ class Database {
     const user = this.getUserById(payment.user_id);
     if (user) {
       user.current_usage = 0;
-      user.usage_limit = payment.plan_id === 'yearly' ? 750000 : 50000;
+      user.usage_limit = payment.plan_id === 'yearly' ? 15000000 : 1000000;
     }
 
     this.save();

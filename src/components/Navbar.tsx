@@ -28,7 +28,7 @@ export const Navbar: React.FC<NavbarProps> = ({ currentView, setCurrentView }) =
   const isSubscribed = user?.isSubscribed || user?.role === 'admin';
 
   return (
-    <header className="sticky top-0 z-40 w-full border-b border-black/[0.08] dark:border-white/[0.08] bg-white/95 dark:bg-[#0A0A0A]/95 backdrop-blur-md transition-colors">
+    <header className="sticky top-0 z-40 w-full border-b border-black/[0.08] dark:border-white/[0.08] bg-white/95 dark:bg-[#1F1F1F]/95 backdrop-blur-md transition-colors">
       <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between gap-8">
         {/* Zone 1: Brand Wordmark */}
         <div className="flex items-center gap-3 shrink-0">
@@ -153,7 +153,7 @@ export const Navbar: React.FC<NavbarProps> = ({ currentView, setCurrentView }) =
               {/* User Dropdown */}
               {dropdownOpen && (
                 <div
-                  className="absolute right-0 mt-2 w-56 rounded-xl bg-white dark:bg-[#0D0D0D] border border-black/10 dark:border-white/10 shadow-lg py-1.5 z-50 text-xs"
+                  className="absolute right-0 mt-2 w-56 rounded-xl bg-white dark:bg-[#262626] border border-black/10 dark:border-white/10 shadow-lg py-1.5 z-50 text-xs"
                   onClick={() => setDropdownOpen(false)}
                 >
                   <div className="px-3.5 py-2 border-b border-black/[0.06] dark:border-white/[0.06]">
@@ -186,7 +186,7 @@ export const Navbar: React.FC<NavbarProps> = ({ currentView, setCurrentView }) =
                     className="w-full text-left px-3.5 py-2 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-neutral-800/60 flex items-center gap-2 transition-colors"
                   >
                     <CreditCard className="w-3.5 h-3.5 text-gray-400" />
-                    <span>{isSubscribed ? 'Subscription Details' : 'Upgrade Plan (৳1,299)'}</span>
+                    <span>{isSubscribed ? 'Subscription Details' : 'Upgrade Plan (৳699)'}</span>
                   </button>
 
                   {user.role === 'admin' && (
@@ -241,7 +241,7 @@ export const Navbar: React.FC<NavbarProps> = ({ currentView, setCurrentView }) =
 
       {/* Mobile Drawer */}
       {mobileMenuOpen && (
-        <div className="md:hidden border-b border-black/[0.08] dark:border-white/[0.08] bg-white dark:bg-[#0A0A0A] px-4 py-4 space-y-2 text-sm">
+        <div className="md:hidden border-b border-black/[0.08] dark:border-white/[0.08] bg-white dark:bg-[#1F1F1F] px-4 py-4 space-y-2 text-sm">
           <button
             onClick={() => {
               setCurrentView('home');
@@ -261,7 +261,7 @@ export const Navbar: React.FC<NavbarProps> = ({ currentView, setCurrentView }) =
             }}
             className="w-full text-left px-3 py-2 rounded-lg text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-neutral-800"
           >
-            Pricing (৳1,299 & ৳9,999)
+            Pricing (৳699 & ৳5,999)
           </button>
           <button
             onClick={() => {

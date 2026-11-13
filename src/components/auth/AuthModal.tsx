@@ -109,7 +109,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, defaultTa
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in overflow-y-auto">
       <div 
-        className="relative w-full max-w-sm my-8 bg-white dark:bg-[#0c0c0c] rounded-[16px] shadow-2xl border border-black/[0.12] dark:border-white/[0.15] overflow-hidden"
+        className="relative w-full max-w-sm my-8 bg-white dark:bg-[#262626] rounded-[16px] shadow-2xl border border-black/[0.12] dark:border-white/[0.15] overflow-hidden"
         role="dialog"
         aria-modal="true"
       >
@@ -124,7 +124,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, defaultTa
 
         {/* Modal Header */}
         <div className="px-6 pt-6 pb-4 border-b border-black/[0.08] dark:border-white/[0.08] text-center">
-          <div className="inline-flex items-center justify-center w-10 h-10 rounded-full border border-black/10 dark:border-white/10 bg-white dark:bg-[#121212] text-black dark:text-white mb-2.5 font-bold shadow-xs">
+          <div className="inline-flex items-center justify-center w-10 h-10 rounded-full border border-black/10 dark:border-white/10 bg-white dark:bg-[#1F1F1F] text-black dark:text-white mb-2.5 font-bold shadow-xs">
             <Sparkles className="w-4 h-4" />
           </div>
           <h2 className="text-lg font-bold text-black dark:text-white">
@@ -150,7 +150,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, defaultTa
                 }}
                 className={`flex-1 py-1.5 rounded-full transition-all cursor-pointer ${
                   tab === 'login'
-                    ? 'bg-white dark:bg-[#1f1f1f] text-black dark:text-white font-semibold shadow-xs'
+                    ? 'bg-white dark:bg-[#333333] text-black dark:text-white font-semibold shadow-xs'
                     : 'text-gray-500 hover:text-black dark:hover:text-white'
                 }`}
               >
@@ -165,7 +165,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, defaultTa
                 }}
                 className={`flex-1 py-1.5 rounded-full transition-all cursor-pointer ${
                   tab === 'register'
-                    ? 'bg-white dark:bg-[#1f1f1f] text-black dark:text-white font-semibold shadow-xs'
+                    ? 'bg-white dark:bg-[#333333] text-black dark:text-white font-semibold shadow-xs'
                     : 'text-gray-500 hover:text-black dark:hover:text-white'
                 }`}
               >
@@ -198,7 +198,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, defaultTa
                 type="button"
                 onClick={handleGoogleAuth}
                 disabled={loading}
-                className="w-full h-11 px-4 rounded-full font-medium text-xs text-black dark:text-white bg-white dark:bg-[#141414] hover:bg-black/[0.03] dark:hover:bg-white/[0.05] border border-black/[0.12] dark:border-white/[0.15] transition-all flex items-center justify-center gap-2.5 shadow-2xs active:scale-[0.99] disabled:opacity-60 cursor-pointer"
+                className="w-full h-11 px-4 rounded-full font-medium text-xs text-black dark:text-white bg-white dark:bg-[#1F1F1F] hover:bg-black/[0.03] dark:hover:bg-white/[0.05] border border-black/[0.12] dark:border-white/[0.15] transition-all flex items-center justify-center gap-2.5 shadow-2xs active:scale-[0.99] disabled:opacity-60 cursor-pointer"
               >
                 <svg className="w-4 h-4 shrink-0" viewBox="0 0 24 24">
                   <path
@@ -226,7 +226,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, defaultTa
               {/* Minimal Divider */}
               <div className="relative flex items-center justify-center my-1">
                 <div className="border-t border-black/[0.08] dark:border-white/[0.08] w-full" />
-                <span className="bg-white dark:bg-[#0c0c0c] px-3 text-[10px] text-gray-400 uppercase tracking-wider font-mono shrink-0">
+                <span className="bg-white dark:bg-[#262626] px-3 text-[10px] text-gray-400 uppercase tracking-wider font-mono shrink-0">
                   or with email
                 </span>
                 <div className="border-t border-black/[0.08] dark:border-white/[0.08] w-full" />
@@ -249,7 +249,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, defaultTa
                     value={name}
                     onChange={e => setName(e.target.value)}
                     placeholder="e.g. Tanvir Ahmed"
-                    className="w-full pl-9 pr-3.5 py-2.5 text-xs rounded-[12px] border border-black/[0.12] dark:border-white/[0.15] bg-white dark:bg-[#121212] text-black dark:text-white focus:outline-none focus:border-black dark:focus:border-white transition-colors"
+                    className="w-full pl-9 pr-3.5 py-2.5 text-xs rounded-[12px] border border-black/[0.12] dark:border-white/[0.15] bg-white dark:bg-[#1F1F1F] text-black dark:text-white focus:outline-none focus:border-black dark:focus:border-white transition-colors"
                   />
                 </div>
               </div>
@@ -267,7 +267,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, defaultTa
                   value={email}
                   onChange={e => setEmail(e.target.value)}
                   placeholder="name@domain.com"
-                  className="w-full pl-9 pr-3.5 py-2.5 text-xs rounded-[12px] border border-black/[0.12] dark:border-white/[0.15] bg-white dark:bg-[#121212] text-black dark:text-white focus:outline-none focus:border-black dark:focus:border-white transition-colors"
+                  className="w-full pl-9 pr-3.5 py-2.5 text-xs rounded-[12px] border border-black/[0.12] dark:border-white/[0.15] bg-white dark:bg-[#1F1F1F] text-black dark:text-white focus:outline-none focus:border-black dark:focus:border-white transition-colors"
                 />
               </div>
             </div>
@@ -284,7 +284,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, defaultTa
                     value={phone}
                     onChange={e => setPhone(e.target.value)}
                     placeholder="017xxxxxxxx"
-                    className="w-full pl-9 pr-3.5 py-2.5 text-xs rounded-[12px] border border-black/[0.12] dark:border-white/[0.15] bg-white dark:bg-[#121212] text-black dark:text-white focus:outline-none focus:border-black dark:focus:border-white transition-colors"
+                    className="w-full pl-9 pr-3.5 py-2.5 text-xs rounded-[12px] border border-black/[0.12] dark:border-white/[0.15] bg-white dark:bg-[#1F1F1F] text-black dark:text-white focus:outline-none focus:border-black dark:focus:border-white transition-colors"
                   />
                 </div>
               </div>
@@ -318,7 +318,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, defaultTa
                     value={password}
                     onChange={e => setPassword(e.target.value)}
                     placeholder="Minimum 6 characters"
-                    className="w-full pl-9 pr-3.5 py-2.5 text-xs rounded-[12px] border border-black/[0.12] dark:border-white/[0.15] bg-white dark:bg-[#121212] text-black dark:text-white focus:outline-none focus:border-black dark:focus:border-white transition-colors"
+                    className="w-full pl-9 pr-3.5 py-2.5 text-xs rounded-[12px] border border-black/[0.12] dark:border-white/[0.15] bg-white dark:bg-[#1F1F1F] text-black dark:text-white focus:outline-none focus:border-black dark:focus:border-white transition-colors"
                   />
                 </div>
               </div>
@@ -338,7 +338,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, defaultTa
                       value={resetToken}
                       onChange={e => setResetToken(e.target.value)}
                       placeholder="RESET-XXXXXX"
-                      className="w-full pl-9 pr-3.5 py-2.5 text-xs rounded-[12px] border border-black/[0.12] dark:border-white/[0.15] bg-white dark:bg-[#121212] text-black dark:text-white font-mono focus:outline-none focus:border-black dark:focus:border-white transition-colors"
+                      className="w-full pl-9 pr-3.5 py-2.5 text-xs rounded-[12px] border border-black/[0.12] dark:border-white/[0.15] bg-white dark:bg-[#1F1F1F] text-black dark:text-white font-mono focus:outline-none focus:border-black dark:focus:border-white transition-colors"
                     />
                   </div>
                 </div>
@@ -354,7 +354,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, defaultTa
                       value={newPassword}
                       onChange={e => setNewPassword(e.target.value)}
                       placeholder="Minimum 6 characters"
-                      className="w-full pl-9 pr-3.5 py-2.5 text-xs rounded-[12px] border border-black/[0.12] dark:border-white/[0.15] bg-white dark:bg-[#121212] text-black dark:text-white focus:outline-none focus:border-black dark:focus:border-white transition-colors"
+                      className="w-full pl-9 pr-3.5 py-2.5 text-xs rounded-[12px] border border-black/[0.12] dark:border-white/[0.15] bg-white dark:bg-[#1F1F1F] text-black dark:text-white focus:outline-none focus:border-black dark:focus:border-white transition-colors"
                     />
                   </div>
                 </div>

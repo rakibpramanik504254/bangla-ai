@@ -10,7 +10,7 @@ CREATE TABLE IF NOT EXISTS users (
     phone VARCHAR(30),
     role VARCHAR(20) DEFAULT 'user' CHECK (role IN ('user', 'admin')),
     status VARCHAR(20) DEFAULT 'active' CHECK (status IN ('active', 'suspended', 'pending')),
-    usage_limit INT DEFAULT 50000, -- Tokens or credits per billing cycle (NULL = fallback to global)
+    usage_limit INT DEFAULT 0, -- Tokens or credits per billing cycle (1M monthly / 15M yearly)
     current_usage INT DEFAULT 0,
     reset_token VARCHAR(255),
     reset_token_expires_at TIMESTAMP,
@@ -27,7 +27,7 @@ CREATE TABLE IF NOT EXISTS subscriptions (
     user_id VARCHAR(36) NOT NULL REFERENCES users(id) ON DELETE CASCADE,
     plan_id VARCHAR(50) NOT NULL CHECK (plan_id IN ('monthly', 'yearly')),
     plan_name VARCHAR(100) NOT NULL,
-    amount DECIMAL(10, 2) NOT NULL, -- 1299.00 or 9999.00
+    amount DECIMAL(10, 2) NOT NULL, -- 699.00 or 5999.00
     currency VARCHAR(10) DEFAULT 'BDT',
     status VARCHAR(20) DEFAULT 'active' CHECK (status IN ('active', 'expired', 'cancelled', 'pending')),
     started_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,

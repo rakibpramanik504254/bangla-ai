@@ -35,7 +35,7 @@ export class AiService {
     if (limit <= 0) {
       return {
         allowed: false,
-        reason: 'You have 0 available tokens. Please subscribe to Monthly (50,000 tokens) or Yearly (750,000 tokens) plan to start chatting.',
+        reason: 'You have 0 available tokens. Please subscribe to Monthly (1M tokens) or Yearly (15M tokens) plan to start chatting.',
         statusCode: 403
       };
     }

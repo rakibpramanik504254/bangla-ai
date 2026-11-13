@@ -11,7 +11,7 @@ export const Footer: React.FC<FooterProps> = ({ setCurrentView }) => {
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
   return (
-    <footer className="border-t border-black/[0.08] dark:border-white/[0.08] bg-white dark:bg-[#0A0A0A] text-gray-500 text-xs transition-colors">
+    <footer className="border-t border-black/[0.08] dark:border-white/[0.08] bg-white dark:bg-[#1F1F1F] text-gray-500 text-xs transition-colors">
       <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-14">
         <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
           {/* Brand */}
@@ -68,7 +68,7 @@ export const Footer: React.FC<FooterProps> = ({ setCurrentView }) => {
                   }}
                   className="hover:text-black dark:hover:text-white transition-colors cursor-pointer"
                 >
-                  Subscription Plans (৳1,299)
+                  Subscription Plans (৳699)
                 </button>
               </li>
               <li>

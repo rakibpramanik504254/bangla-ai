@@ -19,7 +19,7 @@ export const AboutPage: React.FC = () => {
 
       {/* The Challenge & Solution */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        <div className="bg-white dark:bg-[#0c0c0c] p-7 rounded-[8px] border border-black/[0.08] dark:border-white/[0.08] space-y-3 shadow-xs">
+        <div className="bg-white dark:bg-[#262626] p-7 rounded-[8px] border border-black/[0.08] dark:border-white/[0.08] space-y-3 shadow-xs">
           <span className="text-[10px] font-mono font-bold text-gray-400 uppercase tracking-wider">The Challenge</span>
           <h3 className="text-base font-bold text-black dark:text-white">Fragmented & Inaccessible</h3>
           <p className="text-xs text-gray-600 dark:text-gray-400 leading-relaxed">
@@ -27,11 +27,11 @@ export const AboutPage: React.FC = () => {
           </p>
         </div>
 
-        <div className="bg-white dark:bg-[#0c0c0c] p-7 rounded-[8px] border border-black/[0.08] dark:border-white/[0.08] space-y-3 shadow-xs">
+        <div className="bg-white dark:bg-[#262626] p-7 rounded-[8px] border border-black/[0.08] dark:border-white/[0.08] space-y-3 shadow-xs">
           <span className="text-[10px] font-mono font-bold text-black dark:text-white uppercase tracking-wider">The Solution</span>
           <h3 className="text-base font-bold text-black dark:text-white">Single Unified Platform</h3>
           <p className="text-xs text-gray-600 dark:text-gray-400 leading-relaxed">
-            All 10 foundation models in one unified subscription at ৳1,299/month. Instant frictionless activation using Bangladesh's trusted payment channels: bKash, Nagad, and Rocket.
+            All 10 foundation models in one unified subscription at ৳699/month. Instant frictionless activation using Bangladesh's trusted payment channels: bKash, Nagad, and Rocket.
           </p>
         </div>
       </div>
@@ -40,7 +40,7 @@ export const AboutPage: React.FC = () => {
       <div className="space-y-6">
         <h3 className="text-xs font-mono uppercase tracking-wider text-gray-400">Architectural Principles</h3>
         <div className="grid grid-cols-1 gap-4">
-          <div className="p-5 rounded-[8px] border border-black/[0.08] dark:border-white/[0.08] bg-white dark:bg-[#0c0c0c] flex items-start gap-3.5 shadow-xs">
+          <div className="p-5 rounded-[8px] border border-black/[0.08] dark:border-white/[0.08] bg-white dark:bg-[#262626] flex items-start gap-3.5 shadow-xs">
             <CheckCircle2 className="w-4 h-4 text-black dark:text-white shrink-0 mt-0.5" />
             <div>
               <h4 className="text-sm font-bold text-black dark:text-white">Frontier Foundation Catalog</h4>
@@ -50,7 +50,7 @@ export const AboutPage: React.FC = () => {
             </div>
           </div>
 
-          <div className="p-5 rounded-[8px] border border-black/[0.08] dark:border-white/[0.08] bg-white dark:bg-[#0c0c0c] flex items-start gap-3.5 shadow-xs">
+          <div className="p-5 rounded-[8px] border border-black/[0.08] dark:border-white/[0.08] bg-white dark:bg-[#262626] flex items-start gap-3.5 shadow-xs">
             <CheckCircle2 className="w-4 h-4 text-black dark:text-white shrink-0 mt-0.5" />
             <div>
               <h4 className="text-sm font-bold text-black dark:text-white">Strict Privacy & Zero Data Reselling</h4>
@@ -60,7 +60,7 @@ export const AboutPage: React.FC = () => {
             </div>
           </div>
 
-          <div className="p-5 rounded-[8px] border border-black/[0.08] dark:border-white/[0.08] bg-white dark:bg-[#0c0c0c] flex items-start gap-3.5 shadow-xs">
+          <div className="p-5 rounded-[8px] border border-black/[0.08] dark:border-white/[0.08] bg-white dark:bg-[#262626] flex items-start gap-3.5 shadow-xs">
             <CheckCircle2 className="w-4 h-4 text-black dark:text-white shrink-0 mt-0.5" />
             <div>
               <h4 className="text-sm font-bold text-black dark:text-white">Engineered for Latency</h4>
@@ -73,7 +73,7 @@ export const AboutPage: React.FC = () => {
       </div>
 
       {/* Office & Contact */}
-      <div className="p-7 rounded-[8px] bg-[#FAFAFA] dark:bg-[#121212] border border-black/[0.08] dark:border-white/[0.08] flex flex-col md:flex-row md:items-center justify-between gap-6 text-xs">
+      <div className="p-7 rounded-[8px] bg-[#FAFAFA] dark:bg-[#262626] border border-black/[0.08] dark:border-white/[0.08] flex flex-col md:flex-row md:items-center justify-between gap-6 text-xs">
         <div>
           <span className="font-semibold text-black dark:text-white block">Headquarters & Inquiries</span>
           <span className="text-gray-500 mt-0.5 block">Banani Commercial Area, Dhaka-1213, Bangladesh</span>
@@ -84,21 +84,21 @@ export const AboutPage: React.FC = () => {
             href="https://www.facebook.com/profile.php?id=61596472081766"
             target="_blank"
             rel="noopener noreferrer"
-            className="h-9 px-4 rounded-full border border-black/[0.12] dark:border-white/[0.15] bg-white dark:bg-[#1a1a1a] text-black dark:text-white flex items-center justify-center gap-1.5 font-medium hover:border-black/30 transition-colors cursor-pointer"
+            className="h-9 px-4 rounded-full border border-black/[0.12] dark:border-white/[0.15] bg-white dark:bg-[#2A2A2A] text-black dark:text-white flex items-center justify-center gap-1.5 font-medium hover:border-black/30 transition-colors cursor-pointer"
           >
             <Facebook className="w-3.5 h-3.5 text-[#1877F2]" />
             <span>Facebook Page</span>
           </a>
           <a
             href="tel:+8801622860128"
-            className="h-9 px-4 rounded-full border border-black/[0.12] dark:border-white/[0.15] bg-white dark:bg-[#1a1a1a] text-black dark:text-white flex items-center justify-center gap-1.5 font-medium hover:border-black/30 transition-colors cursor-pointer"
+            className="h-9 px-4 rounded-full border border-black/[0.12] dark:border-white/[0.15] bg-white dark:bg-[#2A2A2A] text-black dark:text-white flex items-center justify-center gap-1.5 font-medium hover:border-black/30 transition-colors cursor-pointer"
           >
             <Phone className="w-3.5 h-3.5 text-gray-500" />
             <span>+880 1622-860128</span>
           </a>
           <a
             href="mailto:ourbangla.ai@gmail.com"
-            className="h-9 px-4 rounded-full border border-black/[0.12] dark:border-white/[0.15] bg-white dark:bg-[#1a1a1a] text-black dark:text-white flex items-center justify-center gap-1.5 font-medium hover:border-black/30 transition-colors cursor-pointer"
+            className="h-9 px-4 rounded-full border border-black/[0.12] dark:border-white/[0.15] bg-white dark:bg-[#2A2A2A] text-black dark:text-white flex items-center justify-center gap-1.5 font-medium hover:border-black/30 transition-colors cursor-pointer"
           >
             <Mail className="w-3.5 h-3.5 text-gray-500" />
             <span>ourbangla.ai@gmail.com</span>

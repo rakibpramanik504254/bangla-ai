@@ -68,7 +68,7 @@ export const VideoDemoSection: React.FC<VideoDemoSectionProps> = ({
         ref={containerRef}
         className="relative group rounded-3xl p-2 sm:p-3.5 bg-gradient-to-b from-blue-500/20 via-indigo-500/10 to-transparent dark:from-blue-500/30 dark:via-indigo-500/15 dark:to-transparent border border-blue-500/25 dark:border-blue-400/30 shadow-2xl transition-all duration-500"
       >
-        <div className="relative aspect-video w-full rounded-2xl overflow-hidden bg-black border border-black/10 dark:border-white/10 shadow-inner">
+        <div className="relative aspect-video w-full rounded-2xl overflow-hidden bg-[#1F1F1F] border border-black/10 dark:border-white/10 shadow-inner">
           {isInView ? (
             <iframe
               src={embedUrl}

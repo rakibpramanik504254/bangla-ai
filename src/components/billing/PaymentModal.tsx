@@ -163,7 +163,7 @@ export const PaymentModal: React.FC<PaymentModalProps> = ({
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in">
-      <div className="relative w-full max-w-lg bg-white dark:bg-[#0c0c0c] rounded-[16px] shadow-2xl border border-black/[0.12] dark:border-white/[0.15] overflow-hidden flex flex-col max-h-[92vh]">
+      <div className="relative w-full max-w-lg bg-white dark:bg-[#262626] rounded-[16px] shadow-2xl border border-black/[0.12] dark:border-white/[0.15] overflow-hidden flex flex-col max-h-[92vh]">
         {/* Close Button */}
         <button
           onClick={onClose}
@@ -193,7 +193,7 @@ export const PaymentModal: React.FC<PaymentModalProps> = ({
                 </p>
               </div>
 
-              <div className="bg-[#FAFAFA] dark:bg-[#141414] rounded-[8px] p-4 border border-black/[0.08] dark:border-white/[0.08] text-xs space-y-2.5 text-left font-mono">
+              <div className="bg-[#FAFAFA] dark:bg-[#1F1F1F] rounded-[8px] p-4 border border-black/[0.08] dark:border-white/[0.08] text-xs space-y-2.5 text-left font-mono">
                 <div className="flex justify-between items-center py-1 border-b border-black/[0.04] dark:border-white/[0.04]">
                   <span className="text-gray-500 font-sans">Plan Selected:</span>
                   <span className="font-bold text-black dark:text-white font-sans">{submittedPayment.planName}</span>
@@ -274,7 +274,7 @@ export const PaymentModal: React.FC<PaymentModalProps> = ({
                     {formatBDT(PLANS.monthly.priceBDT)}
                     <span className="text-xs font-normal text-gray-500">/mo</span>
                   </p>
-                  <p className="text-[11px] text-gray-500 mt-1">30 days • 50,000 tokens</p>
+                  <p className="text-[11px] text-gray-500 mt-1">30 days • 1,000,000 (1M) tokens</p>
                 </button>
 
                 <button
@@ -287,7 +287,7 @@ export const PaymentModal: React.FC<PaymentModalProps> = ({
                   }`}
                 >
                   <span className="absolute -top-2 right-2 bg-black text-white dark:bg-white dark:text-black text-[9px] font-mono font-bold px-2 py-0.5 rounded-full border border-black/10">
-                    SAVE 36%
+                    SAVE 28%
                   </span>
                   <div className="flex justify-between items-start">
                     <span className="text-xs font-semibold text-black dark:text-white">Yearly Plan</span>
@@ -299,7 +299,7 @@ export const PaymentModal: React.FC<PaymentModalProps> = ({
                     {formatBDT(PLANS.yearly.priceBDT)}
                     <span className="text-xs font-normal text-gray-500">/yr</span>
                   </p>
-                  <p className="text-[11px] text-gray-500 mt-1">365 days • 750,000 tokens</p>
+                  <p className="text-[11px] text-gray-500 mt-1">365 days • 15,000,000 (15M) tokens</p>
                 </button>
               </div>
 
@@ -351,7 +351,7 @@ export const PaymentModal: React.FC<PaymentModalProps> = ({
               </div>
 
               {/* Payment Instructions Box with Dynamic Number */}
-              <div className="bg-[#F8F9FA] dark:bg-[#141414] rounded-[8px] p-4 border border-black/[0.08] dark:border-white/[0.08] text-xs text-gray-600 dark:text-gray-400 space-y-2.5">
+              <div className="bg-[#F8F9FA] dark:bg-[#1F1F1F] rounded-[8px] p-4 border border-black/[0.08] dark:border-white/[0.08] text-xs text-gray-600 dark:text-gray-400 space-y-2.5">
                 <div className="flex items-center justify-between">
                   <span className="font-semibold text-black dark:text-white flex items-center gap-1.5">
                     <Smartphone className="w-3.5 h-3.5 text-gray-400" />
@@ -360,7 +360,7 @@ export const PaymentModal: React.FC<PaymentModalProps> = ({
                   <button
                     type="button"
                     onClick={handleCopyMerchant}
-                    className="px-2.5 py-1 text-[11px] bg-white dark:bg-[#1f1f1f] border border-black/[0.1] dark:border-white/[0.1] rounded-full font-mono font-bold text-black dark:text-white flex items-center gap-1 hover:bg-black/[0.03] transition-colors cursor-pointer"
+                    className="px-2.5 py-1 text-[11px] bg-white dark:bg-[#2D2D2D] border border-black/[0.1] dark:border-white/[0.1] rounded-full font-mono font-bold text-black dark:text-white flex items-center gap-1 hover:bg-black/[0.03] transition-colors cursor-pointer"
                     title="Click to copy number"
                   >
                     {copied ? <Check className="w-3 h-3 text-emerald-500" /> : <Copy className="w-3 h-3 text-gray-400" />}
@@ -394,7 +394,7 @@ export const PaymentModal: React.FC<PaymentModalProps> = ({
                     value={senderNumber}
                     onChange={e => setSenderNumber(e.target.value)}
                     placeholder="e.g. 01812345678"
-                    className="w-full px-3.5 py-2.5 text-xs rounded-[12px] border border-black/[0.12] dark:border-white/[0.15] bg-white dark:bg-[#121212] text-black dark:text-white font-mono focus:outline-none focus:border-black dark:focus:border-white transition-colors"
+                    className="w-full px-3.5 py-2.5 text-xs rounded-[12px] border border-black/[0.12] dark:border-white/[0.15] bg-white dark:bg-[#1F1F1F] text-black dark:text-white font-mono focus:outline-none focus:border-black dark:focus:border-white transition-colors"
                   />
                 </div>
 
@@ -408,7 +408,7 @@ export const PaymentModal: React.FC<PaymentModalProps> = ({
                     value={trxId}
                     onChange={e => setTrxId(e.target.value)}
                     placeholder="e.g. BKB8792019X or 9G821KLA"
-                    className="w-full px-3.5 py-2.5 text-xs rounded-[12px] border border-black/[0.12] dark:border-white/[0.15] bg-white dark:bg-[#121212] text-black dark:text-white font-mono uppercase focus:outline-none focus:border-black dark:focus:border-white transition-colors"
+                    className="w-full px-3.5 py-2.5 text-xs rounded-[12px] border border-black/[0.12] dark:border-white/[0.15] bg-white dark:bg-[#1F1F1F] text-black dark:text-white font-mono uppercase focus:outline-none focus:border-black dark:focus:border-white transition-colors"
                   />
                   <span className="text-[10px] text-gray-500 block mt-1">
                     Enter the exact TrxID received from {gateway.toUpperCase()} SMS.

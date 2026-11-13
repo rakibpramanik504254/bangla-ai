@@ -613,7 +613,7 @@ async function sendMetaConversionsPurchase(payment: any, settings: any): Promise
           custom_data: {
             currency: 'BDT',
             value: Number(payment.amount),
-            content_name: payment.plan_name || (payment.plan_id === 'yearly' ? 'Yearly Plan (৳9,999)' : 'Monthly Plan (৳1,299)'),
+            content_name: payment.plan_name || (payment.plan_id === 'yearly' ? 'Yearly Plan (৳5,999)' : 'Monthly Plan (৳699)'),
             content_type: 'product',
             order_id: payment.trx_id,
             payment_method: payment.gateway
@@ -687,8 +687,8 @@ app.post('/api/admin/pixel/test', requireAdmin, async (_req: AuthenticatedReques
 
     const testPayment = {
       user_id: 'test_user',
-      amount: 1299,
-      plan_name: 'Monthly Plan (৳1,299)',
+      amount: 699,
+      plan_name: 'Monthly Plan (৳699)',
       plan_id: 'monthly',
       trx_id: 'TEST_TRX_' + Date.now(),
       gateway: 'bkash',

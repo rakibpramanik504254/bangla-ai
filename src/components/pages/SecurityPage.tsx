@@ -18,7 +18,7 @@ export const SecurityPage: React.FC = () => {
       </div>
 
       {/* Summary Box */}
-      <div className="bg-[#FAFAFA] dark:bg-[#121212] border border-black/[0.1] dark:border-white/[0.1] rounded-[8px] p-5 text-xs flex items-start gap-3.5">
+      <div className="bg-[#FAFAFA] dark:bg-[#262626] border border-black/[0.1] dark:border-white/[0.1] rounded-[8px] p-5 text-xs flex items-start gap-3.5">
         <ShieldCheck className="w-4 h-4 text-black dark:text-white shrink-0 mt-0.5" />
         <div className="space-y-1">
           <p className="font-bold text-xs uppercase tracking-wide text-black dark:text-white">Security Philosophy:</p>
@@ -56,7 +56,7 @@ export const SecurityPage: React.FC = () => {
       </div>
 
       {/* Detailed Standards */}
-      <div className="space-y-8 bg-white dark:bg-[#0c0c0c] p-6 sm:p-8 rounded-[8px] border border-black/[0.08] dark:border-white/[0.08] shadow-xs">
+      <div className="space-y-8 bg-white dark:bg-[#262626] p-6 sm:p-8 rounded-[8px] border border-black/[0.08] dark:border-white/[0.08] shadow-xs">
         <section className="space-y-2.5">
           <h2 className="text-xs font-bold text-black dark:text-white uppercase tracking-wider font-mono">
             1. Data Transit & API Gateway Security

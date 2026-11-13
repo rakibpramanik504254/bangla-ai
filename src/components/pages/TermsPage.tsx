@@ -18,7 +18,7 @@ export const TermsPage: React.FC = () => {
       </div>
 
       {/* Summary Box */}
-      <div className="bg-[#FAFAFA] dark:bg-[#121212] border border-black/[0.1] dark:border-white/[0.1] rounded-[8px] p-5 text-xs flex items-start gap-3.5">
+      <div className="bg-[#FAFAFA] dark:bg-[#262626] border border-black/[0.1] dark:border-white/[0.1] rounded-[8px] p-5 text-xs flex items-start gap-3.5">
         <Scale className="w-4 h-4 text-black dark:text-white shrink-0 mt-0.5" />
         <div className="space-y-1">
           <p className="font-bold text-xs uppercase tracking-wide text-black dark:text-white">Summary of Agreement:</p>
@@ -29,7 +29,7 @@ export const TermsPage: React.FC = () => {
       </div>
 
       {/* Terms Content Sections */}
-      <div className="space-y-8 bg-white dark:bg-[#0c0c0c] p-6 sm:p-8 rounded-[8px] border border-black/[0.08] dark:border-white/[0.08] shadow-xs">
+      <div className="space-y-8 bg-white dark:bg-[#262626] p-6 sm:p-8 rounded-[8px] border border-black/[0.08] dark:border-white/[0.08] shadow-xs">
         {/* Section 1 */}
         <section className="space-y-2.5">
           <h2 className="text-xs font-bold text-black dark:text-white uppercase tracking-wider font-mono">
@@ -58,12 +58,12 @@ export const TermsPage: React.FC = () => {
             3. Subscription Plans, Billing & MFS Payments
           </h2>
           <p>
-            Bangla AI offers Monthly (৳1,299) and Yearly (৳9,999) recurring subscription plans payable in Bangladeshi Taka (BDT) via Mobile Financial Services (bKash, Nagad, and Rocket).
+            Bangla AI offers Monthly (৳699) and Yearly (৳5,999) recurring subscription plans payable in Bangladeshi Taka (BDT) via Mobile Financial Services (bKash, Nagad, and Rocket).
           </p>
           <ul className="list-disc pl-5 space-y-1.5 text-gray-600 dark:text-gray-400">
             <li><strong className="text-black dark:text-white">Transaction Verification:</strong> To activate a plan, you must send the exact specified amount to our designated official MFS account and submit the 8–10 alphanumeric Transaction ID (TrxID) along with your sender mobile number.</li>
             <li><strong className="text-black dark:text-white">Admin Validation:</strong> Subscriptions are verified against MFS merchant ledgers. Submitting fabricated, duplicate, or third-party unauthorized TrxIDs constitutes fraud and results in immediate account termination.</li>
-            <li><strong className="text-black dark:text-white">Token Quotas & Renewal:</strong> Monthly plans allocate 50,000 monthly tokens; Yearly plans allocate 750,000 annual tokens. Quotas reset upon successful renewal.</li>
+            <li><strong className="text-black dark:text-white">Token Quotas & Renewal:</strong> Monthly plans allocate 1,000,000 (1M) monthly tokens; Yearly plans allocate 15,000,000 (15M) annual tokens. Quotas reset upon successful renewal.</li>
             <li><strong className="text-black dark:text-white">Refund Policy:</strong> Because token capacity and GPU inference resources are provisioned in real time upon activation, subscription fees are non-refundable once approved and used. If you submit a duplicate payment in error, contact ourbangla.ai@gmail.com within 48 hours for adjustment.</li>
           </ul>
         </section>

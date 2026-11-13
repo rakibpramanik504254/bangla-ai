@@ -119,7 +119,7 @@ export const HomePage: React.FC<HomePageProps> = ({ onStartChat }) => {
   };
 
   return (
-    <div className="space-y-24 sm:space-y-32 py-12 sm:py-20 animate-in fade-in transition-colors bg-white dark:bg-[#0A0A0A] text-black dark:text-white">
+    <div className="space-y-24 sm:space-y-32 py-12 sm:py-20 animate-in fade-in transition-colors bg-white dark:bg-[#1F1F1F] text-black dark:text-white">
       {/* Hero Region (OpenAI Minimal Spacious Center) */}
       <section className="max-w-4xl mx-auto px-4 sm:px-6 text-center">
         <div className="space-y-6">
@@ -162,7 +162,7 @@ export const HomePage: React.FC<HomePageProps> = ({ onStartChat }) => {
               }}
               className="btn-pill-secondary w-full sm:w-auto h-11 px-7 text-sm cursor-pointer"
             >
-              View Plans from ৳1,299
+              View Plans from ৳699
             </button>
           </div>
 
@@ -202,10 +202,10 @@ export const HomePage: React.FC<HomePageProps> = ({ onStartChat }) => {
           </p>
         </div>
 
-        <div className="overflow-hidden rounded-[8px] border border-black/[0.08] dark:border-white/[0.08] bg-white dark:bg-[#0C0C0C] shadow-xs">
+        <div className="overflow-hidden rounded-[8px] border border-black/[0.08] dark:border-white/[0.08] bg-white dark:bg-[#262626] shadow-xs">
           <div className="overflow-x-auto">
             <table className="w-full text-left text-xs">
-              <thead className="bg-[#F9F9F9] dark:bg-[#141414] border-b border-black/[0.08] dark:border-white/[0.08] font-mono text-[11px] text-gray-500">
+              <thead className="bg-[#F9F9F9] dark:bg-[#2D2D2D] border-b border-black/[0.08] dark:border-white/[0.08] font-mono text-[11px] text-gray-500">
                 <tr>
                   <th className="py-4 px-5 font-semibold">Features & Capabilities</th>
                   <th className="py-4 px-5 font-semibold text-gray-400">Separate AI Subscriptions</th>
@@ -219,7 +219,7 @@ export const HomePage: React.FC<HomePageProps> = ({ onStartChat }) => {
                   <td className="py-3.5 px-5 font-medium text-black dark:text-white">Monthly Subscription Cost</td>
                   <td className="py-3.5 px-5 text-gray-500 font-mono">$80+ / mo (~৳10,000+ BDT)</td>
                   <td className="py-3.5 px-5 font-bold text-emerald-600 dark:text-emerald-400 font-mono bg-black/[0.02] dark:bg-white/[0.03]">
-                    ৳1,299 / mo (Save 87%)
+                    ৳699 / mo (Save 93%)
                   </td>
                 </tr>
                 <tr className="hover:bg-black/[0.01] dark:hover:bg-white/[0.01]">
@@ -602,10 +602,10 @@ export const HomePage: React.FC<HomePageProps> = ({ onStartChat }) => {
               <div className="mt-6 flex flex-col gap-1">
                 <div className="flex items-center gap-2">
                   <span className="text-xs font-mono text-gray-400 line-through">
-                    ৳1,529
+                    ৳822
                   </span>
                   <span className="text-[10px] font-mono font-semibold text-emerald-600 dark:text-emerald-400">
-                    Save ৳230/mo
+                    Save ৳123/mo
                   </span>
                 </div>
                 <div className="flex items-baseline gap-1">
@@ -637,7 +637,7 @@ export const HomePage: React.FC<HomePageProps> = ({ onStartChat }) => {
                 }}
                 className="btn-pill-secondary w-full text-center cursor-pointer"
               >
-                Claim 15% Off • Subscribe (৳1,299)
+                Claim 15% Off • Subscribe (৳699)
               </button>
             </div>
           </div>
@@ -648,7 +648,7 @@ export const HomePage: React.FC<HomePageProps> = ({ onStartChat }) => {
               <div className="flex justify-between items-center">
                 <h3 className="text-lg font-bold text-black dark:text-white">Yearly Plan</h3>
                 <span className="px-2.5 py-0.5 rounded-full bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20 text-[10px] font-mono font-bold">
-                  36% OFF • BEST VALUE
+                  28% OFF • BEST VALUE
                 </span>
               </div>
               <p className="text-xs text-gray-500 mt-1">Best value for power users and professionals</p>
@@ -656,10 +656,10 @@ export const HomePage: React.FC<HomePageProps> = ({ onStartChat }) => {
               <div className="mt-6 flex flex-col gap-1">
                 <div className="flex items-center gap-2">
                   <span className="text-xs font-mono text-gray-400 line-through">
-                    ৳15,588
+                    ৳8,388
                   </span>
                   <span className="text-[10px] font-mono font-semibold text-emerald-600 dark:text-emerald-400">
-                    Save ৳5,589/yr
+                    Save ৳2,389/yr
                   </span>
                 </div>
                 <div className="flex items-baseline gap-1">
@@ -669,7 +669,7 @@ export const HomePage: React.FC<HomePageProps> = ({ onStartChat }) => {
                   <span className="text-xs text-gray-500">/ year</span>
                 </div>
                 <p className="text-xs text-gray-500 mt-0.5 font-mono">
-                  Equivalent to ৳833/month
+                  Equivalent to ৳500/month
                 </p>
               </div>
 
@@ -694,7 +694,7 @@ export const HomePage: React.FC<HomePageProps> = ({ onStartChat }) => {
                 }}
                 className="btn-pill-primary w-full text-center cursor-pointer"
               >
-                Claim 36% Off • Subscribe (৳9,999)
+                Claim 28% Off • Subscribe (৳5,999)
               </button>
             </div>
           </div>
@@ -742,7 +742,7 @@ export const HomePage: React.FC<HomePageProps> = ({ onStartChat }) => {
         </div>
 
         {/* Interactive Prompt & Model Output Card */}
-        <div className="rounded-[8px] border border-black/[0.08] dark:border-white/[0.08] bg-white dark:bg-[#0C0C0C] p-6 shadow-xs space-y-5">
+        <div className="rounded-[8px] border border-black/[0.08] dark:border-white/[0.08] bg-white dark:bg-[#262626] p-6 shadow-xs space-y-5">
           {/* Prompt Header */}
           <div className="space-y-1.5 pb-4 border-b border-black/[0.06] dark:border-white/[0.06]">
             <span className="text-[10px] font-mono uppercase tracking-wider text-gray-400 block">
@@ -771,7 +771,7 @@ export const HomePage: React.FC<HomePageProps> = ({ onStartChat }) => {
           </div>
 
           {/* Rendered Output Box */}
-          <div className="bg-[#F8F9FA] dark:bg-[#141414] rounded-[8px] p-4 border border-black/[0.05] dark:border-white/[0.05]">
+          <div className="bg-[#F8F9FA] dark:bg-[#1F1F1F] rounded-[8px] p-4 border border-black/[0.05] dark:border-white/[0.05]">
             <div className="flex items-center justify-between mb-3 text-[11px] text-gray-500">
               <span className="font-mono text-black dark:text-white font-semibold">
                 {SAMPLE_BENCHMARKS[activeBenchmarkTab].models[activeModelTab]?.modelName}
@@ -863,7 +863,7 @@ export const HomePage: React.FC<HomePageProps> = ({ onStartChat }) => {
             <span className="text-xs font-mono font-bold text-gray-400">01</span>
             <h4 className="font-bold text-xs text-black dark:text-white">Choose Your Plan</h4>
             <p className="text-[11px] text-gray-500 leading-relaxed">
-              Select Monthly (৳1,299) or Yearly (৳9,999) and click Subscribe.
+              Select Monthly (৳699) or Yearly (৳5,999) and click Subscribe.
             </p>
           </div>
 
@@ -965,7 +965,7 @@ export const HomePage: React.FC<HomePageProps> = ({ onStartChat }) => {
             },
             {
               q: 'How does payment verification work with bKash, Nagad, and Rocket?',
-              a: 'When you select a plan, you will see our official payment number. Send the exact plan amount (৳1,299 or ৳9,999) using your MFS app, then copy the Transaction ID (TrxID) received via SMS into the form along with your sender number. Our admin panel verifies the TrxID with MFS records and activates your subscription immediately.'
+              a: 'When you select a plan, you will see our official payment number. Send the exact plan amount (৳699 or ৳5,999) using your MFS app, then copy the Transaction ID (TrxID) received via SMS into the form along with your sender number. Our admin panel verifies the TrxID with MFS records and activates your subscription immediately.'
             },
             {
               q: 'Do I need an international credit card or passport endorsement?',
@@ -973,7 +973,7 @@ export const HomePage: React.FC<HomePageProps> = ({ onStartChat }) => {
             },
             {
               q: 'What is the token quota and what happens if I reach the limit?',
-              a: 'Monthly subscriptions provide 50,000 tokens (enough for thousands of questions, code analyses, and translations). Yearly subscribers receive 600,000 tokens. You can track your token consumption in real-time on your Account page and renew or top up whenever needed.'
+              a: 'Monthly subscriptions provide 1,000,000 (1M) tokens (enough for tens of thousands of questions, code analyses, and translations). Yearly subscribers receive 15,000,000 (15M) tokens. You can track your token consumption in real-time on your Account page and renew or top up whenever needed.'
             },
             {
               q: 'Can I use Bangla AI for team or commercial software projects?',

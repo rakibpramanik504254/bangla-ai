@@ -10,9 +10,9 @@ import {
 } from './billing.ts';
 
 test('formatBDT formats amounts with BDT currency symbol and comma separators', () => {
-  assert.equal(formatBDT(1299), '৳1,299');
-  assert.equal(formatBDT(9999), '৳9,999');
-  assert.equal(formatBDT(50000), '৳50,000');
+  assert.equal(formatBDT(699), '৳699');
+  assert.equal(formatBDT(5999), '৳5,999');
+  assert.equal(formatBDT(1000000), '৳1,000,000');
 });
 
 test('isSubscriptionActive properly validates subscription status and expiry', () => {
@@ -74,8 +74,8 @@ test('estimateTokens calculates realistic token approximations', () => {
 });
 
 test('PLANS contains exact specified pricing for Bangladesh market', () => {
-  assert.equal(PLANS.monthly.priceBDT, 1299);
-  assert.equal(PLANS.yearly.priceBDT, 9999);
+  assert.equal(PLANS.monthly.priceBDT, 699);
+  assert.equal(PLANS.yearly.priceBDT, 5999);
   assert.equal(PLANS.monthly.name, 'Monthly Plan');
   assert.equal(PLANS.yearly.name, 'Yearly Plan');
 });

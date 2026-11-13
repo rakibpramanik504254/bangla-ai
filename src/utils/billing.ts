@@ -16,12 +16,12 @@ export const PLANS: Record<'monthly' | 'yearly', PlanConfig> = {
   monthly: {
     id: 'monthly',
     name: 'Monthly Plan',
-    priceBDT: 1299,
+    priceBDT: 699,
     durationDays: 30,
     features: [
       'Full access to top AI models (Gemini 2.5, GPT-4o, Claude 3.5, DeepSeek)',
       'High-speed streaming responses with priority queuing',
-      '50,000 token quota per monthly billing cycle',
+      '1,000,000 (1M) token quota per monthly billing cycle',
       'Persistent chat history & session management',
       'Instant local payment via bKash, Nagad & Rocket',
       '24/7 technical customer support'
@@ -30,14 +30,14 @@ export const PLANS: Record<'monthly' | 'yearly', PlanConfig> = {
   yearly: {
     id: 'yearly',
     name: 'Yearly Plan',
-    priceBDT: 9999,
+    priceBDT: 5999,
     durationDays: 365,
-    monthlyEquivalentBDT: 833,
-    savePercent: 36,
+    monthlyEquivalentBDT: 500,
+    savePercent: 28,
     features: [
       'Everything in Monthly Plan included',
-      'Save ~36% annually (only ৳833/month equivalent)',
-      '750,000 token quota per annual billing cycle',
+      'Save 28% annually (only ৳500/month equivalent)',
+      '15,000,000 (15M) token quota per annual billing cycle',
       'Early access to newly released foundation models',
       'Dedicated high-throughput VIP server allocation',
       'Priority concierge & enterprise-grade support'
@@ -46,7 +46,7 @@ export const PLANS: Record<'monthly' | 'yearly', PlanConfig> = {
 };
 
 /**
- * Formats an amount in Bangladeshi Taka with standard commas (e.g., "৳1,299")
+ * Formats an amount in Bangladeshi Taka with standard commas (e.g., "৳699")
  */
 export function formatBDT(amount: number): string {
   const parts = amount.toLocaleString('en-US').split('.');
