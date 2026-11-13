@@ -9,6 +9,7 @@ import {
   buildOpenRouterRequestBody,
   parseOpenRouterStreamPayload
 } from './openrouter.ts';
+import { sanitizeModelForWorkspace } from './model-sanitizer.ts';
 
 export interface ChatMessageParam {
   role: 'user' | 'assistant' | 'system';
@@ -359,15 +360,16 @@ export class AiService {
   }
 
   private static generateContextualResponse(model: AiModel, prompt: string): string {
+    const safeModel = sanitizeModelForWorkspace(model);
     const p = prompt.toLowerCase();
     const badgeLabel =
-      model.badge === 'max' ? 'Frontier Max Intelligence' :
-      model.badge === 'high' ? 'High Throughput & Reasoning' :
-      model.badge === 'xhigh' ? 'Extreme Inference Power' :
-      model.badge === 'reasoning' ? 'Deep Chain-of-Thought Reasoning' :
-      model.badge === 'coding' ? 'Advanced Code Specialist' :
-      model.badge === 'super_fast' ? 'Ultra Fast Low-Latency' : 'Balanced Multimodal';
-    const modelBadge = `*Model: ${model.display_name}* (${badgeLabel})\n\n`;
+      safeModel.badge === 'max' ? 'Frontier Max Intelligence' :
+      safeModel.badge === 'high' ? 'High Throughput & Reasoning' :
+      safeModel.badge === 'xhigh' ? 'Extreme Inference Power' :
+      safeModel.badge === 'reasoning' ? 'Deep Chain-of-Thought Reasoning' :
+      safeModel.badge === 'coding' ? 'Advanced Code Specialist' :
+      safeModel.badge === 'super_fast' ? 'Ultra Fast Low-Latency' : 'Balanced Multimodal';
+    const modelBadge = `*Model: ${safeModel.display_name}* (${badgeLabel})\n\n`;
 
     if (p.includes('email') || p.includes('letter') || p.includes('proposal') || p.includes('partnership')) {
       return `${modelBadge}Here is a polished, high-converting business partnership proposal email tailored for executive correspondence:
@@ -509,7 +511,7 @@ Would you like to drill down into a specific industry vertical or financial proj
 I am powered by **Bangla AI**, ready to assist you with comprehensive analysis, research, code architecture, or creative synthesis.
 
 ### Key Insights:
-* Your query has been processed through the **${model.display_name}** inference pipeline.
+* Your query has been processed through the **${safeModel.display_name}** inference pipeline.
 * I am calibrated to deliver structured, high-accuracy responses tailored to your technical and business requirements.
 
 Feel free to ask follow-up questions or provide additional requirements!`;

@@ -42,22 +42,34 @@ function MainApp() {
     trackMetaPageView();
   }, [currentView]);
 
-  return (
-    <div className="min-h-screen w-full overflow-x-clip flex flex-col bg-white dark:bg-[#1F1F1F] text-gray-900 dark:text-gray-100 transition-colors">
-      <Navbar currentView={currentView} setCurrentView={setCurrentView} />
+  const isChatView = currentView === 'chat';
 
-      <div className="flex-1 min-w-0">
+  return (
+    <div
+      className={`${
+        isChatView ? 'h-[100dvh] overflow-hidden' : 'min-h-screen overflow-x-clip'
+      } w-full max-w-full flex flex-col bg-white dark:bg-[#1F1F1F] text-gray-900 dark:text-gray-100 transition-colors`}
+    >
+      {!isChatView && <Navbar currentView={currentView} setCurrentView={setCurrentView} />}
+
+      <div className={`flex-1 min-w-0 ${isChatView ? 'min-h-0 flex flex-col overflow-hidden' : ''}`}>
         {currentView === 'home' && <HomePage onStartChat={() => setCurrentView('chat')} />}
         {currentView === 'about' && <AboutPage />}
         {currentView === 'privacy' && <PrivacyPolicyPage />}
         {currentView === 'terms' && <TermsPage />}
         {currentView === 'security' && <SecurityPage />}
         {currentView === 'account' && <AccountPage />}
-        {currentView === 'chat' && <ChatInterface />}
+        {currentView === 'chat' && (
+          <ChatInterface
+            onNavigateHome={() => setCurrentView('home')}
+            onNavigateAccount={() => setCurrentView('account')}
+            onNavigateAdmin={() => setCurrentView('admin')}
+          />
+        )}
         {currentView === 'admin' && <AdminPanel />}
       </div>
 
-      {currentView !== 'chat' && <Footer setCurrentView={setCurrentView} />}
+      {!isChatView && <Footer setCurrentView={setCurrentView} />}
 
       {/* Floating WhatsApp Live Chat (Non-subscribers only) */}
       <WhatsAppSupportWidget />

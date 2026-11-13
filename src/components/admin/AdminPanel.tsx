@@ -81,6 +81,9 @@ export const AdminPanel: React.FC = () => {
   const [testingPixel, setTestingPixel] = useState(false);
   const [modelFilter, setModelFilter] = useState<'all' | 'flagship' | 'free'>('all');
   const [syncingFreeModels, setSyncingFreeModels] = useState(false);
+  const [editingModelId, setEditingModelId] = useState<string | null>(null);
+  const [editingModelName, setEditingModelName] = useState('');
+  const [savingModelId, setSavingModelId] = useState<string | null>(null);
   const [feedback, setFeedback] = useState<string | null>(null);
 
   if (!user || user.role !== 'admin') {
@@ -449,6 +452,43 @@ export const AdminPanel: React.FC = () => {
       }
     } catch (err) {
       console.error(err);
+    }
+  };
+
+  const handleStartModelRename = (model: AiModel) => {
+    setEditingModelId(model.id);
+    setEditingModelName(model.display_name);
+  };
+
+  const handleSaveModelRename = async (modelId: string) => {
+    const trimmed = editingModelName.trim();
+    if (!trimmed) {
+      setFeedback('Error: Model name cannot be empty.');
+      return;
+    }
+    setSavingModelId(modelId);
+    try {
+      const res = await fetch(`/api/admin/models/${modelId}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`
+        },
+        body: JSON.stringify({ display_name: trimmed })
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        setFeedback(`Error: ${data.error || 'Failed to rename model.'}`);
+        return;
+      }
+      setModels(prev => prev.map(m => (m.id === modelId ? { ...m, display_name: data.display_name || trimmed } : m)));
+      setEditingModelId(null);
+      setEditingModelName('');
+      setFeedback(`Model renamed to "${data.display_name || trimmed}". Customers now see this name in Workspace.`);
+    } catch (err: any) {
+      setFeedback(`Error: ${err.message || 'Failed to rename model.'}`);
+    } finally {
+      setSavingModelId(null);
     }
   };
 
@@ -1516,7 +1556,62 @@ export const AdminPanel: React.FC = () => {
                   <div key={m.id} className="p-4 space-y-2.5">
                     <div className="flex flex-wrap items-start justify-between gap-2">
                       <div className="min-w-0 flex-1">
-                        <div className="font-semibold text-black dark:text-white break-words">{m.display_name}</div>
+                        {editingModelId === m.id ? (
+                          <form
+                            onSubmit={e => {
+                              e.preventDefault();
+                              handleSaveModelRename(m.id);
+                            }}
+                            className="flex flex-wrap items-center gap-1.5 mb-1"
+                          >
+                            <input
+                              type="text"
+                              autoFocus
+                              value={editingModelName}
+                              onChange={e => setEditingModelName(e.target.value)}
+                              onKeyDown={e => {
+                                if (e.key === 'Escape') {
+                                  setEditingModelId(null);
+                                  setEditingModelName('');
+                                }
+                              }}
+                              aria-label={`New name for ${m.display_name}`}
+                              className="flex-1 min-w-[140px] px-2.5 py-1 rounded-[6px] border border-black dark:border-white bg-white dark:bg-[#1F1F1F] text-xs font-semibold text-black dark:text-white focus:outline-none"
+                            />
+                            <button
+                              type="submit"
+                              disabled={savingModelId === m.id}
+                              aria-label="Save model name"
+                              className="h-7 px-2.5 rounded-full bg-black text-white dark:bg-white dark:text-black font-semibold text-[11px] cursor-pointer disabled:opacity-50"
+                            >
+                              {savingModelId === m.id ? 'Saving...' : 'Save'}
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setEditingModelId(null);
+                                setEditingModelName('');
+                              }}
+                              aria-label="Cancel rename"
+                              className="h-7 px-2.5 rounded-full border border-black/[0.12] dark:border-white/[0.15] text-[11px] cursor-pointer"
+                            >
+                              Cancel
+                            </button>
+                          </form>
+                        ) : (
+                          <div className="flex items-center gap-1.5 flex-wrap">
+                            <div className="font-semibold text-black dark:text-white break-words">{m.display_name}</div>
+                            <button
+                              type="button"
+                              onClick={() => handleStartModelRename(m)}
+                              aria-label={`Rename ${m.display_name}`}
+                              title="Rename model for customers"
+                              className="p-1 text-gray-400 hover:text-black dark:hover:text-white rounded cursor-pointer"
+                            >
+                              <Edit className="w-3 h-3" />
+                            </button>
+                          </div>
+                        )}
                         <div className="text-[10px] font-mono text-gray-400 break-all">{m.openrouter_model_id || m.model_name}</div>
                       </div>
                       <span className={`px-2 py-0.5 rounded-full text-[10px] font-mono uppercase font-bold shrink-0 ${
@@ -1579,7 +1674,64 @@ export const AdminPanel: React.FC = () => {
                     {visibleModels.map(m => (
                       <tr key={m.id} className="hover:bg-black/[0.02] dark:hover:bg-white/[0.02] transition-colors">
                         <td className="py-3 px-4">
-                          <div className="font-semibold text-black dark:text-white">{m.display_name}</div>
+                          {editingModelId === m.id ? (
+                            <form
+                              onSubmit={e => {
+                                e.preventDefault();
+                                handleSaveModelRename(m.id);
+                              }}
+                              className="flex items-center gap-1.5 mb-1"
+                            >
+                              <input
+                                type="text"
+                                autoFocus
+                                value={editingModelName}
+                                onChange={e => setEditingModelName(e.target.value)}
+                                onKeyDown={e => {
+                                  if (e.key === 'Escape') {
+                                    setEditingModelId(null);
+                                    setEditingModelName('');
+                                  }
+                                }}
+                                aria-label={`New name for ${m.display_name}`}
+                                className="w-60 px-2.5 py-1 rounded-[6px] border border-black dark:border-white bg-white dark:bg-[#1F1F1F] text-xs font-semibold text-black dark:text-white focus:outline-none"
+                              />
+                              <button
+                                type="submit"
+                                disabled={savingModelId === m.id}
+                                aria-label="Save model name"
+                                className="h-7 px-2.5 rounded-full bg-black text-white dark:bg-white dark:text-black font-semibold text-[11px] flex items-center gap-1 cursor-pointer disabled:opacity-50"
+                              >
+                                <Check className="w-3 h-3" />
+                                <span>{savingModelId === m.id ? 'Saving...' : 'Save'}</span>
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  setEditingModelId(null);
+                                  setEditingModelName('');
+                                }}
+                                aria-label="Cancel rename"
+                                className="h-7 px-2.5 rounded-full border border-black/[0.12] dark:border-white/[0.15] text-[11px] cursor-pointer"
+                              >
+                                Cancel
+                              </button>
+                            </form>
+                          ) : (
+                            <div className="flex items-center gap-2">
+                              <span className="font-semibold text-black dark:text-white">{m.display_name}</span>
+                              <button
+                                type="button"
+                                onClick={() => handleStartModelRename(m)}
+                                aria-label={`Rename ${m.display_name}`}
+                                title="Rename model for customers"
+                                className="px-2 py-0.5 rounded-full border border-black/[0.1] dark:border-white/[0.12] hover:border-black/30 dark:hover:border-white/30 text-[10px] font-medium text-gray-500 hover:text-black dark:hover:text-white flex items-center gap-1 transition-colors cursor-pointer"
+                              >
+                                <Edit className="w-2.5 h-2.5" />
+                                <span>Rename</span>
+                              </button>
+                            </div>
+                          )}
                           <div className="text-[10px] font-mono text-gray-400">{m.openrouter_model_id || m.model_name}</div>
                         </td>
                         <td className="py-3 px-4">

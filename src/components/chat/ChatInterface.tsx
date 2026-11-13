@@ -22,7 +22,12 @@ import {
   VolumeX,
   Download,
   ThumbsUp,
-  ThumbsDown
+  ThumbsDown,
+  Home,
+  Sun,
+  Moon,
+  User as UserIcon,
+  Shield
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext.tsx';
 import { Chat, Message, AiModel } from '../../types/index.ts';
@@ -197,8 +202,18 @@ const FormattedMessage: React.FC<{ content: string }> = ({ content }) => {
   );
 };
 
-export const ChatInterface: React.FC = () => {
-  const { user, token, refreshUser, openPaymentModal } = useAuth();
+interface ChatInterfaceProps {
+  onNavigateHome?: () => void;
+  onNavigateAccount?: () => void;
+  onNavigateAdmin?: () => void;
+}
+
+export const ChatInterface: React.FC<ChatInterfaceProps> = ({
+  onNavigateHome,
+  onNavigateAccount,
+  onNavigateAdmin
+}) => {
+  const { user, token, refreshUser, openPaymentModal, theme, toggleTheme } = useAuth();
   const [chats, setChats] = useState<Chat[]>([]);
   const [activeChatId, setActiveChatId] = useState<string | null>(null);
   const [messages, setMessages] = useState<Message[]>([]);
@@ -226,7 +241,7 @@ export const ChatInterface: React.FC = () => {
   const isSubscribed = user?.isSubscribed || user?.role === 'admin';
 
   useEffect(() => {
-    fetch('/api/models')
+    fetch('/api/models', { cache: 'no-store' })
       .then(r => r.json())
       .then(data => {
         setModels(data);
@@ -234,6 +249,22 @@ export const ChatInterface: React.FC = () => {
         if (def) setSelectedModelId(def.id);
       })
       .catch(console.error);
+  }, []);
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    let wasDesktop = window.innerWidth >= 768;
+    const handleResize = () => {
+      const isDesktop = window.innerWidth >= 768;
+      if (wasDesktop && !isDesktop) {
+        setSidebarOpen(false);
+      } else if (!wasDesktop && isDesktop) {
+        setSidebarOpen(true);
+      }
+      wasDesktop = isDesktop;
+    };
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
   }, []);
 
   const fetchChats = async () => {
@@ -596,11 +627,11 @@ export const ChatInterface: React.FC = () => {
   ];
 
   return (
-    <div className="flex h-[calc(100dvh-4rem)] overflow-hidden bg-white dark:bg-[#1F1F1F] transition-colors relative">
+    <div className="flex flex-1 h-full w-full max-w-full overflow-hidden bg-white dark:bg-[#1F1F1F] transition-colors relative">
       {/* Mobile Sidebar Backdrop */}
       {sidebarOpen && (
         <div
-          className="fixed inset-0 top-16 bg-black/40 z-20 md:hidden"
+          className="fixed inset-0 bg-black/40 z-20 md:hidden"
           onClick={() => setSidebarOpen(false)}
           aria-hidden="true"
         />
@@ -611,8 +642,8 @@ export const ChatInterface: React.FC = () => {
         className={`${
           sidebarOpen
             ? 'translate-x-0 w-72 max-w-[82vw] md:w-72'
-            : '-translate-x-full w-72 md:w-0 md:translate-x-0 md:border-r-0'
-        } fixed md:relative top-16 md:top-0 bottom-0 left-0 z-30 md:z-20 shrink-0 border-r border-black/[0.08] dark:border-white/[0.08] bg-[#FAFAFA] dark:bg-[#242424] flex flex-col transition-all duration-300 overflow-hidden`}
+            : '-translate-x-full pointer-events-none md:pointer-events-auto w-72 md:w-0 md:translate-x-0 md:border-r-0'
+        } fixed md:relative top-0 bottom-0 left-0 z-30 md:z-20 shrink-0 border-r border-black/[0.08] dark:border-white/[0.08] bg-[#FAFAFA] dark:bg-[#242424] flex flex-col transition-all duration-300 overflow-hidden`}
       >
         <div className="p-3 border-b border-black/[0.08] dark:border-white/[0.08] flex items-center justify-between gap-2">
           <button
@@ -716,54 +747,116 @@ export const ChatInterface: React.FC = () => {
           )}
         </div>
 
-        {/* Footer info */}
-        <div className="p-3 border-t border-black/[0.08] dark:border-white/[0.08] text-[11px] font-mono text-gray-500 flex items-center justify-between">
-          <span>Conversations:</span>
-          <span className="font-semibold text-black dark:text-white">{chats.length}</span>
+        {/* Footer info & quick navigation */}
+        <div className="p-2.5 border-t border-black/[0.08] dark:border-white/[0.08] space-y-2 shrink-0">
+          <div className="flex flex-wrap items-center gap-1.5 text-[11px] font-medium">
+            {onNavigateHome && (
+              <button
+                type="button"
+                onClick={() => {
+                  setSidebarOpen(false);
+                  onNavigateHome();
+                }}
+                className="flex-1 h-8 px-2.5 rounded-[8px] border border-black/[0.08] dark:border-white/[0.08] hover:bg-black/[0.04] dark:hover:bg-white/[0.06] text-gray-700 dark:text-gray-200 flex items-center justify-center gap-1.5 transition-colors cursor-pointer"
+              >
+                <Home className="w-3.5 h-3.5 shrink-0" />
+                <span>Overview</span>
+              </button>
+            )}
+            {onNavigateAccount && (
+              <button
+                type="button"
+                onClick={() => {
+                  setSidebarOpen(false);
+                  onNavigateAccount();
+                }}
+                className="flex-1 h-8 px-2.5 rounded-[8px] border border-black/[0.08] dark:border-white/[0.08] hover:bg-black/[0.04] dark:hover:bg-white/[0.06] text-gray-700 dark:text-gray-200 flex items-center justify-center gap-1.5 transition-colors cursor-pointer"
+              >
+                <UserIcon className="w-3.5 h-3.5 shrink-0" />
+                <span>Account</span>
+              </button>
+            )}
+            {user?.role === 'admin' && onNavigateAdmin && (
+              <button
+                type="button"
+                onClick={() => {
+                  setSidebarOpen(false);
+                  onNavigateAdmin();
+                }}
+                className="w-full h-8 px-2.5 rounded-[8px] bg-black text-white dark:bg-white dark:text-black flex items-center justify-center gap-1.5 transition-opacity hover:opacity-90 cursor-pointer"
+              >
+                <Shield className="w-3.5 h-3.5 shrink-0" />
+                <span>Admin Console</span>
+              </button>
+            )}
+          </div>
+          <div className="px-1 text-[11px] font-mono text-gray-500 flex items-center justify-between">
+            <span>Conversations:</span>
+            <span className="font-semibold text-black dark:text-white">{chats.length}</span>
+          </div>
         </div>
       </aside>
 
       {/* Main Chat Canvas */}
-      <main className="flex-1 min-w-0 w-full flex flex-col h-full overflow-hidden relative bg-white dark:bg-[#1F1F1F]">
-        {/* Header Bar */}
-        <div className="h-14 border-b border-black/[0.08] dark:border-white/[0.08] px-2.5 sm:px-4 flex items-center justify-between gap-2 sm:gap-3 bg-white/90 dark:bg-[#1F1F1F]/90 backdrop-blur-sm z-10">
-          <div className="flex items-center gap-1.5 sm:gap-2 min-w-0 flex-1">
+      <main className="flex-1 min-w-0 w-full max-w-full flex flex-col h-full overflow-hidden relative bg-white dark:bg-[#1F1F1F]">
+        {/* Compact Workspace Top Bar (Website Header hidden to maximize chat space) */}
+        <div className="h-12 shrink-0 border-b border-black/[0.08] dark:border-white/[0.08] px-2 sm:px-4 flex items-center justify-between gap-1.5 sm:gap-3 bg-white/95 dark:bg-[#1F1F1F]/95 backdrop-blur-sm z-10 w-full max-w-full">
+          <div className="flex items-center gap-1 sm:gap-2 min-w-0 flex-1">
+            {onNavigateHome && (
+              <button
+                type="button"
+                onClick={onNavigateHome}
+                aria-label="Back to Overview"
+                title="Back to Bangla AI Overview"
+                className="w-8 h-8 shrink-0 flex items-center justify-center text-gray-600 dark:text-gray-300 hover:text-black dark:hover:text-white rounded-full hover:bg-black/[0.04] dark:hover:bg-white/[0.06] transition-colors cursor-pointer"
+              >
+                <Home className="w-4 h-4" />
+              </button>
+            )}
+
             {!sidebarOpen && (
               <button
+                type="button"
                 onClick={() => setSidebarOpen(true)}
                 aria-label="Open sidebar"
-                className="w-8 h-8 sm:w-9 sm:h-9 shrink-0 flex items-center justify-center text-gray-500 hover:text-black dark:hover:text-white rounded-full hover:bg-black/[0.04] dark:hover:bg-white/[0.05] transition-colors cursor-pointer"
+                className="w-8 h-8 shrink-0 flex items-center justify-center text-gray-500 hover:text-black dark:hover:text-white rounded-full hover:bg-black/[0.04] dark:hover:bg-white/[0.05] transition-colors cursor-pointer"
               >
                 <PanelLeftOpen className="w-4 h-4" />
               </button>
             )}
 
             {/* Model Selector */}
-            <div className="relative min-w-0 max-w-full">
+            <div className="relative min-w-0 flex-1 sm:flex-initial max-w-full">
               <button
+                type="button"
                 onClick={() => setModelDropdownOpen(!modelDropdownOpen)}
+                aria-label={`Select AI model: ${selectedModel?.display_name || 'Select Model'}`}
+                aria-expanded={modelDropdownOpen}
                 className="max-w-full min-w-0 flex items-center gap-1.5 sm:gap-2 px-2.5 sm:px-3 py-1.5 rounded-full border border-black/[0.12] dark:border-white/[0.15] hover:border-black/30 dark:hover:border-white/30 bg-white dark:bg-[#262626] text-xs font-medium text-black dark:text-white transition-all cursor-pointer shadow-2xs"
               >
                 <Sparkles className="w-3 h-3 text-gray-500 shrink-0" />
                 <span className="font-semibold truncate">{selectedModel?.display_name || 'Select Model'}</span>
-                <span className="hidden sm:inline-block shrink-0 text-[10px] uppercase font-mono px-1.5 py-0.2 rounded-full bg-black/[0.05] dark:bg-white/[0.08] text-gray-600 dark:text-gray-400">
-                  {selectedModel?.badge}
-                </span>
+                {selectedModel?.badge && selectedModel.badge !== 'free' && (
+                  <span className="hidden sm:inline-block shrink-0 text-[10px] uppercase font-mono px-1.5 py-0.2 rounded-full bg-black/[0.05] dark:bg-white/[0.08] text-gray-600 dark:text-gray-400">
+                    {selectedModel.badge}
+                  </span>
+                )}
                 <ChevronDown className="w-3 h-3 text-gray-400 shrink-0" />
               </button>
 
               {modelDropdownOpen && (
                 <div
-                  className="absolute left-0 mt-2 w-[calc(100vw-1.5rem)] max-w-[304px] sm:w-76 rounded-[8px] bg-white dark:bg-[#262626] border border-black/[0.12] dark:border-white/[0.15] shadow-xl py-1.5 z-50 text-xs animate-in fade-in slide-in-from-top-1"
+                  className="fixed sm:absolute left-2 right-2 sm:left-0 sm:right-auto top-13 sm:top-full sm:mt-1.5 sm:w-80 rounded-[10px] bg-white dark:bg-[#262626] border border-black/[0.12] dark:border-white/[0.15] shadow-xl py-1.5 z-50 text-xs animate-in fade-in slide-in-from-top-1"
                   onClick={() => setModelDropdownOpen(false)}
                 >
                   <div className="px-3.5 py-1.5 text-[10px] uppercase font-mono text-gray-400 border-b border-black/[0.06] dark:border-white/[0.06]">
                     Frontier Foundation Models
                   </div>
-                  <div className="max-h-80 overflow-y-auto">
+                  <div className="max-h-72 sm:max-h-80 overflow-y-auto">
                     {models.map(m => (
                       <button
                         key={m.id}
+                        type="button"
                         onClick={() => setSelectedModelId(m.id)}
                         className={`w-full text-left px-3.5 py-2.5 flex items-start gap-2.5 hover:bg-black/[0.03] dark:hover:bg-white/[0.04] transition-colors cursor-pointer ${
                           selectedModelId === m.id
@@ -782,14 +875,7 @@ export const ChatInterface: React.FC = () => {
                         </div>
                         <div className="flex-1 min-w-0">
                           <div className="flex items-center justify-between gap-2">
-                            <div className="flex items-center gap-1.5 min-w-0">
-                              <span className="font-semibold truncate">{m.display_name}</span>
-                              {(m.is_free || m.badge === 'free') && (
-                                <span className="shrink-0 text-[9px] font-mono uppercase font-bold px-1.5 py-0.2 rounded bg-emerald-100 text-emerald-700 dark:bg-emerald-950/60 dark:text-emerald-400">
-                                  FREE
-                                </span>
-                              )}
-                            </div>
+                            <span className="font-semibold truncate">{m.display_name}</span>
                             {selectedModelId === m.id && <Check className="w-3.5 h-3.5 text-black dark:text-white shrink-0" />}
                           </div>
                           <p className="text-[10px] text-gray-500 line-clamp-1 mt-0.5 font-normal">
@@ -804,14 +890,14 @@ export const ChatInterface: React.FC = () => {
             </div>
           </div>
 
-          <div className="flex items-center gap-2 sm:gap-3 shrink-0">
+          <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
             {messages.length > 0 && (
               <button
                 type="button"
                 onClick={handleExportFullChat}
                 aria-label="Export conversation as Markdown"
                 title="Export conversation (.md)"
-                className="h-8 px-2.5 rounded-full border border-black/[0.1] dark:border-white/[0.12] hover:border-black/30 dark:hover:border-white/30 text-[11px] font-medium text-gray-600 dark:text-gray-300 hover:text-black dark:hover:text-white flex items-center gap-1.5 transition-colors cursor-pointer whitespace-nowrap shrink-0"
+                className="h-8 w-8 sm:w-auto sm:px-2.5 rounded-full border border-black/[0.1] dark:border-white/[0.12] hover:border-black/30 dark:hover:border-white/30 text-[11px] font-medium text-gray-600 dark:text-gray-300 hover:text-black dark:hover:text-white flex items-center justify-center gap-1.5 transition-colors cursor-pointer whitespace-nowrap shrink-0"
               >
                 <Download className="w-3.5 h-3.5 shrink-0" />
                 <span className="hidden sm:inline">Export Chat</span>
@@ -819,13 +905,22 @@ export const ChatInterface: React.FC = () => {
             )}
 
             {user && (
-              <div className="flex items-center gap-1.5 text-[11px] sm:text-xs font-mono tabular-nums shrink-0">
+              <div className="flex items-center gap-1 text-[11px] sm:text-xs font-mono tabular-nums shrink-0 px-1">
                 <span className="text-gray-500 hidden sm:inline">Tokens:</span>
                 <span className="font-semibold text-black dark:text-white">
                   {Math.max(0, (user.usage_limit || 0) - (user.current_usage || 0)).toLocaleString()}
                 </span>
               </div>
             )}
+
+            <button
+              type="button"
+              onClick={toggleTheme}
+              aria-label="Toggle theme"
+              className="w-8 h-8 rounded-full bg-black/[0.04] dark:bg-white/[0.08] text-gray-700 dark:text-gray-300 hover:text-black dark:hover:text-white flex items-center justify-center transition-colors shrink-0 cursor-pointer"
+            >
+              {theme === 'dark' ? <Sun className="w-3.5 h-3.5" /> : <Moon className="w-3.5 h-3.5" />}
+            </button>
           </div>
         </div>
 
@@ -848,10 +943,10 @@ export const ChatInterface: React.FC = () => {
         )}
 
         {/* Messages Stream */}
-        <div className="flex-1 overflow-y-auto px-3 sm:px-8 py-6 sm:py-8 space-y-6">
+        <div className="flex-1 min-h-0 w-full max-w-full overflow-y-auto overflow-x-hidden px-2.5 sm:px-6 py-4 sm:py-6 space-y-5">
           {messages.length === 0 && !isStreaming ? (
-            <div className="min-h-full flex flex-col items-center justify-center max-w-xl mx-auto text-center py-6 sm:py-12 space-y-5 sm:space-y-6">
-              <BrandLogo className="w-12 h-12 shadow-xs" />
+            <div className="min-h-full flex flex-col items-center justify-center max-w-2xl mx-auto text-center py-4 sm:py-10 space-y-4 sm:space-y-6 w-full">
+              <BrandLogo className="w-11 h-11 sm:w-12 sm:h-12 shadow-xs" />
               <div className="space-y-1.5 px-1">
                 <h2 className="text-xl sm:text-2xl font-bold tracking-tight text-black dark:text-white">
                   Ready when you are.
@@ -862,13 +957,13 @@ export const ChatInterface: React.FC = () => {
               </div>
 
               {/* Suggestions Chips */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 w-full text-left pt-2">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 w-full text-left pt-1">
                 {suggestions.map((s, idx) => (
                   <button
                     key={idx}
                     type="button"
                     onClick={() => handleSendMessage(s)}
-                    className="w-full p-3.5 rounded-[8px] border border-black/[0.08] dark:border-white/[0.08] hover:border-black/30 dark:hover:border-white/30 bg-white dark:bg-[#262626] text-xs text-gray-700 dark:text-gray-300 transition-all flex items-start justify-between gap-2.5 group cursor-pointer shadow-xs text-left"
+                    className="w-full p-3 sm:p-3.5 rounded-[8px] border border-black/[0.08] dark:border-white/[0.08] hover:border-black/30 dark:hover:border-white/30 bg-white dark:bg-[#262626] text-xs text-gray-700 dark:text-gray-300 transition-all flex items-start justify-between gap-2.5 group cursor-pointer shadow-xs text-left"
                   >
                     <span className="leading-snug flex-1 min-w-0 break-words">{s}</span>
                     <ArrowRight className="w-3.5 h-3.5 text-gray-400 group-hover:translate-x-0.5 group-hover:text-black dark:group-hover:text-white transition-all shrink-0 mt-0.5" />
@@ -877,7 +972,7 @@ export const ChatInterface: React.FC = () => {
               </div>
             </div>
           ) : (
-            <div className="max-w-3xl mx-auto space-y-6">
+            <div className="max-w-4xl mx-auto w-full min-w-0 space-y-5">
               {messages.map((m, idx) => {
                 const msgId = m.id || `msg-${idx}`;
                 const modelLabel = getModelDisplayName(m.model_id);
@@ -887,21 +982,21 @@ export const ChatInterface: React.FC = () => {
                 return (
                   <div
                     key={msgId}
-                    className={`flex gap-2.5 sm:gap-3 ${m.role === 'user' ? 'justify-end' : 'justify-start'}`}
+                    className={`flex gap-2.5 sm:gap-3 w-full min-w-0 ${m.role === 'user' ? 'justify-end' : 'justify-start'}`}
                   >
                     {m.role === 'assistant' && (
-                      <BrandLogo className="w-7 h-7 mt-0.5 shrink-0" />
+                      <BrandLogo className="hidden sm:block w-7 h-7 mt-0.5 shrink-0" />
                     )}
 
                     <div
                       className={`min-w-0 ${
                         m.role === 'user'
-                          ? 'max-w-[88%] sm:max-w-[78%] flex flex-col items-end gap-1.5'
-                          : 'flex-1 max-w-[calc(100%-2.25rem)] sm:max-w-[90%] space-y-2'
+                          ? 'max-w-[90%] sm:max-w-[78%] flex flex-col items-end gap-1.5'
+                          : 'w-full max-w-full sm:flex-1 sm:max-w-[92%] space-y-2'
                       }`}
                     >
                       <div
-                        className={`w-full min-w-0 rounded-[12px] px-3.5 sm:px-4 py-3 text-sm leading-relaxed break-words ${
+                        className={`w-full min-w-0 max-w-full overflow-hidden rounded-[12px] px-3 sm:px-4 py-2.5 sm:py-3 text-sm leading-relaxed break-words ${
                           m.role === 'user'
                             ? 'bg-black text-white dark:bg-white dark:text-black font-normal'
                             : 'bg-white dark:bg-[#262626] text-black dark:text-white border border-black/[0.08] dark:border-white/[0.08] shadow-xs'
@@ -1059,9 +1154,9 @@ export const ChatInterface: React.FC = () => {
               })}
 
               {isStreaming && (
-                <div className="flex gap-2.5 sm:gap-3 justify-start animate-in fade-in">
-                  <BrandLogo className="w-7 h-7 mt-0.5 shrink-0" />
-                  <div className="flex-1 min-w-0 max-w-[calc(100%-2.25rem)] sm:max-w-[90%] rounded-[12px] px-3.5 sm:px-4 py-3 bg-white dark:bg-[#262626] text-black dark:text-white border border-black/[0.08] dark:border-white/[0.08] shadow-xs break-words">
+                <div className="flex gap-2.5 sm:gap-3 justify-start w-full min-w-0 animate-in fade-in">
+                  <BrandLogo className="hidden sm:block w-7 h-7 mt-0.5 shrink-0" />
+                  <div className="w-full max-w-full sm:flex-1 sm:max-w-[92%] min-w-0 overflow-hidden rounded-[12px] px-3 sm:px-4 py-2.5 sm:py-3 bg-white dark:bg-[#262626] text-black dark:text-white border border-black/[0.08] dark:border-white/[0.08] shadow-xs break-words">
                     {streamedText ? (
                       <FormattedMessage content={streamedText} />
                     ) : (
@@ -1079,18 +1174,18 @@ export const ChatInterface: React.FC = () => {
         </div>
 
         {/* Input Box Bar */}
-        <div className="p-2.5 sm:p-4 border-t border-black/[0.08] dark:border-white/[0.08] bg-white dark:bg-[#1F1F1F]">
-          <div className="max-w-3xl mx-auto">
+        <div className="p-2 sm:p-3.5 border-t border-black/[0.08] dark:border-white/[0.08] bg-white dark:bg-[#1F1F1F] shrink-0 w-full max-w-full">
+          <div className="max-w-4xl mx-auto w-full min-w-0">
             <form
               onSubmit={e => {
                 e.preventDefault();
                 handleSendMessage();
               }}
-              className="relative flex items-end rounded-[12px] border border-black/[0.12] dark:border-white/[0.15] bg-white dark:bg-[#262626] focus-within:border-black dark:focus-within:border-white transition-all p-2 shadow-xs"
+              className="relative flex items-end rounded-[12px] border border-black/[0.12] dark:border-white/[0.15] bg-white dark:bg-[#262626] focus-within:border-black dark:focus-within:border-white transition-all p-1.5 sm:p-2 shadow-xs"
             >
               <textarea
                 ref={inputRef}
-                rows={1}
+                rows={2}
                 value={inputMessage}
                 onChange={e => setInputMessage(e.target.value)}
                 onKeyDown={e => {
@@ -1105,7 +1200,7 @@ export const ChatInterface: React.FC = () => {
                     : 'Activate a subscription plan to chat...'
                 }
                 disabled={!isSubscribed}
-                className="w-full min-w-0 resize-none bg-transparent px-2.5 sm:px-3 py-2 text-xs sm:text-sm text-black dark:text-white placeholder-gray-400 focus:outline-none max-h-36 disabled:opacity-50"
+                className="w-full min-w-0 resize-none bg-transparent px-2.5 sm:px-3 py-1.5 sm:py-2 text-[15px] sm:text-sm text-black dark:text-white placeholder-gray-400 focus:outline-none max-h-40 disabled:opacity-50"
               />
 
               <button
@@ -1118,9 +1213,9 @@ export const ChatInterface: React.FC = () => {
               </button>
             </form>
 
-            <div className="flex flex-wrap items-center justify-between gap-1 text-[10px] sm:text-[11px] text-gray-500 px-1 sm:px-2 mt-2 font-mono">
+            <div className="hidden sm:flex items-center justify-between gap-2 text-[11px] text-gray-500 px-2 mt-1.5 font-mono">
               <span>Enter to send • Shift+Enter for new line</span>
-              <span className="truncate max-w-full">{selectedModel?.display_name}</span>
+              <span className="truncate max-w-xs">{selectedModel?.display_name}</span>
             </div>
           </div>
         </div>

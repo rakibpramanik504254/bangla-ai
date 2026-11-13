@@ -7,6 +7,7 @@ import { db, User, verifyPassword, hashPassword } from './src/db/database.ts';
 import { authenticate, requireAdmin, generateToken, AuthenticatedRequest } from './src/server/auth.ts';
 import { AiService } from './src/server/ai-service.ts';
 import { buildNewFreeModelsFromOpenRouterApi } from './src/server/openrouter-free-models.ts';
+import { sanitizeModelForWorkspace } from './src/server/model-sanitizer.ts';
 import { isSubscriptionActive, calculateUsageStats, PLANS } from './src/utils/billing.ts';
 
 dotenv.config();
@@ -321,7 +322,8 @@ app.get('/api/payments/history', authenticate, (req: AuthenticatedRequest, res: 
 // ==========================================
 
 app.get('/api/models', (_req: Request, res: Response) => {
-  const models = db.listModels(true);
+  res.setHeader('Cache-Control', 'no-store');
+  const models = db.listModels(true).map(sanitizeModelForWorkspace);
   res.json(models);
 });
 
@@ -621,11 +623,16 @@ app.get('/api/admin/models', requireAdmin, (_req: AuthenticatedRequest, res: Res
 
 app.put('/api/admin/models/:id', requireAdmin, (req: AuthenticatedRequest, res: Response) => {
   const { is_enabled, is_default, badge, display_name, openrouter_model_id } = req.body;
+  const trimmedName = typeof display_name === 'string' ? display_name.trim() : undefined;
+  if (display_name !== undefined && !trimmedName) {
+    res.status(400).json({ error: 'Model display name cannot be empty.' });
+    return;
+  }
   const updated = db.updateModel(req.params.id, {
     ...(is_enabled !== undefined && { is_enabled }),
     ...(is_default !== undefined && { is_default }),
     ...(badge !== undefined && { badge }),
-    ...(display_name !== undefined && { display_name }),
+    ...(trimmedName !== undefined && { display_name: trimmedName }),
     ...(openrouter_model_id !== undefined && { openrouter_model_id })
   });
   if (!updated) {

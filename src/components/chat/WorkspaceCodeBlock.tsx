@@ -31,7 +31,9 @@ export const WorkspaceCodeBlock: React.FC<WorkspaceCodeBlockProps> = ({
   isStreaming = false
 }) => {
   const [copied, setCopied] = useState(false);
-  const [wrapLines, setWrapLines] = useState(false);
+  const [wrapLines, setWrapLines] = useState(() =>
+    typeof window !== 'undefined' ? window.innerWidth < 640 : false
+  );
 
   const lines = code.split('\n');
   const displayLang = (language || 'code').trim() || 'code';
