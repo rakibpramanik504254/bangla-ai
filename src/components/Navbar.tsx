@@ -13,6 +13,7 @@ import {
   ChevronDown
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext.tsx';
+import { BrandLogo } from './common/BrandLogo.tsx';
 
 interface NavbarProps {
   currentView: 'home' | 'chat' | 'account' | 'admin' | 'about' | 'privacy' | 'terms' | 'security';
@@ -39,9 +40,7 @@ export const Navbar: React.FC<NavbarProps> = ({ currentView, setCurrentView }) =
             }}
             className="flex items-center gap-1.5 sm:gap-2 text-left group focus:outline-none whitespace-nowrap"
           >
-            <div className="w-6 h-6 sm:w-7 sm:h-7 rounded-full bg-black dark:bg-white text-white dark:text-black flex items-center justify-center font-bold text-[11px] sm:text-xs shrink-0">
-              ✦
-            </div>
+            <BrandLogo className="w-6 h-6 sm:w-7 sm:h-7" />
             <span className="text-sm sm:text-base font-bold tracking-tight text-black dark:text-white">
               Bangla AI
             </span>

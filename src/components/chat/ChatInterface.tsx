@@ -23,6 +23,7 @@ import {
 import { useAuth } from '../../context/AuthContext.tsx';
 import { Chat, Message, AiModel } from '../../types/index.ts';
 import { formatBDT, isSubscriptionActive } from '../../utils/billing.ts';
+import { BrandLogo } from '../common/BrandLogo.tsx';
 
 const FormattedMessage: React.FC<{ content: string }> = ({ content }) => {
   const [copiedIndex, setCopiedIndex] = useState<number | null>(null);
@@ -678,9 +679,7 @@ export const ChatInterface: React.FC = () => {
         <div className="flex-1 overflow-y-auto px-3 sm:px-8 py-6 sm:py-8 space-y-6">
           {messages.length === 0 && !isStreaming ? (
             <div className="min-h-full flex flex-col items-center justify-center max-w-xl mx-auto text-center py-6 sm:py-12 space-y-5 sm:space-y-6">
-              <div className="w-12 h-12 rounded-full border border-black/10 dark:border-white/10 bg-white dark:bg-[#262626] text-black dark:text-white flex items-center justify-center font-bold shadow-xs">
-                <Sparkles className="w-5 h-5" />
-              </div>
+              <BrandLogo className="w-12 h-12 shadow-xs" />
               <div className="space-y-1.5 px-1">
                 <h2 className="text-xl sm:text-2xl font-bold tracking-tight text-black dark:text-white">
                   Ready when you are.
@@ -713,9 +712,7 @@ export const ChatInterface: React.FC = () => {
                   className={`flex gap-2.5 sm:gap-3 ${m.role === 'user' ? 'justify-end' : 'justify-start'}`}
                 >
                   {m.role === 'assistant' && (
-                    <div className="w-7 h-7 rounded-full border border-black/10 dark:border-white/10 bg-white dark:bg-[#262626] text-black dark:text-white flex items-center justify-center font-bold text-xs shrink-0 mt-0.5">
-                      <Sparkles className="w-3.5 h-3.5" />
-                    </div>
+                    <BrandLogo className="w-7 h-7 mt-0.5" />
                   )}
 
                   <div
@@ -736,9 +733,7 @@ export const ChatInterface: React.FC = () => {
 
               {isStreaming && (
                 <div className="flex gap-3 justify-start animate-in fade-in">
-                  <div className="w-7 h-7 rounded-full border border-black/10 dark:border-white/10 bg-white dark:bg-[#262626] text-black dark:text-white flex items-center justify-center font-bold text-xs shrink-0 mt-0.5 animate-pulse">
-                    <Sparkles className="w-3.5 h-3.5" />
-                  </div>
+                  <BrandLogo className="w-7 h-7 mt-0.5 animate-pulse" />
                   <div className="max-w-[85%] sm:max-w-[80%] rounded-[12px] px-4 py-3 bg-white dark:bg-[#262626] text-black dark:text-white border border-black/[0.08] dark:border-white/[0.08] shadow-xs">
                     {streamedText ? (
                       <FormattedMessage content={streamedText} />

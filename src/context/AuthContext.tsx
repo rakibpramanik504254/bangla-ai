@@ -44,6 +44,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     } else {
       document.documentElement.classList.remove('dark');
     }
+    const favicon = document.getElementById('app-favicon') as HTMLLinkElement | null;
+    if (favicon) {
+      favicon.href =
+        theme === 'dark'
+          ? '/assets/aistudio/for_black_theme__6e900797.png'
+          : '/assets/aistudio/for_white_theme__de4bccba.png';
+    }
     localStorage.setItem('bangla_ai_theme', theme);
   }, [theme]);
 

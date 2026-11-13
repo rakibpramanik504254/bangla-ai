@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
-import { X, Sparkles, AlertCircle, CheckCircle2, ArrowRight, ShieldCheck, Mail, Lock, User as UserIcon, Phone, KeyRound } from 'lucide-react';
+import { X, AlertCircle, CheckCircle2, ArrowRight, ShieldCheck, Mail, Lock, User as UserIcon, Phone, KeyRound } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext.tsx';
+import { BrandLogo } from '../common/BrandLogo.tsx';
 
 interface AuthModalProps {
   isOpen: boolean;
@@ -124,8 +125,8 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, defaultTa
 
         {/* Modal Header */}
         <div className="px-4 sm:px-6 pt-6 pb-4 border-b border-black/[0.08] dark:border-white/[0.08] text-center">
-          <div className="inline-flex items-center justify-center w-10 h-10 rounded-full border border-black/10 dark:border-white/10 bg-white dark:bg-[#1F1F1F] text-black dark:text-white mb-2.5 font-bold shadow-xs">
-            <Sparkles className="w-4 h-4" />
+          <div className="mb-2.5 flex justify-center">
+            <BrandLogo className="w-10 h-10 shadow-xs" />
           </div>
           <h2 className="text-lg font-bold text-black dark:text-white">
             {tab === 'login' && 'Sign In to Bangla AI'}

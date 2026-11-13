@@ -1,5 +1,6 @@
 import React from 'react';
 import { ShieldCheck, Facebook, Mail, Phone, Globe } from 'lucide-react';
+import { BrandLogo } from './common/BrandLogo.tsx';
 
 interface FooterProps {
   setCurrentView: (view: 'home' | 'chat' | 'account' | 'admin' | 'about' | 'privacy' | 'terms' | 'security') => void;
@@ -17,9 +18,7 @@ export const Footer: React.FC<FooterProps> = ({ setCurrentView }) => {
           {/* Brand */}
           <div className="space-y-3 md:col-span-1">
             <div className="flex items-center gap-2">
-              <div className="w-6 h-6 rounded-full bg-black dark:bg-white text-white dark:text-black flex items-center justify-center font-bold text-xs">
-                ✦
-              </div>
+              <BrandLogo className="w-6 h-6" />
               <span className="text-sm font-bold tracking-tight text-black dark:text-white">Bangla AI</span>
             </div>
             <p className="text-xs leading-relaxed text-gray-500 max-w-xs">
