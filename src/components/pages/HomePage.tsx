@@ -23,6 +23,7 @@ import { useAuth } from '../../context/AuthContext.tsx';
 import { PLANS, formatBDT } from '../../utils/billing.ts';
 import { VideoDemoSection } from '../home/VideoDemoSection.tsx';
 import { SmarterWorkflowsSection } from '../home/SmarterWorkflowsSection.tsx';
+import { CodeIdeHighlight } from '../home/CodeIdeHighlight.tsx';
 import {
   AnthropicClaudeIcon,
   GoogleGeminiIcon,
@@ -833,9 +834,17 @@ export const HomePage: React.FC<HomePageProps> = ({ onStartChat }) => {
                 {SAMPLE_BENCHMARKS[activeBenchmarkTab].models[activeModelTab]?.badge}
               </span>
             </div>
-            <pre className="text-xs font-mono text-gray-800 dark:text-gray-200 whitespace-pre-wrap break-words leading-relaxed overflow-x-auto max-w-full">
-              {SAMPLE_BENCHMARKS[activeBenchmarkTab].models[activeModelTab]?.output}
-            </pre>
+            {SAMPLE_BENCHMARKS[activeBenchmarkTab].id === 'coding' ? (
+              <CodeIdeHighlight
+                code={SAMPLE_BENCHMARKS[activeBenchmarkTab].models[activeModelTab]?.output || ''}
+                filename="useDebouncedSearch.ts"
+                languageLabel="TypeScript"
+              />
+            ) : (
+              <pre className="text-xs font-mono text-gray-800 dark:text-gray-200 whitespace-pre-wrap break-words leading-relaxed overflow-x-auto max-w-full">
+                {SAMPLE_BENCHMARKS[activeBenchmarkTab].models[activeModelTab]?.output}
+              </pre>
+            )}
           </div>
         </div>
       </section>

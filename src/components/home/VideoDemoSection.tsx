@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Play, Sparkles, ExternalLink } from 'lucide-react';
+import { Play, Sparkles } from 'lucide-react';
 
 interface VideoDemoSectionProps {
   videoId?: string;
@@ -36,15 +36,13 @@ export const VideoDemoSection: React.FC<VideoDemoSectionProps> = ({
     };
   }, []);
 
-  // Construct YouTube Embed URL:
-  // - autoplay=1: autoplays when loaded
-  // - mute=1: muted so it plays continuously across all browsers
-  // - controls=1: shows native YouTube playback controls (play, pause, seek, volume, fullscreen)
-  // - loop=1&playlist=${videoId}: continuously loops and keeps playing
+  // Construct clean YouTube Embed URL with hidden controls:
+  // - autoplay=1&mute=1: plays seamlessly muted across browsers
+  // - controls=0&disablekb=1&fs=0&iv_load_policy=3: keeps default YouTube UI controls hidden
+  // - loop=1&playlist=${videoId}: continuous loop
   // - playsinline=1: inline playback on mobile
-  // - rel=0: related videos from same channel
   const embedUrl = isInView
-    ? `https://www.youtube-nocookie.com/embed/${videoId}?autoplay=1&mute=1&controls=1&loop=1&playlist=${videoId}&playsinline=1&rel=0&modestbranding=0&enablejsapi=1`
+    ? `https://www.youtube-nocookie.com/embed/${videoId}?autoplay=1&mute=1&controls=0&disablekb=1&fs=0&iv_load_policy=3&loop=1&playlist=${videoId}&playsinline=1&rel=0&modestbranding=1&enablejsapi=1`
     : '';
 
   return (
@@ -74,8 +72,7 @@ export const VideoDemoSection: React.FC<VideoDemoSectionProps> = ({
               src={embedUrl}
               title="Bangla AI Product Walkthrough"
               allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
-              allowFullScreen
-              className="w-full h-full border-0 absolute inset-0 z-0"
+              className="w-full h-full border-0 absolute inset-0 z-0 pointer-events-none select-none"
             />
           ) : (
             /* High-res poster preview while waiting for scroll */
@@ -95,23 +92,6 @@ export const VideoDemoSection: React.FC<VideoDemoSectionProps> = ({
               </div>
             </div>
           )}
-        </div>
-
-        {/* Caption bar underneath video */}
-        <div className="mt-3 px-2 sm:px-3 py-1 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 text-[11px] text-gray-500 font-mono">
-          <div className="flex items-start sm:items-center gap-2 min-w-0">
-            <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse shrink-0 mt-1 sm:mt-0" />
-            <span className="leading-snug">Looping Muted with Controls • Unmute anytime via player controls</span>
-          </div>
-          <a
-            href={`https://youtu.be/${videoId}`}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="text-gray-400 hover:text-black dark:hover:text-white transition-colors flex items-center gap-1 shrink-0"
-          >
-            <span>Open in YouTube</span>
-            <ExternalLink className="w-3 h-3" />
-          </a>
         </div>
       </div>
     </section>

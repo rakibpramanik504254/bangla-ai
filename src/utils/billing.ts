@@ -19,7 +19,7 @@ export const PLANS: Record<'monthly' | 'yearly', PlanConfig> = {
     priceBDT: 699,
     durationDays: 30,
     features: [
-      'Full access to top AI models (Gemini 2.5, GPT-4o, Claude 3.5, DeepSeek)',
+      'Full access to top AI models (Claude Fable 5.2 (max), Gemini 4 Carbon (high), GPT-6 Astra (max), Grok 4.7 (xhigh))',
       'High-speed streaming responses with priority queuing',
       '1,000,000 (1M) token quota per monthly billing cycle',
       'Persistent chat history & session management',
