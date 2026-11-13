@@ -54,9 +54,9 @@ export const VideoDemoSection: React.FC<VideoDemoSectionProps> = ({
         <span className="text-xs font-mono uppercase tracking-wider text-gray-400 block">
           Product Walkthrough
         </span>
-        <h2 className="text-2xl sm:text-3xl font-medium tracking-tight text-black dark:text-white flex items-center justify-center gap-2">
+        <h2 className="text-2xl sm:text-3xl font-medium tracking-tight text-black dark:text-white flex flex-wrap items-center justify-center gap-2">
           <span>See Bangla AI in Action</span>
-          <Sparkles className="w-5 h-5 text-blue-500 animate-pulse" />
+          <Sparkles className="w-5 h-5 text-blue-500 animate-pulse shrink-0" />
         </h2>
         <p className="text-sm text-gray-500 max-w-xl mx-auto">
           Watch how effortlessly you can orchestrate 10 foundation models, synthesize complex code, and generate bilingual solutions in real time.
@@ -98,16 +98,16 @@ export const VideoDemoSection: React.FC<VideoDemoSectionProps> = ({
         </div>
 
         {/* Caption bar underneath video */}
-        <div className="mt-3 px-3 py-1 flex items-center justify-between text-[11px] text-gray-500 font-mono">
-          <div className="flex items-center gap-2">
-            <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-            <span>Looping Muted with Controls • Unmute anytime via player controls</span>
+        <div className="mt-3 px-2 sm:px-3 py-1 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 text-[11px] text-gray-500 font-mono">
+          <div className="flex items-start sm:items-center gap-2 min-w-0">
+            <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse shrink-0 mt-1 sm:mt-0" />
+            <span className="leading-snug">Looping Muted with Controls • Unmute anytime via player controls</span>
           </div>
           <a
             href={`https://youtu.be/${videoId}`}
             target="_blank"
             rel="noopener noreferrer"
-            className="text-gray-400 hover:text-black dark:hover:text-white transition-colors flex items-center gap-1"
+            className="text-gray-400 hover:text-black dark:hover:text-white transition-colors flex items-center gap-1 shrink-0"
           >
             <span>Open in YouTube</span>
             <ExternalLink className="w-3 h-3" />

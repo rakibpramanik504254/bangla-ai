@@ -142,9 +142,9 @@ export const Footer: React.FC<FooterProps> = ({ setCurrentView }) => {
               <li className="pt-1 font-mono">
                 <a
                   href="mailto:ourbangla.ai@gmail.com"
-                  className="text-gray-700 dark:text-gray-300 hover:text-black dark:hover:text-white transition-colors inline-flex items-center gap-1.5"
+                  className="text-gray-700 dark:text-gray-300 hover:text-black dark:hover:text-white transition-colors inline-flex items-center gap-1.5 break-all"
                 >
-                  <Mail className="w-3 h-3 text-gray-400" />
+                  <Mail className="w-3 h-3 text-gray-400 shrink-0" />
                   <span>ourbangla.ai@gmail.com</span>
                 </a>
               </li>
@@ -153,7 +153,7 @@ export const Footer: React.FC<FooterProps> = ({ setCurrentView }) => {
                   href="tel:+8801622860128"
                   className="text-gray-700 dark:text-gray-300 hover:text-black dark:hover:text-white transition-colors inline-flex items-center gap-1.5"
                 >
-                  <Phone className="w-3 h-3 text-gray-400" />
+                  <Phone className="w-3 h-3 text-gray-400 shrink-0" />
                   <span>+880 1622-860128</span>
                 </a>
               </li>
@@ -164,7 +164,7 @@ export const Footer: React.FC<FooterProps> = ({ setCurrentView }) => {
                   rel="noopener noreferrer"
                   className="text-gray-700 dark:text-gray-300 hover:text-black dark:hover:text-white transition-colors inline-flex items-center gap-1.5"
                 >
-                  <Globe className="w-3 h-3 text-gray-400" />
+                  <Globe className="w-3 h-3 text-gray-400 shrink-0" />
                   <span>bangla-ai.pro</span>
                 </a>
               </li>
@@ -172,9 +172,9 @@ export const Footer: React.FC<FooterProps> = ({ setCurrentView }) => {
           </div>
         </div>
 
-        <div className="mt-12 pt-6 border-t border-black/[0.06] dark:border-white/[0.06] flex flex-col sm:flex-row items-center justify-between gap-4 text-[11px] text-gray-400">
+        <div className="mt-12 pt-6 border-t border-black/[0.06] dark:border-white/[0.06] flex flex-col sm:flex-row items-center justify-between gap-4 text-[11px] text-gray-400 text-center sm:text-left">
           <p>© 2026 Bangla AI (<a href="https://bangla-ai.pro" className="hover:underline">bangla-ai.pro</a>). All rights reserved.</p>
-          <div className="flex items-center gap-4">
+          <div className="flex flex-wrap items-center justify-center gap-4">
             <a
               href="https://www.facebook.com/profile.php?id=61596472081766"
               target="_blank"

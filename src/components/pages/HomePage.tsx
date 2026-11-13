@@ -119,12 +119,12 @@ export const HomePage: React.FC<HomePageProps> = ({ onStartChat }) => {
   };
 
   return (
-    <div className="space-y-24 sm:space-y-32 py-12 sm:py-20 animate-in fade-in transition-colors bg-white dark:bg-[#1F1F1F] text-black dark:text-white">
+    <div className="space-y-20 sm:space-y-32 py-10 sm:py-20 overflow-x-clip animate-in fade-in transition-colors bg-white dark:bg-[#1F1F1F] text-black dark:text-white">
       {/* Hero Region (OpenAI Minimal Spacious Center) */}
       <section className="max-w-4xl mx-auto px-4 sm:px-6 text-center">
         <div className="space-y-6">
-          <div className="inline-flex items-center gap-2 px-3.5 py-1 rounded-full border border-black/10 dark:border-white/15 bg-white dark:bg-neutral-900 text-xs font-medium text-gray-700 dark:text-gray-300">
-            <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+          <div className="inline-flex flex-wrap items-center justify-center gap-2 px-3 sm:px-3.5 py-1.5 rounded-full border border-black/10 dark:border-white/15 bg-white dark:bg-neutral-900 text-[11px] sm:text-xs font-medium text-gray-700 dark:text-gray-300 max-w-full">
+            <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse shrink-0" />
             <span>Bangla AI • All 10 Frontier AI Models in One Hub</span>
           </div>
 
@@ -167,22 +167,22 @@ export const HomePage: React.FC<HomePageProps> = ({ onStartChat }) => {
           </div>
 
           {/* Key Metrics Strip (Clean Typography, No Pill Enclosures) */}
-          <div className="pt-12 mt-6 border-t border-black/[0.06] dark:border-white/[0.06] grid grid-cols-2 md:grid-cols-4 gap-6 text-center">
-            <div>
-              <p className="text-2xl font-bold tracking-tight text-black dark:text-white">10+ Models</p>
-              <p className="text-xs text-gray-500 mt-1">Claude Fable, Gemini 4, GPT-6, Grok</p>
+          <div className="pt-10 sm:pt-12 mt-6 border-t border-black/[0.06] dark:border-white/[0.06] grid grid-cols-2 md:grid-cols-4 gap-4 sm:gap-6 text-center">
+            <div className="min-w-0">
+              <p className="text-xl sm:text-2xl font-bold tracking-tight text-black dark:text-white">10+ Models</p>
+              <p className="text-[11px] sm:text-xs text-gray-500 mt-1">Claude Fable, Gemini 4, GPT-6, Grok</p>
             </div>
-            <div>
-              <p className="text-2xl font-bold tracking-tight text-black dark:text-white">Direct MFS</p>
-              <p className="text-xs text-gray-500 mt-1">bKash, Nagad & Rocket verification</p>
+            <div className="min-w-0">
+              <p className="text-xl sm:text-2xl font-bold tracking-tight text-black dark:text-white">Direct MFS</p>
+              <p className="text-[11px] sm:text-xs text-gray-500 mt-1">bKash, Nagad & Rocket verification</p>
             </div>
-            <div>
-              <p className="text-2xl font-bold tracking-tight text-black dark:text-white">Zero Cards</p>
-              <p className="text-xs text-gray-500 mt-1">No dual currency passport hassle</p>
+            <div className="min-w-0">
+              <p className="text-xl sm:text-2xl font-bold tracking-tight text-black dark:text-white">Zero Cards</p>
+              <p className="text-[11px] sm:text-xs text-gray-500 mt-1">No dual currency passport hassle</p>
             </div>
-            <div>
-              <p className="text-2xl font-bold tracking-tight text-black dark:text-white">99.9%</p>
-              <p className="text-xs text-gray-500 mt-1">High-throughput uptime</p>
+            <div className="min-w-0">
+              <p className="text-xl sm:text-2xl font-bold tracking-tight text-black dark:text-white">99.9%</p>
+              <p className="text-[11px] sm:text-xs text-gray-500 mt-1">High-throughput uptime</p>
             </div>
           </div>
         </div>
@@ -203,7 +203,60 @@ export const HomePage: React.FC<HomePageProps> = ({ onStartChat }) => {
         </div>
 
         <div className="overflow-hidden rounded-[8px] border border-black/[0.08] dark:border-white/[0.08] bg-white dark:bg-[#262626] shadow-xs">
-          <div className="overflow-x-auto">
+          {/* Mobile Stacked Comparison Cards (Zero horizontal table scroll) */}
+          <div className="sm:hidden divide-y divide-black/[0.06] dark:divide-white/[0.06] text-xs">
+            {[
+              {
+                label: 'Monthly Subscription Cost',
+                separate: '$80+ / mo (~৳10,000+ BDT)',
+                unified: '৳699 / mo (Save 93%)',
+                highlight: true
+              },
+              {
+                label: 'Payment Method in Bangladesh',
+                separate: 'Passport-endorsed Dual Currency Credit Card required',
+                unified: 'bKash, Nagad, Rocket (TrxID)'
+              },
+              {
+                label: 'Catalog of Top Foundation Models',
+                separate: '1 model per subscription tab',
+                unified: '10 Flagship Models in 1 Account'
+              },
+              {
+                label: 'Cross-Model Workflow Switcher',
+                separate: 'Manual copy-pasting across different browser tabs',
+                unified: 'Switch model in-flight with continuous context'
+              },
+              {
+                label: 'Customer Support & Verification',
+                separate: 'Overseas automated chatbot',
+                unified: 'Dedicated Bangladesh Support Team'
+              }
+            ].map((row) => (
+              <div key={row.label} className="p-4 space-y-2.5">
+                <p className="font-bold text-black dark:text-white">{row.label}</p>
+                <div className="grid grid-cols-1 gap-2">
+                  <div className="p-2.5 rounded-[6px] bg-black/[0.02] dark:bg-white/[0.03] border border-black/[0.05] dark:border-white/[0.06]">
+                    <span className="text-[10px] font-mono uppercase tracking-wider text-gray-400 block mb-0.5">
+                      Separate Plans
+                    </span>
+                    <span className="text-gray-500 dark:text-gray-400 leading-snug block">{row.separate}</span>
+                  </div>
+                  <div className="p-2.5 rounded-[6px] bg-emerald-500/[0.06] dark:bg-emerald-500/[0.08] border border-emerald-500/20">
+                    <span className="text-[10px] font-mono uppercase tracking-wider text-emerald-600 dark:text-emerald-400 block mb-0.5">
+                      Bangla AI (Unified)
+                    </span>
+                    <span className={`leading-snug block ${row.highlight ? 'font-bold font-mono text-emerald-600 dark:text-emerald-400' : 'font-semibold text-black dark:text-white'}`}>
+                      {row.unified}
+                    </span>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+
+          {/* Desktop Comparison Table */}
+          <div className="hidden sm:block overflow-x-auto">
             <table className="w-full text-left text-xs">
               <thead className="bg-[#F9F9F9] dark:bg-[#2D2D2D] border-b border-black/[0.08] dark:border-white/[0.08] font-mono text-[11px] text-gray-500">
                 <tr>
@@ -589,9 +642,9 @@ export const HomePage: React.FC<HomePageProps> = ({ onStartChat }) => {
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6 items-stretch">
           {/* Monthly Plan */}
-          <div className="card-minimal p-7 flex flex-col justify-between">
+          <div className="card-minimal p-5 sm:p-7 flex flex-col justify-between min-w-0">
             <div>
-              <div className="flex justify-between items-center">
+              <div className="flex flex-wrap justify-between items-center gap-2">
                 <h3 className="text-lg font-bold text-black dark:text-white">Monthly Plan</h3>
                 <span className="px-2.5 py-0.5 rounded-full bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20 text-[10px] font-mono font-bold">
                   15% OFF
@@ -643,9 +696,9 @@ export const HomePage: React.FC<HomePageProps> = ({ onStartChat }) => {
           </div>
 
           {/* Yearly Plan (Emphasis Card) */}
-          <div className="card-minimal p-7 flex flex-col justify-between border-black/20 dark:border-white/25 shadow-sm relative">
+          <div className="card-minimal p-5 sm:p-7 flex flex-col justify-between border-black/20 dark:border-white/25 shadow-sm relative min-w-0">
             <div>
-              <div className="flex justify-between items-center">
+              <div className="flex flex-wrap justify-between items-center gap-2">
                 <h3 className="text-lg font-bold text-black dark:text-white">Yearly Plan</h3>
                 <span className="px-2.5 py-0.5 rounded-full bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20 text-[10px] font-mono font-bold">
                   28% OFF • BEST VALUE
@@ -722,7 +775,7 @@ export const HomePage: React.FC<HomePageProps> = ({ onStartChat }) => {
         </div>
 
         {/* Task Category Tabs */}
-        <div className="flex items-center justify-center gap-2 mb-6 overflow-x-auto pb-2">
+        <div className="flex flex-wrap items-center justify-center gap-2 mb-6">
           {SAMPLE_BENCHMARKS.map((sample, idx) => (
             <button
               key={sample.id}
@@ -730,7 +783,7 @@ export const HomePage: React.FC<HomePageProps> = ({ onStartChat }) => {
                 setActiveBenchmarkTab(idx);
                 setActiveModelTab(0);
               }}
-              className={`h-9 px-4 rounded-full text-xs font-semibold transition-all cursor-pointer ${
+              className={`min-h-9 h-auto py-2 px-3.5 sm:px-4 rounded-full text-xs font-semibold transition-all cursor-pointer text-center ${
                 activeBenchmarkTab === idx
                   ? 'bg-black text-white dark:bg-white dark:text-black shadow-xs'
                   : 'bg-black/[0.04] dark:bg-white/[0.06] text-gray-600 dark:text-gray-400 hover:text-black dark:hover:text-white'
@@ -742,24 +795,24 @@ export const HomePage: React.FC<HomePageProps> = ({ onStartChat }) => {
         </div>
 
         {/* Interactive Prompt & Model Output Card */}
-        <div className="rounded-[8px] border border-black/[0.08] dark:border-white/[0.08] bg-white dark:bg-[#262626] p-6 shadow-xs space-y-5">
+        <div className="rounded-[8px] border border-black/[0.08] dark:border-white/[0.08] bg-white dark:bg-[#262626] p-4 sm:p-6 shadow-xs space-y-5 min-w-0">
           {/* Prompt Header */}
           <div className="space-y-1.5 pb-4 border-b border-black/[0.06] dark:border-white/[0.06]">
             <span className="text-[10px] font-mono uppercase tracking-wider text-gray-400 block">
               Prompt Input
             </span>
-            <p className="text-sm font-medium text-black dark:text-white">
+            <p className="text-sm font-medium text-black dark:text-white break-words">
               "{SAMPLE_BENCHMARKS[activeBenchmarkTab].prompt}"
             </p>
           </div>
 
           {/* Model Selector Tabs */}
-          <div className="flex items-center gap-2 overflow-x-auto pb-1">
+          <div className="flex flex-wrap items-center gap-2">
             {SAMPLE_BENCHMARKS[activeBenchmarkTab].models.map((m, mIdx) => (
               <button
                 key={mIdx}
                 onClick={() => setActiveModelTab(mIdx)}
-                className={`text-xs px-3.5 py-1.5 rounded-full border transition-all cursor-pointer font-mono ${
+                className={`text-xs px-3 sm:px-3.5 py-1.5 rounded-full border transition-all cursor-pointer font-mono text-left ${
                   activeModelTab === mIdx
                     ? 'border-black dark:border-white bg-black dark:bg-white text-white dark:text-black font-bold'
                     : 'border-black/10 dark:border-white/10 text-gray-500 hover:border-black/30'
@@ -771,16 +824,16 @@ export const HomePage: React.FC<HomePageProps> = ({ onStartChat }) => {
           </div>
 
           {/* Rendered Output Box */}
-          <div className="bg-[#F8F9FA] dark:bg-[#1F1F1F] rounded-[8px] p-4 border border-black/[0.05] dark:border-white/[0.05]">
-            <div className="flex items-center justify-between mb-3 text-[11px] text-gray-500">
-              <span className="font-mono text-black dark:text-white font-semibold">
+          <div className="bg-[#F8F9FA] dark:bg-[#1F1F1F] rounded-[8px] p-3.5 sm:p-4 border border-black/[0.05] dark:border-white/[0.05] min-w-0">
+            <div className="flex flex-wrap items-center justify-between gap-2 mb-3 text-[11px] text-gray-500">
+              <span className="font-mono text-black dark:text-white font-semibold break-words">
                 {SAMPLE_BENCHMARKS[activeBenchmarkTab].models[activeModelTab]?.modelName}
               </span>
-              <span className="px-2 py-0.5 rounded-full bg-black/[0.05] dark:bg-white/[0.08] text-[10px] font-mono">
+              <span className="px-2 py-0.5 rounded-full bg-black/[0.05] dark:bg-white/[0.08] text-[10px] font-mono shrink-0">
                 {SAMPLE_BENCHMARKS[activeBenchmarkTab].models[activeModelTab]?.badge}
               </span>
             </div>
-            <pre className="text-xs font-mono text-gray-800 dark:text-gray-200 whitespace-pre-wrap leading-relaxed overflow-x-auto">
+            <pre className="text-xs font-mono text-gray-800 dark:text-gray-200 whitespace-pre-wrap break-words leading-relaxed overflow-x-auto max-w-full">
               {SAMPLE_BENCHMARKS[activeBenchmarkTab].models[activeModelTab]?.output}
             </pre>
           </div>

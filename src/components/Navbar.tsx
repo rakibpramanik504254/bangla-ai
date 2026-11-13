@@ -29,20 +29,20 @@ export const Navbar: React.FC<NavbarProps> = ({ currentView, setCurrentView }) =
 
   return (
     <header className="sticky top-0 z-40 w-full border-b border-black/[0.08] dark:border-white/[0.08] bg-white/95 dark:bg-[#1F1F1F]/95 backdrop-blur-md transition-colors">
-      <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between gap-8">
+      <div className="max-w-6xl mx-auto px-3 sm:px-6 lg:px-8 h-16 flex items-center justify-between gap-2 sm:gap-4 lg:gap-8">
         {/* Zone 1: Brand Wordmark */}
-        <div className="flex items-center gap-3 shrink-0">
+        <div className="flex items-center gap-2 sm:gap-3 shrink-0 min-w-0">
           <button
             onClick={() => {
               setCurrentView('home');
               setMobileMenuOpen(false);
             }}
-            className="flex items-center gap-2 text-left group focus:outline-none"
+            className="flex items-center gap-1.5 sm:gap-2 text-left group focus:outline-none whitespace-nowrap"
           >
-            <div className="w-7 h-7 rounded-full bg-black dark:bg-white text-white dark:text-black flex items-center justify-center font-bold text-xs">
+            <div className="w-6 h-6 sm:w-7 sm:h-7 rounded-full bg-black dark:bg-white text-white dark:text-black flex items-center justify-center font-bold text-[11px] sm:text-xs shrink-0">
               ✦
             </div>
-            <span className="text-base font-bold tracking-tight text-black dark:text-white">
+            <span className="text-sm sm:text-base font-bold tracking-tight text-black dark:text-white">
               Bangla AI
             </span>
           </button>
@@ -121,12 +121,12 @@ export const Navbar: React.FC<NavbarProps> = ({ currentView, setCurrentView }) =
         </nav>
 
         {/* Zone 3: Actions & Controls */}
-        <div className="flex items-center gap-2.5 shrink-0">
+        <div className="flex items-center gap-1.5 sm:gap-2.5 shrink-0">
           {/* Minimal Icon Button (Theme Toggle) */}
           <button
             onClick={toggleTheme}
             aria-label="Toggle theme"
-            className="w-9 h-9 rounded-full bg-gray-100 dark:bg-neutral-800 text-gray-700 dark:text-gray-300 hover:text-black dark:hover:text-white flex items-center justify-center transition-colors"
+            className="w-8 h-8 sm:w-9 sm:h-9 rounded-full bg-gray-100 dark:bg-neutral-800 text-gray-700 dark:text-gray-300 hover:text-black dark:hover:text-white flex items-center justify-center transition-colors shrink-0"
           >
             {theme === 'dark' ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
           </button>
@@ -135,25 +135,25 @@ export const Navbar: React.FC<NavbarProps> = ({ currentView, setCurrentView }) =
             <div className="relative">
               <button
                 onClick={() => setDropdownOpen(!dropdownOpen)}
-                className="btn-pill-secondary !h-9 !px-3 gap-2"
+                className="btn-pill-secondary !min-h-0 !h-8 sm:!h-9 !py-0 !px-2 sm:!px-3 gap-1.5 sm:gap-2 !whitespace-nowrap"
               >
                 {user.avatar_url ? (
                   <img src={user.avatar_url} alt={user.name} className="w-5 h-5 rounded-full object-cover shrink-0" />
                 ) : (
-                  <div className="w-5 h-5 rounded-full bg-black text-white dark:bg-white dark:text-black font-semibold text-[10px] flex items-center justify-center">
+                  <div className="w-5 h-5 rounded-full bg-black text-white dark:bg-white dark:text-black font-semibold text-[10px] flex items-center justify-center shrink-0">
                     {user.name.slice(0, 1).toUpperCase()}
                   </div>
                 )}
-                <span className="text-xs font-medium truncate max-w-[80px]">
+                <span className="text-xs font-medium truncate max-w-[60px] sm:max-w-[90px]">
                   {user.name.split(' ')[0]}
                 </span>
-                <ChevronDown className="w-3 h-3 text-gray-400" />
+                <ChevronDown className="w-3 h-3 text-gray-400 shrink-0" />
               </button>
 
               {/* User Dropdown */}
               {dropdownOpen && (
                 <div
-                  className="absolute right-0 mt-2 w-56 rounded-xl bg-white dark:bg-[#262626] border border-black/10 dark:border-white/10 shadow-lg py-1.5 z-50 text-xs"
+                  className="absolute right-0 mt-2 w-56 max-w-[calc(100vw-1.5rem)] rounded-xl bg-white dark:bg-[#262626] border border-black/10 dark:border-white/10 shadow-lg py-1.5 z-50 text-xs"
                   onClick={() => setDropdownOpen(false)}
                 >
                   <div className="px-3.5 py-2 border-b border-black/[0.06] dark:border-white/[0.06]">
@@ -212,16 +212,16 @@ export const Navbar: React.FC<NavbarProps> = ({ currentView, setCurrentView }) =
               )}
             </div>
           ) : (
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-1.5 sm:gap-2">
               <button
                 onClick={() => openAuthModal('login')}
-                className="btn-pill-secondary !h-9 !px-3.5 text-xs"
+                className="btn-pill-secondary !min-h-0 !h-8 sm:!h-9 !py-0 !px-2.5 sm:!px-3.5 !text-[11px] sm:!text-xs !whitespace-nowrap"
               >
                 Sign In
               </button>
               <button
                 onClick={() => openAuthModal('register')}
-                className="btn-pill-primary !h-9 !px-4 text-xs"
+                className="btn-pill-primary !min-h-0 !h-8 sm:!h-9 !py-0 !px-2.5 sm:!px-4 !text-[11px] sm:!text-xs !whitespace-nowrap"
               >
                 Get Started
               </button>
@@ -231,7 +231,7 @@ export const Navbar: React.FC<NavbarProps> = ({ currentView, setCurrentView }) =
           {/* Mobile menu trigger */}
           <button
             onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-            className="md:hidden p-1.5 rounded-lg text-gray-500 hover:text-black dark:text-gray-400 dark:hover:text-white"
+            className="md:hidden p-1.5 rounded-lg text-gray-500 hover:text-black dark:text-gray-400 dark:hover:text-white shrink-0"
             aria-label="Toggle mobile menu"
           >
             {mobileMenuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}

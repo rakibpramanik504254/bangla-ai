@@ -36,7 +36,7 @@ const FormattedMessage: React.FC<{ content: string }> = ({ content }) => {
   const parts = content.split(/(```[\s\S]*?```)/g);
 
   return (
-    <div className="space-y-3 leading-relaxed text-sm">
+    <div className="space-y-3 leading-relaxed text-sm min-w-0 break-words">
       {parts.map((part, index) => {
         if (part.startsWith('```') && part.endsWith('```')) {
           const firstLineEnd = part.indexOf('\n');
@@ -46,7 +46,7 @@ const FormattedMessage: React.FC<{ content: string }> = ({ content }) => {
           return (
             <div
               key={index}
-              className="rounded-[8px] overflow-hidden border border-black/10 dark:border-white/10 bg-[#262626] text-white my-3 font-mono text-xs shadow-xs"
+              className="rounded-[8px] overflow-hidden border border-black/10 dark:border-white/10 bg-[#262626] text-white my-3 font-mono text-xs shadow-xs max-w-full"
             >
               <div className="flex items-center justify-between px-3.5 py-1.5 bg-[#1F1F1F] border-b border-white/10 text-[11px] text-gray-400">
                 <span className="font-sans uppercase text-[10px] tracking-wider text-gray-400">{lang}</span>
@@ -68,7 +68,7 @@ const FormattedMessage: React.FC<{ content: string }> = ({ content }) => {
                   )}
                 </button>
               </div>
-              <pre className="p-4 overflow-x-auto leading-relaxed text-gray-200">
+              <pre className="p-3 sm:p-4 overflow-x-auto leading-relaxed text-gray-200 max-w-full">
                 <code>{code}</code>
               </pre>
             </div>
@@ -157,7 +157,9 @@ export const ChatInterface: React.FC = () => {
   const [isStreaming, setIsStreaming] = useState(false);
   const [streamedText, setStreamedText] = useState('');
   const [searchQuery, setSearchQuery] = useState('');
-  const [sidebarOpen, setSidebarOpen] = useState(true);
+  const [sidebarOpen, setSidebarOpen] = useState(() =>
+    typeof window !== 'undefined' ? window.innerWidth >= 768 : true
+  );
   const [modelDropdownOpen, setModelDropdownOpen] = useState(false);
 
   const [editingChatId, setEditingChatId] = useState<string | null>(null);
@@ -243,6 +245,9 @@ export const ChatInterface: React.FC = () => {
         setActiveChatId(newChat.id);
         setMessages([]);
         setInputMessage('');
+        if (typeof window !== 'undefined' && window.innerWidth < 768) {
+          setSidebarOpen(false);
+        }
         inputRef.current?.focus();
       }
     } catch (err) {
@@ -440,12 +445,23 @@ export const ChatInterface: React.FC = () => {
   ];
 
   return (
-    <div className="flex h-[calc(100vh-4rem)] overflow-hidden bg-white dark:bg-[#1F1F1F] transition-colors">
-      {/* Collapsible Sidebar */}
+    <div className="flex h-[calc(100dvh-4rem)] overflow-hidden bg-white dark:bg-[#1F1F1F] transition-colors relative">
+      {/* Mobile Sidebar Backdrop */}
+      {sidebarOpen && (
+        <div
+          className="fixed inset-0 top-16 bg-black/40 z-20 md:hidden"
+          onClick={() => setSidebarOpen(false)}
+          aria-hidden="true"
+        />
+      )}
+
+      {/* Collapsible Sidebar (Slide-over on mobile, inline on desktop) */}
       <aside
         className={`${
-          sidebarOpen ? 'w-64 sm:w-72' : 'w-0'
-        } shrink-0 border-r border-black/[0.08] dark:border-white/[0.08] bg-[#FAFAFA] dark:bg-[#242424] flex flex-col transition-all duration-300 overflow-hidden relative z-20`}
+          sidebarOpen
+            ? 'translate-x-0 w-72 max-w-[82vw] md:w-72'
+            : '-translate-x-full w-72 md:w-0 md:translate-x-0 md:border-r-0'
+        } fixed md:relative top-16 md:top-0 bottom-0 left-0 z-30 md:z-20 shrink-0 border-r border-black/[0.08] dark:border-white/[0.08] bg-[#FAFAFA] dark:bg-[#242424] flex flex-col transition-all duration-300 overflow-hidden`}
       >
         <div className="p-3 border-b border-black/[0.08] dark:border-white/[0.08] flex items-center justify-between gap-2">
           <button
@@ -488,17 +504,16 @@ export const ChatInterface: React.FC = () => {
             filteredChats.map(c => (
               <div
                 key={c.id}
-                onClick={() => setActiveChatId(c.id)}
-                className={`group flex items-center justify-between px-3 py-2 rounded-[8px] cursor-pointer text-xs transition-colors ${
+                className={`group flex items-center justify-between px-3 py-2 rounded-[8px] text-xs transition-colors ${
                   activeChatId === c.id
                     ? 'bg-black/[0.06] dark:bg-white/[0.08] text-black dark:text-white font-medium'
                     : 'text-gray-600 dark:text-gray-400 hover:bg-black/[0.03] dark:hover:bg-white/[0.04]'
                 }`}
               >
-                <div className="flex items-center gap-2 truncate flex-1 mr-1">
-                  <MessageSquare className="w-3.5 h-3.5 shrink-0 text-gray-400" />
-                  {editingChatId === c.id ? (
-                    <form onSubmit={e => handleSaveRename(c.id, e)} className="flex-1" onClick={e => e.stopPropagation()}>
+                {editingChatId === c.id ? (
+                  <div className="flex items-center gap-2 truncate flex-1 mr-1 min-w-0">
+                    <MessageSquare className="w-3.5 h-3.5 shrink-0 text-gray-400" />
+                    <form onSubmit={e => handleSaveRename(c.id, e)} className="flex-1">
                       <input
                         type="text"
                         autoFocus
@@ -508,12 +523,24 @@ export const ChatInterface: React.FC = () => {
                         className="w-full bg-white dark:bg-[#2D2D2D] px-1.5 py-0.5 rounded-[4px] border border-black dark:border-white text-xs focus:outline-none"
                       />
                     </form>
-                  ) : (
+                  </div>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setActiveChatId(c.id);
+                      if (typeof window !== 'undefined' && window.innerWidth < 768) {
+                        setSidebarOpen(false);
+                      }
+                    }}
+                    className="flex items-center gap-2 truncate flex-1 mr-1 min-w-0 text-left cursor-pointer"
+                  >
+                    <MessageSquare className="w-3.5 h-3.5 shrink-0 text-gray-400" />
                     <span className="truncate">{c.title}</span>
-                  )}
-                </div>
+                  </button>
+                )}
 
-                <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                <div className="flex items-center gap-1 opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity shrink-0">
                   <button
                     onClick={e => {
                       e.stopPropagation();
@@ -546,37 +573,37 @@ export const ChatInterface: React.FC = () => {
       </aside>
 
       {/* Main Chat Canvas */}
-      <main className="flex-1 flex flex-col h-full overflow-hidden relative bg-white dark:bg-[#1F1F1F]">
+      <main className="flex-1 min-w-0 w-full flex flex-col h-full overflow-hidden relative bg-white dark:bg-[#1F1F1F]">
         {/* Header Bar */}
-        <div className="h-14 border-b border-black/[0.08] dark:border-white/[0.08] px-4 flex items-center justify-between gap-3 bg-white/90 dark:bg-[#1F1F1F]/90 backdrop-blur-sm z-10">
-          <div className="flex items-center gap-2">
+        <div className="h-14 border-b border-black/[0.08] dark:border-white/[0.08] px-2.5 sm:px-4 flex items-center justify-between gap-2 sm:gap-3 bg-white/90 dark:bg-[#1F1F1F]/90 backdrop-blur-sm z-10">
+          <div className="flex items-center gap-1.5 sm:gap-2 min-w-0 flex-1">
             {!sidebarOpen && (
               <button
                 onClick={() => setSidebarOpen(true)}
                 aria-label="Open sidebar"
-                className="w-9 h-9 flex items-center justify-center text-gray-500 hover:text-black dark:hover:text-white rounded-full hover:bg-black/[0.04] dark:hover:bg-white/[0.05] transition-colors cursor-pointer"
+                className="w-8 h-8 sm:w-9 sm:h-9 shrink-0 flex items-center justify-center text-gray-500 hover:text-black dark:hover:text-white rounded-full hover:bg-black/[0.04] dark:hover:bg-white/[0.05] transition-colors cursor-pointer"
               >
                 <PanelLeftOpen className="w-4 h-4" />
               </button>
             )}
 
             {/* Model Selector */}
-            <div className="relative">
+            <div className="relative min-w-0 max-w-full">
               <button
                 onClick={() => setModelDropdownOpen(!modelDropdownOpen)}
-                className="flex items-center gap-2 px-3 py-1.5 rounded-full border border-black/[0.12] dark:border-white/[0.15] hover:border-black/30 dark:hover:border-white/30 bg-white dark:bg-[#262626] text-xs font-medium text-black dark:text-white transition-all cursor-pointer shadow-2xs"
+                className="max-w-full min-w-0 flex items-center gap-1.5 sm:gap-2 px-2.5 sm:px-3 py-1.5 rounded-full border border-black/[0.12] dark:border-white/[0.15] hover:border-black/30 dark:hover:border-white/30 bg-white dark:bg-[#262626] text-xs font-medium text-black dark:text-white transition-all cursor-pointer shadow-2xs"
               >
-                <Sparkles className="w-3 h-3 text-gray-500" />
-                <span className="font-semibold">{selectedModel?.display_name || 'Select Model'}</span>
-                <span className="text-[10px] uppercase font-mono px-1.5 py-0.2 rounded-full bg-black/[0.05] dark:bg-white/[0.08] text-gray-600 dark:text-gray-400">
+                <Sparkles className="w-3 h-3 text-gray-500 shrink-0" />
+                <span className="font-semibold truncate">{selectedModel?.display_name || 'Select Model'}</span>
+                <span className="hidden sm:inline-block shrink-0 text-[10px] uppercase font-mono px-1.5 py-0.2 rounded-full bg-black/[0.05] dark:bg-white/[0.08] text-gray-600 dark:text-gray-400">
                   {selectedModel?.badge}
                 </span>
-                <ChevronDown className="w-3 h-3 text-gray-400" />
+                <ChevronDown className="w-3 h-3 text-gray-400 shrink-0" />
               </button>
 
               {modelDropdownOpen && (
                 <div
-                  className="absolute left-0 mt-2 w-76 rounded-[8px] bg-white dark:bg-[#262626] border border-black/[0.12] dark:border-white/[0.15] shadow-xl py-1.5 z-50 text-xs animate-in fade-in slide-in-from-top-1"
+                  className="absolute left-0 mt-2 w-[calc(100vw-1.5rem)] max-w-[304px] sm:w-76 rounded-[8px] bg-white dark:bg-[#262626] border border-black/[0.12] dark:border-white/[0.15] shadow-xl py-1.5 z-50 text-xs animate-in fade-in slide-in-from-top-1"
                   onClick={() => setModelDropdownOpen(false)}
                 >
                   <div className="px-3.5 py-1.5 text-[10px] uppercase font-mono text-gray-400 border-b border-black/[0.06] dark:border-white/[0.06]">
@@ -593,7 +620,7 @@ export const ChatInterface: React.FC = () => {
                             : 'text-gray-700 dark:text-gray-300'
                         }`}
                       >
-                        <div className="mt-0.5">
+                        <div className="mt-0.5 shrink-0">
                           {m.badge === 'reasoning' ? (
                             <Brain className="w-3.5 h-3.5 text-black dark:text-white" />
                           ) : m.badge === 'coding' ? (
@@ -602,10 +629,10 @@ export const ChatInterface: React.FC = () => {
                             <Bot className="w-3.5 h-3.5 text-black dark:text-white" />
                           )}
                         </div>
-                        <div className="flex-1">
-                          <div className="flex items-center justify-between">
-                            <span className="font-semibold">{m.display_name}</span>
-                            {selectedModelId === m.id && <Check className="w-3.5 h-3.5 text-black dark:text-white" />}
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center justify-between gap-2">
+                            <span className="font-semibold truncate">{m.display_name}</span>
+                            {selectedModelId === m.id && <Check className="w-3.5 h-3.5 text-black dark:text-white shrink-0" />}
                           </div>
                           <p className="text-[10px] text-gray-500 line-clamp-1 mt-0.5 font-normal">
                             {m.description_en}
@@ -620,7 +647,7 @@ export const ChatInterface: React.FC = () => {
           </div>
 
           {user && (
-            <div className="flex items-center gap-2 text-xs font-mono">
+            <div className="flex items-center gap-1.5 text-[11px] sm:text-xs font-mono shrink-0">
               <span className="text-gray-500 hidden sm:inline">Tokens:</span>
               <span className="font-semibold text-black dark:text-white">
                 {Math.max(0, (user.usage_limit || 0) - (user.current_usage || 0)).toLocaleString()}
@@ -631,8 +658,8 @@ export const ChatInterface: React.FC = () => {
 
         {/* Gating Banner if unpaid */}
         {!isSubscribed && (
-          <div className="bg-[#1F1F1F] text-white dark:bg-white dark:text-[#1F1F1F] px-4 py-2.5 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs z-10">
-            <div className="flex items-center gap-2">
+          <div className="bg-[#1F1F1F] text-white dark:bg-white dark:text-[#1F1F1F] px-3 sm:px-4 py-2.5 flex flex-col sm:flex-row items-center justify-between gap-2.5 sm:gap-3 text-xs z-10 text-center sm:text-left">
+            <div className="flex items-center gap-2 min-w-0">
               <Lock className="w-3.5 h-3.5 text-amber-300 shrink-0" />
               <span>
                 <strong>Subscription Required:</strong> Active subscription needed to converse with foundation models.
@@ -640,7 +667,7 @@ export const ChatInterface: React.FC = () => {
             </div>
             <button
               onClick={() => openPaymentModal('monthly')}
-              className="h-8 px-4 rounded-full bg-white text-black dark:bg-[#1F1F1F] dark:text-white font-semibold text-xs hover:opacity-90 transition-opacity cursor-pointer"
+              className="h-8 px-4 rounded-full bg-white text-black dark:bg-[#1F1F1F] dark:text-white font-semibold text-xs hover:opacity-90 transition-opacity cursor-pointer shrink-0 w-full sm:w-auto"
             >
               Subscribe (৳699/mo)
             </button>
@@ -648,14 +675,14 @@ export const ChatInterface: React.FC = () => {
         )}
 
         {/* Messages Stream */}
-        <div className="flex-1 overflow-y-auto px-4 sm:px-8 py-8 space-y-6">
+        <div className="flex-1 overflow-y-auto px-3 sm:px-8 py-6 sm:py-8 space-y-6">
           {messages.length === 0 && !isStreaming ? (
-            <div className="h-full flex flex-col items-center justify-center max-w-xl mx-auto text-center py-12 space-y-6">
+            <div className="min-h-full flex flex-col items-center justify-center max-w-xl mx-auto text-center py-6 sm:py-12 space-y-5 sm:space-y-6">
               <div className="w-12 h-12 rounded-full border border-black/10 dark:border-white/10 bg-white dark:bg-[#262626] text-black dark:text-white flex items-center justify-center font-bold shadow-xs">
                 <Sparkles className="w-5 h-5" />
               </div>
-              <div className="space-y-1.5">
-                <h2 className="text-2xl font-bold tracking-tight text-black dark:text-white">
+              <div className="space-y-1.5 px-1">
+                <h2 className="text-xl sm:text-2xl font-bold tracking-tight text-black dark:text-white">
                   Ready when you are.
                 </h2>
                 <p className="text-xs text-gray-500 max-w-md mx-auto">
@@ -670,9 +697,9 @@ export const ChatInterface: React.FC = () => {
                     key={idx}
                     type="button"
                     onClick={() => handleSendMessage(s)}
-                    className="p-3.5 rounded-[8px] border border-black/[0.08] dark:border-white/[0.08] hover:border-black/30 dark:hover:border-white/30 bg-white dark:bg-[#262626] text-xs text-gray-700 dark:text-gray-300 transition-all flex items-start justify-between gap-2.5 group cursor-pointer shadow-xs"
+                    className="w-full p-3.5 rounded-[8px] border border-black/[0.08] dark:border-white/[0.08] hover:border-black/30 dark:hover:border-white/30 bg-white dark:bg-[#262626] text-xs text-gray-700 dark:text-gray-300 transition-all flex items-start justify-between gap-2.5 group cursor-pointer shadow-xs text-left"
                   >
-                    <span className="leading-snug">{s}</span>
+                    <span className="leading-snug flex-1 min-w-0 break-words">{s}</span>
                     <ArrowRight className="w-3.5 h-3.5 text-gray-400 group-hover:translate-x-0.5 group-hover:text-black dark:group-hover:text-white transition-all shrink-0 mt-0.5" />
                   </button>
                 ))}
@@ -683,7 +710,7 @@ export const ChatInterface: React.FC = () => {
               {messages.map((m, idx) => (
                 <div
                   key={m.id || idx}
-                  className={`flex gap-3 ${m.role === 'user' ? 'justify-end' : 'justify-start'}`}
+                  className={`flex gap-2.5 sm:gap-3 ${m.role === 'user' ? 'justify-end' : 'justify-start'}`}
                 >
                   {m.role === 'assistant' && (
                     <div className="w-7 h-7 rounded-full border border-black/10 dark:border-white/10 bg-white dark:bg-[#262626] text-black dark:text-white flex items-center justify-center font-bold text-xs shrink-0 mt-0.5">
@@ -692,14 +719,14 @@ export const ChatInterface: React.FC = () => {
                   )}
 
                   <div
-                    className={`max-w-[85%] sm:max-w-[80%] rounded-[12px] px-4 py-3 text-sm leading-relaxed ${
+                    className={`min-w-0 max-w-[88%] sm:max-w-[80%] rounded-[12px] px-3.5 sm:px-4 py-3 text-sm leading-relaxed break-words ${
                       m.role === 'user'
                         ? 'bg-black text-white dark:bg-white dark:text-black font-normal'
                         : 'bg-white dark:bg-[#262626] text-black dark:text-white border border-black/[0.08] dark:border-white/[0.08] shadow-xs'
                     }`}
                   >
                     {m.role === 'user' ? (
-                      <p className="whitespace-pre-wrap">{m.content}</p>
+                      <p className="whitespace-pre-wrap break-words">{m.content}</p>
                     ) : (
                       <FormattedMessage content={m.content} />
                     )}
@@ -731,7 +758,7 @@ export const ChatInterface: React.FC = () => {
         </div>
 
         {/* Input Box Bar */}
-        <div className="p-4 border-t border-black/[0.08] dark:border-white/[0.08] bg-white dark:bg-[#1F1F1F]">
+        <div className="p-2.5 sm:p-4 border-t border-black/[0.08] dark:border-white/[0.08] bg-white dark:bg-[#1F1F1F]">
           <div className="max-w-3xl mx-auto">
             <form
               onSubmit={e => {
@@ -757,7 +784,7 @@ export const ChatInterface: React.FC = () => {
                     : 'Activate a subscription plan to chat...'
                 }
                 disabled={!isSubscribed}
-                className="w-full resize-none bg-transparent px-3 py-2 text-xs sm:text-sm text-black dark:text-white placeholder-gray-400 focus:outline-none max-h-36 disabled:opacity-50"
+                className="w-full min-w-0 resize-none bg-transparent px-2.5 sm:px-3 py-2 text-xs sm:text-sm text-black dark:text-white placeholder-gray-400 focus:outline-none max-h-36 disabled:opacity-50"
               />
 
               <button
@@ -770,9 +797,9 @@ export const ChatInterface: React.FC = () => {
               </button>
             </form>
 
-            <div className="flex items-center justify-between text-[11px] text-gray-500 px-2 mt-2 font-mono">
+            <div className="flex flex-wrap items-center justify-between gap-1 text-[10px] sm:text-[11px] text-gray-500 px-1 sm:px-2 mt-2 font-mono">
               <span>Enter to send • Shift+Enter for new line</span>
-              <span>{selectedModel?.display_name}</span>
+              <span className="truncate max-w-full">{selectedModel?.display_name}</span>
             </div>
           </div>
         </div>

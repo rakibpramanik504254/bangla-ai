@@ -3,7 +3,7 @@ import { FileText, AlertCircle, ShieldCheck, Scale, CheckCircle2, DollarSign, Ba
 
 export const TermsPage: React.FC = () => {
   return (
-    <div className="max-w-4xl mx-auto px-4 sm:px-6 py-20 space-y-12 text-xs sm:text-sm text-gray-700 dark:text-gray-300 leading-relaxed">
+    <div className="max-w-4xl mx-auto px-4 sm:px-6 py-12 sm:py-20 space-y-10 sm:space-y-12 text-xs sm:text-sm text-gray-700 dark:text-gray-300 leading-relaxed break-words">
       {/* Header */}
       <div className="space-y-2">
         <span className="text-[11px] font-mono uppercase tracking-wider text-gray-500 block">
@@ -139,11 +139,11 @@ export const TermsPage: React.FC = () => {
           <p className="text-gray-600 dark:text-gray-400">
             For questions regarding these Terms, billing inquiries, or enterprise arrangements, reach out to our legal and operations desk:
           </p>
-          <div className="pt-2 font-mono text-xs space-y-1 text-black dark:text-white">
-            <p>Email: <a href="mailto:ourbangla.ai@gmail.com" className="underline">ourbangla.ai@gmail.com</a></p>
+          <div className="pt-2 font-mono text-xs space-y-1 text-black dark:text-white break-words">
+            <p>Email: <a href="mailto:ourbangla.ai@gmail.com" className="underline break-all">ourbangla.ai@gmail.com</a></p>
             <p>Hotline: <a href="tel:+8801622860128" className="underline">+880 1622-860128</a></p>
             <p>Official Website: <a href="https://bangla-ai.pro" target="_blank" rel="noopener noreferrer" className="underline">bangla-ai.pro</a></p>
-            <p>Facebook: <a href="https://www.facebook.com/profile.php?id=61596472081766" target="_blank" rel="noopener noreferrer" className="underline">facebook.com/profile.php?id=61596472081766</a></p>
+            <p>Facebook: <a href="https://www.facebook.com/profile.php?id=61596472081766" target="_blank" rel="noopener noreferrer" className="underline break-all">facebook.com/profile.php?id=61596472081766</a></p>
             <p>Address: Banani Commercial Area, Dhaka-1213, Bangladesh</p>
           </div>
         </section>

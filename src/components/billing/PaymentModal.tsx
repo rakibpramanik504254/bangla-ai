@@ -211,7 +211,7 @@ export const PaymentModal: React.FC<PaymentModalProps> = ({
           <X className="w-4 h-4" />
         </button>
 
-        <div className="overflow-y-auto p-6 sm:p-8 space-y-6">
+        <div className="overflow-y-auto p-4 sm:p-8 space-y-5 sm:space-y-6">
           {submittedPayment ? (
             /* Pending Verification Confirmation Card */
             <div className="space-y-6 text-center py-4 animate-in fade-in">
@@ -232,25 +232,25 @@ export const PaymentModal: React.FC<PaymentModalProps> = ({
               </div>
 
               <div className="bg-[#FAFAFA] dark:bg-[#1F1F1F] rounded-[8px] p-4 border border-black/[0.08] dark:border-white/[0.08] text-xs space-y-2.5 text-left font-mono">
-                <div className="flex justify-between items-center py-1 border-b border-black/[0.04] dark:border-white/[0.04]">
+                <div className="flex flex-wrap justify-between items-center gap-2 py-1 border-b border-black/[0.04] dark:border-white/[0.04]">
                   <span className="text-gray-500 font-sans">Plan Selected:</span>
                   <span className="font-bold text-black dark:text-white font-sans">{submittedPayment.planName}</span>
                 </div>
-                <div className="flex justify-between items-center py-1 border-b border-black/[0.04] dark:border-white/[0.04]">
+                <div className="flex flex-wrap justify-between items-center gap-2 py-1 border-b border-black/[0.04] dark:border-white/[0.04]">
                   <span className="text-gray-500 font-sans">Amount:</span>
                   <span className="font-bold text-black dark:text-white">{formatBDT(submittedPayment.amount)}</span>
                 </div>
-                <div className="flex justify-between items-center py-1 border-b border-black/[0.04] dark:border-white/[0.04]">
+                <div className="flex flex-wrap justify-between items-center gap-2 py-1 border-b border-black/[0.04] dark:border-white/[0.04]">
                   <span className="text-gray-500 font-sans">MFS Gateway:</span>
                   <span className="font-bold text-black dark:text-white uppercase font-sans">{submittedPayment.gateway}</span>
                 </div>
-                <div className="flex justify-between items-center py-1 border-b border-black/[0.04] dark:border-white/[0.04]">
+                <div className="flex flex-wrap justify-between items-center gap-2 py-1 border-b border-black/[0.04] dark:border-white/[0.04]">
                   <span className="text-gray-500 font-sans">Sender Mobile:</span>
                   <span className="font-bold text-black dark:text-white">{submittedPayment.senderNumber}</span>
                 </div>
-                <div className="flex justify-between items-center py-1">
+                <div className="flex flex-wrap justify-between items-center gap-2 py-1">
                   <span className="text-gray-500 font-sans">Transaction ID:</span>
-                  <span className="font-bold text-emerald-600 dark:text-emerald-400 font-mono tracking-wider">{submittedPayment.trxId}</span>
+                  <span className="font-bold text-emerald-600 dark:text-emerald-400 font-mono tracking-wider break-all">{submittedPayment.trxId}</span>
                 </div>
               </div>
 
@@ -292,19 +292,19 @@ export const PaymentModal: React.FC<PaymentModalProps> = ({
               </div>
 
               {/* Plan Selector */}
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <button
                   type="button"
                   onClick={() => setSelectedPlan('monthly')}
-                  className={`p-4 rounded-[8px] border text-left transition-all cursor-pointer ${
+                  className={`p-3.5 sm:p-4 rounded-[8px] border text-left transition-all cursor-pointer ${
                     selectedPlan === 'monthly'
                       ? 'border-black dark:border-white bg-black/[0.02] dark:bg-white/[0.03] ring-1 ring-black dark:ring-white'
                       : 'border-black/[0.08] dark:border-white/[0.08] hover:border-black/30 dark:hover:border-white/30'
                   }`}
                 >
-                  <div className="flex justify-between items-start">
+                  <div className="flex justify-between items-start gap-2">
                     <span className="text-xs font-semibold text-black dark:text-white">Monthly Plan</span>
-                    <span className="w-4 h-4 rounded-full border border-black/30 dark:border-white/30 flex items-center justify-center">
+                    <span className="w-4 h-4 rounded-full border border-black/30 dark:border-white/30 flex items-center justify-center shrink-0">
                       {selectedPlan === 'monthly' && <span className="w-2 h-2 rounded-full bg-black dark:bg-white" />}
                     </span>
                   </div>
@@ -318,7 +318,7 @@ export const PaymentModal: React.FC<PaymentModalProps> = ({
                 <button
                   type="button"
                   onClick={() => setSelectedPlan('yearly')}
-                  className={`p-4 rounded-[8px] border text-left transition-all relative cursor-pointer ${
+                  className={`p-3.5 sm:p-4 rounded-[8px] border text-left transition-all relative cursor-pointer ${
                     selectedPlan === 'yearly'
                       ? 'border-black dark:border-white bg-black/[0.02] dark:bg-white/[0.03] ring-1 ring-black dark:ring-white'
                       : 'border-black/[0.08] dark:border-white/[0.08] hover:border-black/30 dark:hover:border-white/30'
@@ -327,9 +327,9 @@ export const PaymentModal: React.FC<PaymentModalProps> = ({
                   <span className="absolute -top-2 right-2 bg-black text-white dark:bg-white dark:text-black text-[9px] font-mono font-bold px-2 py-0.5 rounded-full border border-black/10">
                     SAVE 28%
                   </span>
-                  <div className="flex justify-between items-start">
+                  <div className="flex justify-between items-start gap-2">
                     <span className="text-xs font-semibold text-black dark:text-white">Yearly Plan</span>
-                    <span className="w-4 h-4 rounded-full border border-black/30 dark:border-white/30 flex items-center justify-center">
+                    <span className="w-4 h-4 rounded-full border border-black/30 dark:border-white/30 flex items-center justify-center shrink-0">
                       {selectedPlan === 'yearly' && <span className="w-2 h-2 rounded-full bg-black dark:bg-white" />}
                     </span>
                   </div>
@@ -346,13 +346,13 @@ export const PaymentModal: React.FC<PaymentModalProps> = ({
                 <label className="block text-xs font-semibold text-black dark:text-white mb-2">
                   Select Mobile Financial Service (MFS):
                 </label>
-                <div className="grid grid-cols-3 gap-2.5">
+                <div className="grid grid-cols-3 gap-2 sm:gap-2.5">
                   {MFS_GATEWAYS.map(item => (
                     <button
                       key={item.id}
                       type="button"
                       onClick={() => setGateway(item.id)}
-                      className={`py-2.5 px-2.5 rounded-[12px] border flex items-center justify-center gap-2 transition-all cursor-pointer ${
+                      className={`py-2 px-1.5 sm:py-2.5 sm:px-2.5 rounded-[12px] border flex items-center justify-center gap-1.5 sm:gap-2 transition-all cursor-pointer min-w-0 ${
                         gateway === item.id
                           ? `${item.activeClass} font-bold text-black dark:text-white shadow-2xs`
                           : 'border-black/[0.08] dark:border-white/[0.08] bg-white dark:bg-[#1F1F1F] text-gray-600 dark:text-gray-400 hover:border-black/30 dark:hover:border-white/30'
@@ -361,11 +361,11 @@ export const PaymentModal: React.FC<PaymentModalProps> = ({
                       <img
                         src={item.icon}
                         alt={item.name}
-                        className="w-7 h-7 object-contain rounded-md shrink-0 bg-white p-0.5 shadow-2xs"
+                        className="w-6 h-6 sm:w-7 sm:h-7 object-contain rounded-md shrink-0 bg-white p-0.5 shadow-2xs"
                       />
-                      <div className="text-left leading-tight">
-                        <span className="text-xs font-bold block">{item.name}</span>
-                        <span className="text-[10px] font-mono text-gray-500 dark:text-gray-400 block">{item.bangla}</span>
+                      <div className="text-left leading-tight min-w-0">
+                        <span className="text-[11px] sm:text-xs font-bold block truncate">{item.name}</span>
+                        <span className="text-[9px] sm:text-[10px] font-mono text-gray-500 dark:text-gray-400 block truncate">{item.bangla}</span>
                       </div>
                     </button>
                   ))}
@@ -373,15 +373,15 @@ export const PaymentModal: React.FC<PaymentModalProps> = ({
               </div>
 
               {/* Payment Instructions Box with Prominent Big Number */}
-              <div className="bg-[#F8F9FA] dark:bg-[#1F1F1F] rounded-[12px] p-4 border border-black/[0.08] dark:border-white/[0.08] text-xs text-gray-600 dark:text-gray-400 space-y-3.5">
+              <div className="bg-[#F8F9FA] dark:bg-[#1F1F1F] rounded-[12px] p-3.5 sm:p-4 border border-black/[0.08] dark:border-white/[0.08] text-xs text-gray-600 dark:text-gray-400 space-y-3.5">
                 {/* Highlighted Large Merchant Number Card */}
-                <div className="bg-white dark:bg-[#2A2A2A] rounded-[10px] p-3.5 border border-black/[0.08] dark:border-white/[0.1] shadow-xs space-y-2.5">
-                  <div className="flex items-center justify-between gap-3">
-                    <div className="flex items-center gap-2.5 min-w-0">
+                <div className="bg-white dark:bg-[#2A2A2A] rounded-[10px] p-3 sm:p-3.5 border border-black/[0.08] dark:border-white/[0.1] shadow-xs space-y-2.5">
+                  <div className="flex flex-wrap items-center justify-between gap-2">
+                    <div className="flex items-center gap-2 min-w-0">
                       <img
                         src={activeGateway.icon}
                         alt={activeGateway.name}
-                        className="w-8 h-8 object-contain rounded-lg bg-white p-0.5 border border-black/[0.08] shrink-0 shadow-2xs"
+                        className="w-7 h-7 sm:w-8 sm:h-8 object-contain rounded-lg bg-white p-0.5 border border-black/[0.08] shrink-0 shadow-2xs"
                       />
                       <span className="text-xs font-medium text-gray-500 dark:text-gray-400">
                         Send <strong className="text-black dark:text-white font-mono">{formatBDT(plan.priceBDT)}</strong> to {activeGateway.name}
@@ -390,7 +390,7 @@ export const PaymentModal: React.FC<PaymentModalProps> = ({
                     <button
                       type="button"
                       onClick={handleCopyMerchant}
-                      className={`shrink-0 px-3.5 py-1.5 text-xs rounded-full border font-semibold flex items-center gap-1.5 transition-all cursor-pointer shadow-2xs ${
+                      className={`shrink-0 px-3 sm:px-3.5 py-1.5 text-xs rounded-full border font-semibold flex items-center gap-1.5 transition-all cursor-pointer shadow-2xs ${
                         copied
                           ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-600 dark:text-emerald-400'
                           : 'bg-[#F8F9FA] dark:bg-[#1F1F1F] border-black/[0.12] dark:border-white/[0.15] text-black dark:text-white hover:border-black/30 dark:hover:border-white/30'
@@ -403,7 +403,7 @@ export const PaymentModal: React.FC<PaymentModalProps> = ({
                   </div>
 
                   <div className="pt-2 border-t border-black/[0.06] dark:border-white/[0.08]">
-                    <p className="text-xl sm:text-2xl font-extrabold font-mono tracking-wider text-black dark:text-white select-all break-words leading-snug">
+                    <p className="text-lg sm:text-2xl font-extrabold font-mono tracking-wider text-black dark:text-white select-all break-words leading-snug">
                       {activeMerchantNumber}
                     </p>
                   </div>

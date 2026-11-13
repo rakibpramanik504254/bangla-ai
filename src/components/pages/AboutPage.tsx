@@ -3,13 +3,13 @@ import { Sparkles, MapPin, Mail, ArrowUpRight, CheckCircle2, Shield, Facebook, P
 
 export const AboutPage: React.FC = () => {
   return (
-    <div className="max-w-4xl mx-auto px-4 sm:px-6 py-20 space-y-20">
+    <div className="max-w-4xl mx-auto px-4 sm:px-6 py-12 sm:py-20 space-y-14 sm:space-y-20">
       {/* Header */}
       <div className="space-y-4 max-w-2xl">
         <span className="text-[11px] font-mono uppercase tracking-wider text-gray-500 block">
           Our Purpose & Mission
         </span>
-        <h1 className="text-4xl sm:text-5xl font-bold text-black dark:text-white tracking-tight leading-tight">
+        <h1 className="text-3xl sm:text-5xl font-bold text-black dark:text-white tracking-tight leading-tight break-words">
           Democratizing generative intelligence for Bangladesh.
         </h1>
         <p className="text-base text-gray-600 dark:text-gray-400 leading-relaxed pt-2">
@@ -73,7 +73,7 @@ export const AboutPage: React.FC = () => {
       </div>
 
       {/* Office & Contact */}
-      <div className="p-7 rounded-[8px] bg-[#FAFAFA] dark:bg-[#262626] border border-black/[0.08] dark:border-white/[0.08] flex flex-col md:flex-row md:items-center justify-between gap-6 text-xs">
+      <div className="p-5 sm:p-7 rounded-[8px] bg-[#FAFAFA] dark:bg-[#262626] border border-black/[0.08] dark:border-white/[0.08] flex flex-col md:flex-row md:items-center justify-between gap-6 text-xs">
         <div>
           <span className="font-semibold text-black dark:text-white block">Headquarters & Inquiries</span>
           <span className="text-gray-500 mt-0.5 block">Banani Commercial Area, Dhaka-1213, Bangladesh</span>
@@ -84,23 +84,23 @@ export const AboutPage: React.FC = () => {
             href="https://www.facebook.com/profile.php?id=61596472081766"
             target="_blank"
             rel="noopener noreferrer"
-            className="h-9 px-4 rounded-full border border-black/[0.12] dark:border-white/[0.15] bg-white dark:bg-[#2A2A2A] text-black dark:text-white flex items-center justify-center gap-1.5 font-medium hover:border-black/30 transition-colors cursor-pointer"
+            className="min-h-9 h-auto py-1.5 px-3.5 sm:px-4 rounded-full border border-black/[0.12] dark:border-white/[0.15] bg-white dark:bg-[#2A2A2A] text-black dark:text-white flex items-center justify-center gap-1.5 font-medium hover:border-black/30 transition-colors cursor-pointer"
           >
-            <Facebook className="w-3.5 h-3.5 text-[#1877F2]" />
+            <Facebook className="w-3.5 h-3.5 text-[#1877F2] shrink-0" />
             <span>Facebook Page</span>
           </a>
           <a
             href="tel:+8801622860128"
-            className="h-9 px-4 rounded-full border border-black/[0.12] dark:border-white/[0.15] bg-white dark:bg-[#2A2A2A] text-black dark:text-white flex items-center justify-center gap-1.5 font-medium hover:border-black/30 transition-colors cursor-pointer"
+            className="min-h-9 h-auto py-1.5 px-3.5 sm:px-4 rounded-full border border-black/[0.12] dark:border-white/[0.15] bg-white dark:bg-[#2A2A2A] text-black dark:text-white flex items-center justify-center gap-1.5 font-medium hover:border-black/30 transition-colors cursor-pointer"
           >
-            <Phone className="w-3.5 h-3.5 text-gray-500" />
+            <Phone className="w-3.5 h-3.5 text-gray-500 shrink-0" />
             <span>+880 1622-860128</span>
           </a>
           <a
             href="mailto:ourbangla.ai@gmail.com"
-            className="h-9 px-4 rounded-full border border-black/[0.12] dark:border-white/[0.15] bg-white dark:bg-[#2A2A2A] text-black dark:text-white flex items-center justify-center gap-1.5 font-medium hover:border-black/30 transition-colors cursor-pointer"
+            className="min-h-9 h-auto py-1.5 px-3.5 sm:px-4 rounded-full border border-black/[0.12] dark:border-white/[0.15] bg-white dark:bg-[#2A2A2A] text-black dark:text-white flex items-center justify-center gap-1.5 font-medium hover:border-black/30 transition-colors cursor-pointer break-all"
           >
-            <Mail className="w-3.5 h-3.5 text-gray-500" />
+            <Mail className="w-3.5 h-3.5 text-gray-500 shrink-0" />
             <span>ourbangla.ai@gmail.com</span>
           </a>
         </div>

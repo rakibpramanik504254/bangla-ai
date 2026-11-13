@@ -415,18 +415,18 @@ export const AdminPanel: React.FC = () => {
   });
 
   return (
-    <div className="max-w-6xl mx-auto px-4 sm:px-6 py-12 space-y-8 animate-in fade-in">
+    <div className="max-w-6xl mx-auto px-4 sm:px-6 py-8 sm:py-12 space-y-6 sm:space-y-8 animate-in fade-in">
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-black/[0.08] dark:border-white/[0.08] pb-6">
-        <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-full border border-black/10 dark:border-white/10 bg-white dark:bg-[#1F1F1F] flex items-center justify-center text-black dark:text-white">
+        <div className="flex items-start sm:items-center gap-3 min-w-0">
+          <div className="w-10 h-10 rounded-full border border-black/10 dark:border-white/10 bg-white dark:bg-[#1F1F1F] flex items-center justify-center text-black dark:text-white shrink-0">
             <Shield className="w-5 h-5" />
           </div>
-          <div>
+          <div className="min-w-0">
             <span className="text-[10px] font-mono uppercase tracking-wider text-gray-500 block">
               Platform Administration
             </span>
-            <h1 className="text-2xl font-bold tracking-tight text-black dark:text-white">
+            <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-black dark:text-white break-words">
               System Control Console
             </h1>
             <p className="text-xs text-gray-500 mt-0.5">
@@ -442,7 +442,7 @@ export const AdminPanel: React.FC = () => {
             fetchPayments();
             fetchProvidersAndModels();
           }}
-          className="self-start sm:self-auto h-9 px-4 rounded-full border border-black/[0.12] dark:border-white/[0.15] hover:border-black/30 dark:hover:border-white/30 text-xs font-semibold text-black dark:text-white flex items-center gap-1.5 transition-colors cursor-pointer shadow-2xs"
+          className="self-start sm:self-auto h-9 px-4 rounded-full border border-black/[0.12] dark:border-white/[0.15] hover:border-black/30 dark:hover:border-white/30 text-xs font-semibold text-black dark:text-white flex items-center gap-1.5 transition-colors cursor-pointer shadow-2xs shrink-0"
         >
           <RefreshCw className="w-3.5 h-3.5" />
           <span>Refresh</span>
@@ -450,40 +450,40 @@ export const AdminPanel: React.FC = () => {
       </div>
 
       {feedback && (
-        <div className="p-3.5 text-xs bg-[#FAFAFA] dark:bg-[#1F1F1F] border border-black/[0.1] dark:border-white/[0.1] rounded-[8px] flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <CheckCircle2 className="w-4 h-4 text-emerald-500 shrink-0" />
-            <span className="text-black dark:text-white font-medium">{feedback}</span>
+        <div className="p-3.5 text-xs bg-[#FAFAFA] dark:bg-[#1F1F1F] border border-black/[0.1] dark:border-white/[0.1] rounded-[8px] flex items-start sm:items-center justify-between gap-2">
+          <div className="flex items-start sm:items-center gap-2 min-w-0">
+            <CheckCircle2 className="w-4 h-4 text-emerald-500 shrink-0 mt-0.5 sm:mt-0" />
+            <span className="text-black dark:text-white font-medium break-words">{feedback}</span>
           </div>
-          <button onClick={() => setFeedback(null)} className="text-gray-400 hover:text-black dark:hover:text-white cursor-pointer">
+          <button onClick={() => setFeedback(null)} className="text-gray-400 hover:text-black dark:hover:text-white cursor-pointer shrink-0">
             ✕
           </button>
         </div>
       )}
 
       {/* Tabs */}
-      <div className="flex items-center gap-2 border-b border-black/[0.08] dark:border-white/[0.08] overflow-x-auto pb-2 text-xs font-medium">
+      <div className="flex flex-wrap items-center gap-1.5 sm:gap-2 border-b border-black/[0.08] dark:border-white/[0.08] pb-3 text-xs font-medium">
         <button
           onClick={() => setActiveTab('overview')}
-          className={`h-9 px-4 rounded-full transition-all flex items-center gap-1.5 whitespace-nowrap cursor-pointer ${
+          className={`min-h-8 sm:min-h-9 h-auto py-1.5 px-3 sm:px-4 rounded-full transition-all flex items-center gap-1.5 cursor-pointer ${
             activeTab === 'overview'
               ? 'bg-black text-white dark:bg-white dark:text-black font-semibold shadow-xs'
               : 'text-gray-500 hover:text-black dark:hover:text-white'
           }`}
         >
-          <TrendingUp className="w-3.5 h-3.5" />
+          <TrendingUp className="w-3.5 h-3.5 shrink-0" />
           <span>Overview</span>
         </button>
 
         <button
           onClick={() => setActiveTab('payments')}
-          className={`h-9 px-4 rounded-full transition-all flex items-center gap-1.5 whitespace-nowrap cursor-pointer ${
+          className={`min-h-8 sm:min-h-9 h-auto py-1.5 px-3 sm:px-4 rounded-full transition-all flex items-center gap-1.5 cursor-pointer ${
             activeTab === 'payments'
               ? 'bg-black text-white dark:bg-white dark:text-black font-semibold shadow-xs'
               : 'text-gray-500 hover:text-black dark:hover:text-white'
           }`}
         >
-          <CreditCard className="w-3.5 h-3.5" />
+          <CreditCard className="w-3.5 h-3.5 shrink-0" />
           <span>Payments Verification</span>
           {pendingPayments.length > 0 && (
             <span className="px-1.5 py-0.2 rounded-full text-[10px] font-mono font-bold bg-amber-400 text-black">
@@ -494,49 +494,49 @@ export const AdminPanel: React.FC = () => {
 
         <button
           onClick={() => setActiveTab('users')}
-          className={`h-9 px-4 rounded-full transition-all flex items-center gap-1.5 whitespace-nowrap cursor-pointer ${
+          className={`min-h-8 sm:min-h-9 h-auto py-1.5 px-3 sm:px-4 rounded-full transition-all flex items-center gap-1.5 cursor-pointer ${
             activeTab === 'users'
               ? 'bg-black text-white dark:bg-white dark:text-black font-semibold shadow-xs'
               : 'text-gray-500 hover:text-black dark:hover:text-white'
           }`}
         >
-          <Users className="w-3.5 h-3.5" />
+          <Users className="w-3.5 h-3.5 shrink-0" />
           <span>Users & Quotas</span>
         </button>
 
         <button
           onClick={() => setActiveTab('providers')}
-          className={`h-9 px-4 rounded-full transition-all flex items-center gap-1.5 whitespace-nowrap cursor-pointer ${
+          className={`min-h-8 sm:min-h-9 h-auto py-1.5 px-3 sm:px-4 rounded-full transition-all flex items-center gap-1.5 cursor-pointer ${
             activeTab === 'providers'
               ? 'bg-black text-white dark:bg-white dark:text-black font-semibold shadow-xs'
               : 'text-gray-500 hover:text-black dark:hover:text-white'
           }`}
         >
-          <Key className="w-3.5 h-3.5" />
+          <Key className="w-3.5 h-3.5 shrink-0" />
           <span>Providers & Keys</span>
         </button>
 
         <button
           onClick={() => setActiveTab('models')}
-          className={`h-9 px-4 rounded-full transition-all flex items-center gap-1.5 whitespace-nowrap cursor-pointer ${
+          className={`min-h-8 sm:min-h-9 h-auto py-1.5 px-3 sm:px-4 rounded-full transition-all flex items-center gap-1.5 cursor-pointer ${
             activeTab === 'models'
               ? 'bg-black text-white dark:bg-white dark:text-black font-semibold shadow-xs'
               : 'text-gray-500 hover:text-black dark:hover:text-white'
           }`}
         >
-          <Cpu className="w-3.5 h-3.5" />
+          <Cpu className="w-3.5 h-3.5 shrink-0" />
           <span>Models Catalog</span>
         </button>
 
         <button
           onClick={() => setActiveTab('settings')}
-          className={`h-9 px-4 rounded-full transition-all flex items-center gap-1.5 whitespace-nowrap cursor-pointer ${
+          className={`min-h-8 sm:min-h-9 h-auto py-1.5 px-3 sm:px-4 rounded-full transition-all flex items-center gap-1.5 cursor-pointer ${
             activeTab === 'settings'
               ? 'bg-black text-white dark:bg-white dark:text-black font-semibold shadow-xs'
               : 'text-gray-500 hover:text-black dark:hover:text-white'
           }`}
         >
-          <Settings className="w-3.5 h-3.5" />
+          <Settings className="w-3.5 h-3.5 shrink-0" />
           <span>Settings & Meta Pixel</span>
         </button>
       </div>
@@ -583,7 +583,7 @@ export const AdminPanel: React.FC = () => {
             </div>
           </div>
 
-          <div className="bg-white dark:bg-[#262626] p-6 rounded-[8px] border border-black/[0.08] dark:border-white/[0.08] shadow-xs">
+          <div className="bg-white dark:bg-[#262626] p-4 sm:p-6 rounded-[8px] border border-black/[0.08] dark:border-white/[0.08] shadow-xs">
             <h3 className="font-bold text-black dark:text-white text-sm mb-4">
               Model Token Consumption Breakdown
             </h3>
@@ -592,9 +592,9 @@ export const AdminPanel: React.FC = () => {
                 {Object.entries(stats.modelUsageMap).map(([modelId, tokens]) => {
                   const m = models.find(mod => mod.id === modelId);
                   return (
-                    <div key={modelId} className="flex items-center justify-between text-xs py-2.5 border-b border-black/[0.04] dark:border-white/[0.04] font-mono">
-                      <span className="font-sans font-semibold text-black dark:text-white">{m?.display_name || modelId}</span>
-                      <span className="font-bold">{tokens.toLocaleString()} tokens</span>
+                    <div key={modelId} className="flex flex-wrap items-center justify-between gap-2 text-xs py-2.5 border-b border-black/[0.04] dark:border-white/[0.04] font-mono">
+                      <span className="font-sans font-semibold text-black dark:text-white truncate">{m?.display_name || modelId}</span>
+                      <span className="font-bold shrink-0">{tokens.toLocaleString()} tokens</span>
                     </div>
                   );
                 })}
@@ -609,9 +609,9 @@ export const AdminPanel: React.FC = () => {
       {/* Tab: Payments Verification (The core requested feature!) */}
       {activeTab === 'payments' && (
         <div className="space-y-5">
-          <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3">
-            <div className="flex items-center gap-2">
-              <div className="relative w-full sm:w-80">
+          <div className="flex flex-col md:flex-row items-stretch md:items-center justify-between gap-3">
+            <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2.5">
+              <div className="relative w-full sm:w-72">
                 <Search className="w-3.5 h-3.5 absolute left-3 top-3 text-gray-400" />
                 <input
                   type="text"
@@ -623,12 +623,12 @@ export const AdminPanel: React.FC = () => {
               </div>
 
               {/* Status Filters */}
-              <div className="flex items-center gap-1 bg-black/[0.04] dark:bg-white/[0.05] p-1 rounded-full text-xs">
+              <div className="flex flex-wrap items-center gap-1 bg-black/[0.04] dark:bg-white/[0.05] p-1 rounded-[12px] sm:rounded-full text-xs w-fit max-w-full">
                 {(['all', 'pending', 'completed', 'rejected'] as const).map(f => (
                   <button
                     key={f}
                     onClick={() => setPaymentFilter(f)}
-                    className={`px-3 py-1 rounded-full capitalize text-xs font-semibold cursor-pointer transition-colors ${
+                    className={`px-2.5 sm:px-3 py-1 rounded-full capitalize text-xs font-semibold cursor-pointer transition-colors ${
                       paymentFilter === f
                         ? 'bg-white dark:bg-[#2D2D2D] text-black dark:text-white shadow-xs'
                         : 'text-gray-500 hover:text-black dark:hover:text-white'
@@ -652,126 +652,218 @@ export const AdminPanel: React.FC = () => {
             ) : filteredPayments.length === 0 ? (
               <div className="py-12 text-center text-xs text-gray-400">No payment requests match your criteria.</div>
             ) : (
-              <div className="overflow-x-auto">
-                <table className="w-full text-left text-xs">
-                  <thead className="border-b border-black/[0.08] dark:border-white/[0.08] text-gray-400 font-mono text-[11px]">
-                    <tr>
-                      <th className="py-3 px-4 font-medium">User Profile</th>
-                      <th className="py-3 px-4 font-medium">MFS Gateway</th>
-                      <th className="py-3 px-4 font-medium">Sender Number</th>
-                      <th className="py-3 px-4 font-medium">Transaction ID (TrxID)</th>
-                      <th className="py-3 px-4 font-medium">Plan & Amount</th>
-                      <th className="py-3 px-4 font-medium">Status</th>
-                      <th className="py-3 px-4 font-medium text-right">Verification Action</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-black/[0.04] dark:divide-white/[0.04]">
-                    {filteredPayments.map(p => (
-                      <tr key={p.id} className="hover:bg-black/[0.02] dark:hover:bg-white/[0.02] transition-colors">
-                        <td className="py-3.5 px-4">
-                          <div className="font-semibold text-black dark:text-white">{p.user_name || 'Subscriber'}</div>
-                          <div className="text-[11px] text-gray-500">{p.user_email}</div>
-                          <div className="text-[10px] text-gray-400 font-mono">
+              <>
+                {/* Mobile Card Layout */}
+                <div className="md:hidden divide-y divide-black/[0.06] dark:divide-white/[0.06] text-xs">
+                  {filteredPayments.map(p => (
+                    <div key={p.id} className="p-4 space-y-3">
+                      <div className="flex flex-wrap items-start justify-between gap-2">
+                        <div className="min-w-0">
+                          <div className="font-semibold text-black dark:text-white truncate">{p.user_name || 'Subscriber'}</div>
+                          <div className="text-[11px] text-gray-500 break-all">{p.user_email}</div>
+                          <div className="text-[10px] text-gray-400 font-mono mt-0.5">
                             {new Date(p.created_at).toLocaleString('en-US', { dateStyle: 'short', timeStyle: 'short' })}
                           </div>
-                        </td>
+                        </div>
+                        <span className={`px-2.5 py-0.5 rounded-full text-[10px] font-mono font-bold uppercase inline-flex items-center gap-1 shrink-0 ${
+                          p.status === 'completed'
+                            ? 'bg-emerald-50 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-400 border border-emerald-200'
+                            : p.status === 'pending'
+                            ? 'bg-amber-50 text-amber-700 dark:bg-amber-950/40 dark:text-amber-300 border border-amber-200 animate-pulse'
+                            : 'bg-red-50 text-red-700 dark:bg-red-950/40 dark:text-red-400 border border-red-200'
+                        }`}>
+                          <span className={`w-1.5 h-1.5 rounded-full ${
+                            p.status === 'completed' ? 'bg-emerald-500' : p.status === 'pending' ? 'bg-amber-500' : 'bg-red-500'
+                          }`} />
+                          {p.status}
+                        </span>
+                      </div>
 
-                        <td className="py-3.5 px-4">
-                          <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-[10px] font-bold font-mono uppercase ${
-                            p.gateway === 'bkash'
-                              ? 'bg-pink-50 text-[#E2136E] dark:bg-pink-950/40 border border-pink-200 dark:border-pink-900'
-                              : p.gateway === 'nagad'
-                              ? 'bg-orange-50 text-[#F7941D] dark:bg-orange-950/40 border border-orange-200 dark:border-orange-900'
-                              : 'bg-purple-50 text-[#8C3494] dark:bg-purple-950/40 border border-purple-200 dark:border-purple-900'
-                          }`}>
-                            {p.gateway}
-                          </span>
-                        </td>
-
-                        <td className="py-3.5 px-4 font-mono font-bold text-black dark:text-white">
-                          <div className="flex items-center gap-1.5">
+                      <div className="grid grid-cols-2 gap-2.5 bg-[#FAFAFA] dark:bg-[#1F1F1F] p-3 rounded-[8px] border border-black/[0.05] dark:border-white/[0.06]">
+                        <div>
+                          <span className="text-[10px] font-mono text-gray-400 block">Gateway & Plan</span>
+                          <span className="font-bold text-black dark:text-white uppercase">{p.gateway}</span>
+                          <span className="text-[11px] font-mono text-gray-600 dark:text-gray-300 block">{formatBDT(p.amount)}</span>
+                        </div>
+                        <div>
+                          <span className="text-[10px] font-mono text-gray-400 block">Sender Number</span>
+                          <div className="flex items-center gap-1.5 font-mono font-bold text-black dark:text-white">
                             <span>{p.sender_number}</span>
                             <button
                               type="button"
-                              onClick={() => handleCopyText(p.sender_number, `ph_${p.id}`)}
+                              onClick={() => handleCopyText(p.sender_number, `ph_m_${p.id}`)}
                               className="text-gray-400 hover:text-black dark:hover:text-white cursor-pointer"
-                              title="Copy sender number"
+                              aria-label="Copy sender number"
                             >
-                              {copiedId === `ph_${p.id}` ? <Check className="w-3 h-3 text-emerald-500" /> : <Copy className="w-3 h-3" />}
+                              {copiedId === `ph_m_${p.id}` ? <Check className="w-3 h-3 text-emerald-500" /> : <Copy className="w-3 h-3" />}
                             </button>
                           </div>
-                        </td>
-
-                        <td className="py-3.5 px-4">
-                          <div className="flex items-center gap-1.5 font-mono font-bold text-black dark:text-white bg-black/[0.03] dark:bg-white/[0.05] px-2 py-1 rounded-[6px] w-fit">
-                            <span>{p.trx_id}</span>
+                        </div>
+                        <div className="col-span-2 pt-1 border-t border-black/[0.05] dark:border-white/[0.06]">
+                          <span className="text-[10px] font-mono text-gray-400 block mb-0.5">Transaction ID (TrxID)</span>
+                          <div className="flex items-center justify-between gap-2 font-mono font-bold text-black dark:text-white">
+                            <span className="break-all">{p.trx_id}</span>
                             <button
                               type="button"
-                              onClick={() => handleCopyText(p.trx_id, `trx_${p.id}`)}
-                              className="text-gray-400 hover:text-black dark:hover:text-white cursor-pointer"
-                              title="Copy TrxID to check MFS statement"
+                              onClick={() => handleCopyText(p.trx_id, `trx_m_${p.id}`)}
+                              className="text-gray-400 hover:text-black dark:hover:text-white cursor-pointer shrink-0"
+                              aria-label="Copy transaction ID"
                             >
-                              {copiedId === `trx_${p.id}` ? <Check className="w-3 h-3 text-emerald-500" /> : <Copy className="w-3 h-3" />}
+                              {copiedId === `trx_m_${p.id}` ? <Check className="w-3 h-3 text-emerald-500" /> : <Copy className="w-3 h-3" />}
                             </button>
                           </div>
-                        </td>
+                        </div>
+                      </div>
 
-                        <td className="py-3.5 px-4">
-                          <div className="font-bold text-black dark:text-white">{formatBDT(p.amount)}</div>
-                          <span className="text-[10px] text-gray-500 capitalize">{p.plan_id} Plan</span>
-                        </td>
+                      {p.status === 'pending' ? (
+                        <div className="flex flex-wrap items-center gap-2 pt-1">
+                          <button
+                            type="button"
+                            onClick={() => handleApprovePayment(p)}
+                            className="flex-1 min-h-9 py-1.5 px-3 rounded-full bg-black hover:bg-black/90 dark:bg-white dark:hover:bg-white/90 text-white dark:text-black font-semibold text-xs flex items-center justify-center gap-1.5 transition-all shadow-xs cursor-pointer"
+                          >
+                            <Check className="w-3.5 h-3.5 text-emerald-400 dark:text-emerald-600 shrink-0" />
+                            <span>Approve & Activate</span>
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => handleRejectPayment(p)}
+                            className="min-h-9 py-1.5 px-3.5 rounded-full border border-red-200 text-red-600 hover:bg-red-50 dark:hover:bg-red-950/30 text-xs font-semibold cursor-pointer transition-colors"
+                          >
+                            Reject
+                          </button>
+                        </div>
+                      ) : (
+                        <div className="text-gray-400 font-mono text-[11px]">
+                          {p.status === 'completed' ? 'Verified & Active' : 'Rejected'}
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                </div>
 
-                        <td className="py-3.5 px-4">
-                          <span className={`px-2.5 py-0.5 rounded-full text-[10px] font-mono font-bold uppercase inline-flex items-center gap-1 ${
-                            p.status === 'completed'
-                              ? 'bg-emerald-50 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-400 border border-emerald-200'
-                              : p.status === 'pending'
-                              ? 'bg-amber-50 text-amber-700 dark:bg-amber-950/40 dark:text-amber-300 border border-amber-200 animate-pulse'
-                              : 'bg-red-50 text-red-700 dark:bg-red-950/40 dark:text-red-400 border border-red-200'
-                          }`}>
-                            <span className={`w-1.5 h-1.5 rounded-full ${
-                              p.status === 'completed' ? 'bg-emerald-500' : p.status === 'pending' ? 'bg-amber-500' : 'bg-red-500'
-                            }`} />
-                            {p.status}
-                          </span>
-                          {p.admin_note && (
-                            <div className="text-[10px] text-gray-400 mt-0.5 line-clamp-1">{p.admin_note}</div>
-                          )}
-                        </td>
+                {/* Desktop Table Layout */}
+                <div className="hidden md:block overflow-x-auto">
+                  <table className="w-full text-left text-xs">
+                    <thead className="border-b border-black/[0.08] dark:border-white/[0.08] text-gray-400 font-mono text-[11px]">
+                      <tr>
+                        <th className="py-3 px-4 font-medium">User Profile</th>
+                        <th className="py-3 px-4 font-medium">MFS Gateway</th>
+                        <th className="py-3 px-4 font-medium">Sender Number</th>
+                        <th className="py-3 px-4 font-medium">Transaction ID (TrxID)</th>
+                        <th className="py-3 px-4 font-medium">Plan & Amount</th>
+                        <th className="py-3 px-4 font-medium">Status</th>
+                        <th className="py-3 px-4 font-medium text-right">Verification Action</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-black/[0.04] dark:divide-white/[0.04]">
+                      {filteredPayments.map(p => (
+                        <tr key={p.id} className="hover:bg-black/[0.02] dark:hover:bg-white/[0.02] transition-colors">
+                          <td className="py-3.5 px-4">
+                            <div className="font-semibold text-black dark:text-white">{p.user_name || 'Subscriber'}</div>
+                            <div className="text-[11px] text-gray-500">{p.user_email}</div>
+                            <div className="text-[10px] text-gray-400 font-mono">
+                              {new Date(p.created_at).toLocaleString('en-US', { dateStyle: 'short', timeStyle: 'short' })}
+                            </div>
+                          </td>
 
-                        <td className="py-3.5 px-4 text-right">
-                          {p.status === 'pending' ? (
-                            <div className="flex items-center justify-end gap-2">
+                          <td className="py-3.5 px-4">
+                            <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-[10px] font-bold font-mono uppercase ${
+                              p.gateway === 'bkash'
+                                ? 'bg-pink-50 text-[#E2136E] dark:bg-pink-950/40 border border-pink-200 dark:border-pink-900'
+                                : p.gateway === 'nagad'
+                                ? 'bg-orange-50 text-[#F7941D] dark:bg-orange-950/40 border border-orange-200 dark:border-orange-900'
+                                : 'bg-purple-50 text-[#8C3494] dark:bg-purple-950/40 border border-purple-200 dark:border-purple-900'
+                            }`}>
+                              {p.gateway}
+                            </span>
+                          </td>
+
+                          <td className="py-3.5 px-4 font-mono font-bold text-black dark:text-white">
+                            <div className="flex items-center gap-1.5">
+                              <span>{p.sender_number}</span>
                               <button
                                 type="button"
-                                onClick={() => handleApprovePayment(p)}
-                                className="h-8 px-3.5 rounded-full bg-black hover:bg-black/90 dark:bg-white dark:hover:bg-white/90 text-white dark:text-black font-semibold text-xs flex items-center gap-1.5 transition-all shadow-xs cursor-pointer"
-                                title="Approve payment, activate subscription and fire Meta Pixel Purchase event"
+                                onClick={() => handleCopyText(p.sender_number, `ph_${p.id}`)}
+                                className="text-gray-400 hover:text-black dark:hover:text-white cursor-pointer"
+                                title="Copy sender number"
                               >
-                                <Check className="w-3.5 h-3.5 text-emerald-400 dark:text-emerald-600" />
-                                <span>Approve & Activate</span>
-                              </button>
-
-                              <button
-                                type="button"
-                                onClick={() => handleRejectPayment(p)}
-                                className="h-8 px-2.5 rounded-full border border-red-200 text-red-600 hover:bg-red-50 dark:hover:bg-red-950/30 text-xs font-semibold cursor-pointer transition-colors"
-                                title="Reject transaction if TrxID does not match"
-                              >
-                                Reject
+                                {copiedId === `ph_${p.id}` ? <Check className="w-3 h-3 text-emerald-500" /> : <Copy className="w-3 h-3" />}
                               </button>
                             </div>
-                          ) : (
-                            <span className="text-gray-400 font-mono text-[11px]">
-                              {p.status === 'completed' ? 'Verified & Active' : 'Rejected'}
+                          </td>
+
+                          <td className="py-3.5 px-4">
+                            <div className="flex items-center gap-1.5 font-mono font-bold text-black dark:text-white bg-black/[0.03] dark:bg-white/[0.05] px-2 py-1 rounded-[6px] w-fit">
+                              <span>{p.trx_id}</span>
+                              <button
+                                type="button"
+                                onClick={() => handleCopyText(p.trx_id, `trx_${p.id}`)}
+                                className="text-gray-400 hover:text-black dark:hover:text-white cursor-pointer"
+                                title="Copy TrxID to check MFS statement"
+                              >
+                                {copiedId === `trx_${p.id}` ? <Check className="w-3 h-3 text-emerald-500" /> : <Copy className="w-3 h-3" />}
+                              </button>
+                            </div>
+                          </td>
+
+                          <td className="py-3.5 px-4">
+                            <div className="font-bold text-black dark:text-white">{formatBDT(p.amount)}</div>
+                            <span className="text-[10px] text-gray-500 capitalize">{p.plan_id} Plan</span>
+                          </td>
+
+                          <td className="py-3.5 px-4">
+                            <span className={`px-2.5 py-0.5 rounded-full text-[10px] font-mono font-bold uppercase inline-flex items-center gap-1 ${
+                              p.status === 'completed'
+                                ? 'bg-emerald-50 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-400 border border-emerald-200'
+                                : p.status === 'pending'
+                                ? 'bg-amber-50 text-amber-700 dark:bg-amber-950/40 dark:text-amber-300 border border-amber-200 animate-pulse'
+                                : 'bg-red-50 text-red-700 dark:bg-red-950/40 dark:text-red-400 border border-red-200'
+                            }`}>
+                              <span className={`w-1.5 h-1.5 rounded-full ${
+                                p.status === 'completed' ? 'bg-emerald-500' : p.status === 'pending' ? 'bg-amber-500' : 'bg-red-500'
+                              }`} />
+                              {p.status}
                             </span>
-                          )}
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
+                            {p.admin_note && (
+                              <div className="text-[10px] text-gray-400 mt-0.5 line-clamp-1">{p.admin_note}</div>
+                            )}
+                          </td>
+
+                          <td className="py-3.5 px-4 text-right">
+                            {p.status === 'pending' ? (
+                              <div className="flex items-center justify-end gap-2">
+                                <button
+                                  type="button"
+                                  onClick={() => handleApprovePayment(p)}
+                                  className="h-8 px-3.5 rounded-full bg-black hover:bg-black/90 dark:bg-white dark:hover:bg-white/90 text-white dark:text-black font-semibold text-xs flex items-center gap-1.5 transition-all shadow-xs cursor-pointer"
+                                  title="Approve payment, activate subscription and fire Meta Pixel Purchase event"
+                                >
+                                  <Check className="w-3.5 h-3.5 text-emerald-400 dark:text-emerald-600" />
+                                  <span>Approve & Activate</span>
+                                </button>
+
+                                <button
+                                  type="button"
+                                  onClick={() => handleRejectPayment(p)}
+                                  className="h-8 px-2.5 rounded-full border border-red-200 text-red-600 hover:bg-red-50 dark:hover:bg-red-950/30 text-xs font-semibold cursor-pointer transition-colors"
+                                  title="Reject transaction if TrxID does not match"
+                                >
+                                  Reject
+                                </button>
+                              </div>
+                            ) : (
+                              <span className="text-gray-400 font-mono text-[11px]">
+                                {p.status === 'completed' ? 'Verified & Active' : 'Rejected'}
+                              </span>
+                            )}
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </>
             )}
           </div>
         </div>
@@ -780,7 +872,7 @@ export const AdminPanel: React.FC = () => {
       {/* Tab 2: Users */}
       {activeTab === 'users' && (
         <div className="space-y-4">
-          <div className="flex flex-col sm:flex-row items-center justify-between gap-3">
+          <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3">
             <div className="relative w-full sm:w-80">
               <Search className="w-3.5 h-3.5 absolute left-3 top-3 text-gray-400" />
               <input
@@ -798,7 +890,87 @@ export const AdminPanel: React.FC = () => {
           </div>
 
           <div className="bg-white dark:bg-[#262626] rounded-[8px] border border-black/[0.08] dark:border-white/[0.08] shadow-xs overflow-hidden">
-            <div className="overflow-x-auto">
+            {/* Mobile Card Layout */}
+            <div className="md:hidden divide-y divide-black/[0.06] dark:divide-white/[0.06] text-xs">
+              {users.map(u => (
+                <div key={u.id} className="p-4 space-y-3">
+                  <div className="flex items-start justify-between gap-2">
+                    <div className="min-w-0">
+                      <div className="font-semibold text-black dark:text-white truncate">{u.name}</div>
+                      <div className="text-[11px] text-gray-500 break-all">{u.email}</div>
+                      {u.phone && <div className="text-[10px] text-gray-400 font-mono">{u.phone}</div>}
+                    </div>
+                    <div className="flex items-center gap-1.5 shrink-0">
+                      <span className={`px-2 py-0.5 rounded-full text-[10px] font-mono uppercase ${
+                        u.role === 'admin'
+                          ? 'bg-black text-white dark:bg-white dark:text-black font-bold'
+                          : 'bg-black/[0.05] text-gray-700 dark:bg-white/[0.08] dark:text-gray-300'
+                      }`}>
+                        {u.role}
+                      </span>
+                      <button
+                        onClick={() => handleToggleUserStatus(u)}
+                        className={`px-2 py-0.5 rounded-full text-[10px] font-mono uppercase cursor-pointer ${
+                          u.status === 'active'
+                            ? 'bg-emerald-50 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-400 border border-emerald-200'
+                            : 'bg-red-50 text-red-700 dark:bg-red-950/40 dark:text-red-400 border border-red-200'
+                        }`}
+                      >
+                        {u.status}
+                      </button>
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-1 gap-2 bg-[#FAFAFA] dark:bg-[#1F1F1F] p-3 rounded-[8px] border border-black/[0.05] dark:border-white/[0.06]">
+                    <div className="flex flex-wrap items-center justify-between gap-2">
+                      <span className="text-[10px] font-mono text-gray-400">Subscription</span>
+                      {u.subscription ? (
+                        <span className="font-semibold text-black dark:text-white">
+                          {u.subscription.plan_name} (Exp: {new Date(u.subscription.expires_at).toLocaleDateString('en-US')})
+                        </span>
+                      ) : (
+                        <span className="text-gray-400 italic">None</span>
+                      )}
+                    </div>
+                    <div className="flex flex-wrap items-center justify-between gap-2 font-mono text-[11px]">
+                      <span className="text-[10px] font-mono text-gray-400">Tokens / Limit</span>
+                      <div className="flex items-center gap-1.5">
+                        <span>{(u.current_usage || 0).toLocaleString()}</span>
+                        <span className="text-gray-400">/</span>
+                        <input
+                          type="number"
+                          defaultValue={u.usage_limit}
+                          onBlur={e => handleUpdateUserLimit(u.id, e.target.value)}
+                          className="w-24 px-2 py-1 rounded-[4px] border border-black/[0.1] dark:border-white/[0.1] bg-white dark:bg-[#262626] text-[11px] font-mono"
+                        />
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="flex items-center justify-between gap-2 pt-1">
+                    <button
+                      onClick={() => setSelectedUserForSub(u)}
+                      className="h-8 px-3.5 rounded-full text-xs border border-black/[0.12] dark:border-white/[0.15] hover:border-black/30 font-medium cursor-pointer"
+                    >
+                      Grant Plan
+                    </button>
+                    {u.role !== 'admin' && (
+                      <button
+                        onClick={() => handleDeleteUser(u.id)}
+                        className="h-8 px-2.5 text-gray-400 hover:text-red-500 rounded-full border border-transparent hover:border-red-200 flex items-center gap-1 cursor-pointer"
+                        title="Delete user"
+                      >
+                        <Trash2 className="w-3.5 h-3.5" />
+                        <span className="text-[11px]">Delete</span>
+                      </button>
+                    )}
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            {/* Desktop Table Layout */}
+            <div className="hidden md:block overflow-x-auto">
               <table className="w-full text-left text-xs">
                 <thead className="border-b border-black/[0.08] dark:border-white/[0.08] text-gray-400 font-mono text-[11px]">
                   <tr>
@@ -959,25 +1131,25 @@ export const AdminPanel: React.FC = () => {
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {providers.map(p => (
-              <div key={p.id} className="bg-white dark:bg-[#262626] p-6 rounded-[8px] border border-black/[0.08] dark:border-white/[0.08] shadow-xs space-y-3">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <Key className="w-3.5 h-3.5 text-gray-500" />
-                    <h3 className="font-bold text-black dark:text-white text-sm">{p.name}</h3>
+              <div key={p.id} className="bg-white dark:bg-[#262626] p-4 sm:p-6 rounded-[8px] border border-black/[0.08] dark:border-white/[0.08] shadow-xs space-y-3 min-w-0">
+                <div className="flex flex-wrap items-center justify-between gap-2">
+                  <div className="flex items-center gap-2 min-w-0">
+                    <Key className="w-3.5 h-3.5 text-gray-500 shrink-0" />
+                    <h3 className="font-bold text-black dark:text-white text-sm truncate">{p.name}</h3>
                   </div>
-                  <span className="text-[10px] font-mono uppercase px-2 py-0.5 rounded-full bg-black/[0.05] dark:bg-white/[0.08] text-black dark:text-white font-semibold">
+                  <span className="text-[10px] font-mono uppercase px-2 py-0.5 rounded-full bg-black/[0.05] dark:bg-white/[0.08] text-black dark:text-white font-semibold shrink-0">
                     Active
                   </span>
                 </div>
 
                 <div className="text-xs space-y-1.5 text-gray-500 font-mono text-[11px]">
-                  <div className="flex items-center justify-between">
-                    <span>Slug:</span>
-                    <span className="text-black dark:text-white font-semibold">{p.slug}</span>
+                  <div className="flex items-center justify-between gap-2">
+                    <span className="shrink-0">Slug:</span>
+                    <span className="text-black dark:text-white font-semibold truncate">{p.slug}</span>
                   </div>
-                  <div className="flex items-center justify-between">
-                    <span>Base URL:</span>
-                    <span className="text-gray-600 dark:text-gray-400 truncate max-w-xs">{p.base_url}</span>
+                  <div className="flex items-center justify-between gap-2">
+                    <span className="shrink-0">Base URL:</span>
+                    <span className="text-gray-600 dark:text-gray-400 truncate max-w-[160px] sm:max-w-xs">{p.base_url}</span>
                   </div>
                 </div>
 
@@ -1026,7 +1198,50 @@ export const AdminPanel: React.FC = () => {
       {/* Tab 4: Models */}
       {activeTab === 'models' && (
         <div className="bg-white dark:bg-[#262626] rounded-[8px] border border-black/[0.08] dark:border-white/[0.08] shadow-xs overflow-hidden">
-          <div className="overflow-x-auto">
+          {/* Mobile Card Layout */}
+          <div className="md:hidden divide-y divide-black/[0.06] dark:divide-white/[0.06] text-xs">
+            {models.map(m => (
+              <div key={m.id} className="p-4 space-y-2.5">
+                <div className="flex flex-wrap items-start justify-between gap-2">
+                  <div className="min-w-0">
+                    <div className="font-semibold text-black dark:text-white truncate">{m.display_name}</div>
+                    <div className="text-[10px] font-mono text-gray-400 break-all">{m.model_name}</div>
+                  </div>
+                  <span className="px-2 py-0.5 rounded-full text-[10px] font-mono uppercase font-bold bg-black/[0.05] dark:bg-white/[0.08] text-black dark:text-white shrink-0">
+                    {m.badge}
+                  </span>
+                </div>
+
+                <div className="flex flex-wrap items-center justify-between gap-2 text-[11px] font-mono text-gray-500">
+                  <span>Ctx: {m.context_window.toLocaleString()}</span>
+                  <span>Out: {m.max_output_tokens.toLocaleString()}</span>
+                </div>
+
+                <div className="flex items-center justify-between gap-2 pt-1">
+                  <span className={`px-2 py-0.5 rounded-full text-[10px] font-mono uppercase ${
+                    m.is_enabled
+                      ? 'bg-emerald-50 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-400'
+                      : 'bg-black/[0.05] text-gray-500'
+                  }`}>
+                    {m.is_enabled ? 'Enabled' : 'Disabled'}
+                  </span>
+                  <button
+                    onClick={() => handleToggleModel(m)}
+                    className={`h-7 px-3 rounded-full text-xs font-semibold cursor-pointer border border-black/[0.08] dark:border-white/[0.1] ${
+                      m.is_enabled
+                        ? 'text-red-600 hover:bg-red-50 dark:hover:bg-red-950/40'
+                        : 'text-emerald-600 hover:bg-emerald-50 dark:hover:bg-emerald-950/40'
+                    }`}
+                  >
+                    {m.is_enabled ? 'Disable' : 'Enable'}
+                  </button>
+                </div>
+              </div>
+            ))}
+          </div>
+
+          {/* Desktop Table Layout */}
+          <div className="hidden md:block overflow-x-auto">
             <table className="w-full text-left text-xs">
               <thead className="border-b border-black/[0.08] dark:border-white/[0.08] text-gray-400 font-mono text-[11px]">
                 <tr>
@@ -1083,7 +1298,7 @@ export const AdminPanel: React.FC = () => {
 
       {/* Tab 5: Settings & Facebook Pixel (The requested Meta Pixel setting!) */}
       {activeTab === 'settings' && (
-        <form onSubmit={handleSaveSettings} className="bg-white dark:bg-[#262626] p-6 sm:p-8 rounded-[8px] border border-black/[0.08] dark:border-white/[0.08] shadow-xs space-y-6 max-w-2xl text-xs">
+        <form onSubmit={handleSaveSettings} className="bg-white dark:bg-[#262626] p-4 sm:p-8 rounded-[8px] border border-black/[0.08] dark:border-white/[0.08] shadow-xs space-y-6 max-w-2xl text-xs">
           <div>
             <h3 className="font-bold text-base text-black dark:text-white">
               Global Platform, Payment & Meta Pixel Settings
@@ -1094,15 +1309,15 @@ export const AdminPanel: React.FC = () => {
           </div>
 
           {/* Facebook Pixel Setup Section */}
-          <div className="p-5 rounded-[8px] border border-black/[0.12] dark:border-white/[0.15] bg-[#FAFAFA] dark:bg-[#1F1F1F] space-y-4">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <Activity className="w-4 h-4 text-blue-600 dark:text-blue-400" />
+          <div className="p-4 sm:p-5 rounded-[8px] border border-black/[0.12] dark:border-white/[0.15] bg-[#FAFAFA] dark:bg-[#1F1F1F] space-y-4">
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <div className="flex items-center gap-2 min-w-0">
+                <Activity className="w-4 h-4 text-blue-600 dark:text-blue-400 shrink-0" />
                 <h4 className="font-bold text-sm text-black dark:text-white">
                   Facebook / Meta Pixel Setup (Meta Ads)
                 </h4>
               </div>
-              <label className="flex items-center gap-2 cursor-pointer">
+              <label className="flex items-center gap-2 cursor-pointer shrink-0">
                 <input
                   type="checkbox"
                   checked={!!globalSettings.facebook_pixel_enabled}
@@ -1162,14 +1377,14 @@ export const AdminPanel: React.FC = () => {
               />
             </div>
 
-            <div className="pt-1 flex items-center gap-3">
+            <div className="pt-1 flex flex-wrap items-center gap-2.5">
               <button
                 type="button"
                 disabled={testingPixel || !globalSettings.facebook_pixel_id}
                 onClick={handleTestPixel}
-                className="h-8 px-4 rounded-full border border-black/[0.12] dark:border-white/[0.15] hover:border-black/30 text-xs font-semibold flex items-center gap-1.5 cursor-pointer disabled:opacity-50"
+                className="min-h-8 h-auto py-1.5 px-4 rounded-full border border-black/[0.12] dark:border-white/[0.15] hover:border-black/30 text-xs font-semibold flex items-center gap-1.5 cursor-pointer disabled:opacity-50"
               >
-                <Activity className="w-3.5 h-3.5 text-blue-500" />
+                <Activity className="w-3.5 h-3.5 text-blue-500 shrink-0" />
                 <span>{testingPixel ? 'Sending Test...' : 'Send Test Purchase Event'}</span>
               </button>
               <span className="text-[10px] text-gray-500">
@@ -1181,9 +1396,9 @@ export const AdminPanel: React.FC = () => {
           {/* MFS Payment Numbers Configuration */}
           <div className="pt-2 border-t border-black/[0.08] dark:border-white/[0.08] space-y-3.5">
             <div>
-              <h4 className="font-bold text-xs text-black dark:text-white flex items-center justify-between">
+              <h4 className="font-bold text-xs text-black dark:text-white flex flex-wrap items-center justify-between gap-2">
                 <span>MFS Payment Phone Numbers</span>
-                <span className="text-[10px] font-mono text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/40 px-2 py-0.5 rounded-full border border-emerald-200">
+                <span className="text-[10px] font-mono text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/40 px-2 py-0.5 rounded-full border border-emerald-200 shrink-0">
                   Live in Checkout
                 </span>
               </h4>
@@ -1279,7 +1494,7 @@ export const AdminPanel: React.FC = () => {
             <button
               type="submit"
               disabled={savingSettings}
-              className="h-10 px-6 rounded-full bg-black hover:bg-black/90 dark:bg-white dark:hover:bg-white/90 text-white dark:text-black font-semibold text-xs flex items-center gap-2 cursor-pointer shadow-xs"
+              className="w-full sm:w-auto h-10 px-6 rounded-full bg-black hover:bg-black/90 dark:bg-white dark:hover:bg-white/90 text-white dark:text-black font-semibold text-xs flex items-center justify-center gap-2 cursor-pointer shadow-xs"
             >
               <Save className="w-3.5 h-3.5" />
               <span>{savingSettings ? 'Saving...' : 'Save Settings & Pixel'}</span>

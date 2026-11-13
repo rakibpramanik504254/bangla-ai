@@ -31,23 +31,23 @@ export const SmarterWorkflowsSection: React.FC = () => {
       {/* 2x2 Grid matching the user's reference design */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 sm:gap-8">
         {/* Card 1: All AI-Models in One Platform */}
-        <div className="rounded-2xl border border-black/[0.08] dark:border-white/[0.08] bg-white dark:bg-[#262626] overflow-hidden shadow-xs hover:border-black/20 dark:hover:border-white/20 transition-all group flex flex-col">
+        <div className="rounded-2xl border border-black/[0.08] dark:border-white/[0.08] bg-white dark:bg-[#262626] overflow-hidden shadow-xs hover:border-black/20 dark:hover:border-white/20 transition-all group flex flex-col min-w-0">
           {/* Visual Canvas */}
-          <div className="h-64 sm:h-72 bg-gradient-to-b from-[#EEF4FF] via-[#F4F7FC] to-[#FAFBFE] dark:from-[#262A33] dark:via-[#22252C] dark:to-[#1F1F1F] p-6 flex items-center justify-center relative overflow-hidden">
+          <div className="min-h-64 h-auto sm:h-72 bg-gradient-to-b from-[#EEF4FF] via-[#F4F7FC] to-[#FAFBFE] dark:from-[#262A33] dark:via-[#22252C] dark:to-[#1F1F1F] p-4 sm:p-6 flex items-center justify-center relative overflow-hidden">
             {/* Soft decorative background circles */}
             <div className="absolute w-64 h-64 rounded-full bg-blue-500/5 blur-2xl pointer-events-none" />
 
-            <div className="flex items-center gap-4 sm:gap-6 w-full max-w-md relative z-10">
+            <div className="flex items-center gap-2.5 sm:gap-6 w-full max-w-md relative z-10 min-w-0">
               {/* Left Circular Model Selector Node */}
               <div className="flex flex-col items-center shrink-0">
-                <div className="relative flex items-center justify-center">
-                  <div className="w-20 h-20 rounded-full border border-blue-400/30 animate-pulse absolute" />
-                  <div className="w-16 h-16 rounded-full border border-blue-400/50 absolute" />
-                  <div className="w-12 h-12 rounded-full bg-gradient-to-tr from-blue-600 to-indigo-600 text-white flex items-center justify-center shadow-lg">
-                    <Bot className="w-6 h-6 text-white" />
+                <div className="relative flex items-center justify-center w-16 h-16 sm:w-20 sm:h-20">
+                  <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-full border border-blue-400/30 animate-pulse absolute" />
+                  <div className="w-12 h-12 sm:w-16 sm:h-16 rounded-full border border-blue-400/50 absolute" />
+                  <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-full bg-gradient-to-tr from-blue-600 to-indigo-600 text-white flex items-center justify-center shadow-lg">
+                    <Bot className="w-5 h-5 sm:w-6 sm:h-6 text-white" />
                   </div>
                 </div>
-                <span className="text-[10px] font-mono text-gray-500 dark:text-gray-400 mt-2 text-center whitespace-nowrap">
+                <span className="text-[9px] sm:text-[10px] font-mono text-gray-500 dark:text-gray-400 mt-1.5 sm:mt-2 text-center whitespace-nowrap">
                   Choose the best<br />ai model....
                 </span>
               </div>
@@ -56,30 +56,30 @@ export const SmarterWorkflowsSection: React.FC = () => {
               <div className="h-[2px] w-6 bg-gradient-to-r from-blue-500 to-blue-400 shrink-0 hidden sm:block" />
 
               {/* Right Model Selection Card */}
-              <div className="flex-1 bg-white dark:bg-[#2D313B] rounded-xl border border-black/[0.08] dark:border-white/[0.08] p-2.5 shadow-md space-y-1.5 text-xs">
-                <div className="flex items-center gap-2 px-2.5 py-1 rounded-md text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-white/5 transition-colors">
-                  <span className="w-2 h-2 rounded-full bg-amber-500" />
-                  <span className="font-medium text-[11px]">Claude Opus 4.7</span>
+              <div className="flex-1 min-w-0 bg-white dark:bg-[#2D313B] rounded-xl border border-black/[0.08] dark:border-white/[0.08] p-2 sm:p-2.5 shadow-md space-y-1 sm:space-y-1.5 text-xs">
+                <div className="flex items-center gap-2 px-2 py-1 rounded-md text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-white/5 transition-colors min-w-0">
+                  <span className="w-2 h-2 rounded-full bg-amber-500 shrink-0" />
+                  <span className="font-medium text-[10px] sm:text-[11px] truncate">Claude Opus 4.7</span>
                 </div>
-                <div className="flex items-center gap-2 px-2.5 py-1 rounded-md text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-white/5 transition-colors">
-                  <span className="w-2 h-2 rounded-full bg-blue-500" />
-                  <span className="font-medium text-[11px]">Gemini 4 Carbon</span>
+                <div className="flex items-center gap-2 px-2 py-1 rounded-md text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-white/5 transition-colors min-w-0">
+                  <span className="w-2 h-2 rounded-full bg-blue-500 shrink-0" />
+                  <span className="font-medium text-[10px] sm:text-[11px] truncate">Gemini 4 Carbon</span>
                 </div>
                 {/* Active Highlighted Item */}
-                <div className="flex items-center justify-between px-2.5 py-1.5 rounded-lg border border-blue-500 bg-blue-50/70 dark:bg-blue-950/40 text-blue-700 dark:text-blue-300 shadow-2xs font-semibold">
-                  <div className="flex items-center gap-2">
-                    <span className="w-2 h-2 rounded-full bg-blue-600" />
-                    <span className="text-[11px]">ChatGPT-5.5 / GPT-4o</span>
+                <div className="flex items-center justify-between gap-1.5 px-2 py-1.5 rounded-lg border border-blue-500 bg-blue-50/70 dark:bg-blue-950/40 text-blue-700 dark:text-blue-300 shadow-2xs font-semibold min-w-0">
+                  <div className="flex items-center gap-1.5 sm:gap-2 min-w-0">
+                    <span className="w-2 h-2 rounded-full bg-blue-600 shrink-0" />
+                    <span className="text-[10px] sm:text-[11px] truncate">ChatGPT-5.5 / GPT-4o</span>
                   </div>
-                  <span className="text-[9px] uppercase tracking-wider font-mono bg-blue-500 text-white px-1.5 py-0.5 rounded">Active</span>
+                  <span className="text-[9px] uppercase tracking-wider font-mono bg-blue-500 text-white px-1.5 py-0.5 rounded shrink-0">Active</span>
                 </div>
-                <div className="flex items-center gap-2 px-2.5 py-1 rounded-md text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-white/5 transition-colors">
-                  <span className="w-2 h-2 rounded-full bg-orange-500" />
-                  <span className="font-medium text-[11px]">Claude Sonnet 3.5</span>
+                <div className="flex items-center gap-2 px-2 py-1 rounded-md text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-white/5 transition-colors min-w-0">
+                  <span className="w-2 h-2 rounded-full bg-orange-500 shrink-0" />
+                  <span className="font-medium text-[10px] sm:text-[11px] truncate">Claude Sonnet 3.5</span>
                 </div>
-                <div className="flex items-center gap-2 px-2.5 py-1 rounded-md text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-white/5 transition-colors">
-                  <span className="w-2 h-2 rounded-full bg-purple-500" />
-                  <span className="font-medium text-[11px]">Grok 4.7</span>
+                <div className="flex items-center gap-2 px-2 py-1 rounded-md text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-white/5 transition-colors min-w-0">
+                  <span className="w-2 h-2 rounded-full bg-purple-500 shrink-0" />
+                  <span className="font-medium text-[10px] sm:text-[11px] truncate">Grok 4.7</span>
                 </div>
               </div>
             </div>
@@ -97,9 +97,9 @@ export const SmarterWorkflowsSection: React.FC = () => {
         </div>
 
         {/* Card 2: Generate images in seconds */}
-        <div className="rounded-2xl border border-black/[0.08] dark:border-white/[0.08] bg-white dark:bg-[#262626] overflow-hidden shadow-xs hover:border-black/20 dark:hover:border-white/20 transition-all group flex flex-col">
+        <div className="rounded-2xl border border-black/[0.08] dark:border-white/[0.08] bg-white dark:bg-[#262626] overflow-hidden shadow-xs hover:border-black/20 dark:hover:border-white/20 transition-all group flex flex-col min-w-0">
           {/* Visual Canvas */}
-          <div className="h-64 sm:h-72 bg-gradient-to-b from-[#EEF4FF] via-[#F4F7FC] to-[#FAFBFE] dark:from-[#262A33] dark:via-[#22252C] dark:to-[#1F1F1F] p-5 sm:p-6 flex items-center justify-center relative overflow-hidden">
+          <div className="min-h-64 h-auto sm:h-72 bg-gradient-to-b from-[#EEF4FF] via-[#F4F7FC] to-[#FAFBFE] dark:from-[#262A33] dark:via-[#22252C] dark:to-[#1F1F1F] p-4 sm:p-6 flex items-center justify-center relative overflow-hidden">
             <div className="w-full max-w-sm bg-white dark:bg-[#2D313B] rounded-xl border border-black/[0.08] dark:border-white/[0.08] p-3.5 shadow-md space-y-3">
               {/* Header */}
               <div className="flex items-center gap-2 border-b border-black/[0.05] dark:border-white/[0.05] pb-2">
@@ -157,9 +157,9 @@ export const SmarterWorkflowsSection: React.FC = () => {
         </div>
 
         {/* Card 3: Research Faster with AI */}
-        <div className="rounded-2xl border border-black/[0.08] dark:border-white/[0.08] bg-white dark:bg-[#262626] overflow-hidden shadow-xs hover:border-black/20 dark:hover:border-white/20 transition-all group flex flex-col">
+        <div className="rounded-2xl border border-black/[0.08] dark:border-white/[0.08] bg-white dark:bg-[#262626] overflow-hidden shadow-xs hover:border-black/20 dark:hover:border-white/20 transition-all group flex flex-col min-w-0">
           {/* Visual Canvas */}
-          <div className="h-64 sm:h-72 bg-gradient-to-b from-[#EEF4FF] via-[#F4F7FC] to-[#FAFBFE] dark:from-[#262A33] dark:via-[#22252C] dark:to-[#1F1F1F] p-5 sm:p-6 flex flex-col items-center justify-center relative overflow-hidden">
+          <div className="min-h-64 h-auto sm:h-72 bg-gradient-to-b from-[#EEF4FF] via-[#F4F7FC] to-[#FAFBFE] dark:from-[#262A33] dark:via-[#22252C] dark:to-[#1F1F1F] p-4 sm:p-6 flex flex-col items-center justify-center relative overflow-hidden">
             {/* Top Root Node */}
             <div className="w-12 h-12 rounded-full bg-gradient-to-tr from-blue-600 to-indigo-600 text-white flex items-center justify-center shadow-lg relative z-10">
               <Network className="w-6 h-6 text-white" />
@@ -167,13 +167,13 @@ export const SmarterWorkflowsSection: React.FC = () => {
 
             {/* Tree Branching Connector Lines */}
             <div className="w-0.5 h-6 bg-blue-400/60" />
-            <div className="w-48 sm:w-64 h-0.5 bg-blue-400/60 relative">
+            <div className="w-44 sm:w-64 h-0.5 bg-blue-400/60 relative">
               <div className="absolute -top-1 left-0 w-2 h-2 rounded-full bg-blue-500" />
               <div className="absolute -top-1 left-1/3 w-2 h-2 rounded-full bg-blue-500" />
               <div className="absolute -top-1 left-2/3 w-2 h-2 rounded-full bg-blue-500" />
               <div className="absolute -top-1 right-0 w-2 h-2 rounded-full bg-blue-500" />
             </div>
-            <div className="flex justify-between w-48 sm:w-64 h-4">
+            <div className="flex justify-between w-44 sm:w-64 h-4">
               <div className="w-0.5 h-full bg-blue-400/60" />
               <div className="w-0.5 h-full bg-blue-400/60" />
               <div className="w-0.5 h-full bg-blue-400/60" />
@@ -181,7 +181,7 @@ export const SmarterWorkflowsSection: React.FC = () => {
             </div>
 
             {/* Structured Concept Cards */}
-            <div className="grid grid-cols-4 gap-2 w-full max-w-sm">
+            <div className="grid grid-cols-4 gap-1.5 sm:gap-2 w-full max-w-sm">
               <div className="bg-white dark:bg-[#2D313B] p-2 rounded-lg border border-black/10 dark:border-white/10 text-center shadow-xs">
                 <span className="text-[10px] font-mono text-gray-500 block truncate">Task 01</span>
                 <span className="text-[9px] text-gray-400 block truncate">Synthesis</span>
@@ -213,13 +213,13 @@ export const SmarterWorkflowsSection: React.FC = () => {
         </div>
 
         {/* Card 4: Write Code More Easily Than Ever */}
-        <div className="rounded-2xl border border-black/[0.08] dark:border-white/[0.08] bg-white dark:bg-[#262626] overflow-hidden shadow-xs hover:border-black/20 dark:hover:border-white/20 transition-all group flex flex-col">
+        <div className="rounded-2xl border border-black/[0.08] dark:border-white/[0.08] bg-white dark:bg-[#262626] overflow-hidden shadow-xs hover:border-black/20 dark:hover:border-white/20 transition-all group flex flex-col min-w-0">
           {/* Visual Canvas */}
-          <div className="h-64 sm:h-72 bg-gradient-to-b from-[#EEF4FF] via-[#F4F7FC] to-[#FAFBFE] dark:from-[#262A33] dark:via-[#22252C] dark:to-[#1F1F1F] p-5 sm:p-6 flex items-center justify-center relative overflow-hidden">
-            <div className="w-full max-w-sm bg-white dark:bg-[#2D313B] rounded-xl border border-black/[0.08] dark:border-white/[0.08] p-3.5 shadow-md space-y-2.5">
+          <div className="min-h-64 h-auto sm:h-72 bg-gradient-to-b from-[#EEF4FF] via-[#F4F7FC] to-[#FAFBFE] dark:from-[#262A33] dark:via-[#22252C] dark:to-[#1F1F1F] p-4 sm:p-6 flex items-center justify-center relative overflow-hidden">
+            <div className="w-full max-w-sm min-w-0 bg-white dark:bg-[#2D313B] rounded-xl border border-black/[0.08] dark:border-white/[0.08] p-3 sm:p-3.5 shadow-md space-y-2.5">
               {/* Header */}
               <div className="flex items-center gap-2 border-b border-black/[0.05] dark:border-white/[0.05] pb-2">
-                <div className="w-4 h-4 rounded-full bg-blue-600 flex items-center justify-center text-[9px] text-white font-bold">
+                <div className="w-4 h-4 rounded-full bg-blue-600 flex items-center justify-center text-[9px] text-white font-bold shrink-0">
                   ✦
                 </div>
                 <span className="text-[11px] font-semibold text-black dark:text-white">Bangla AI</span>
@@ -230,13 +230,13 @@ export const SmarterWorkflowsSection: React.FC = () => {
               </p>
 
               {/* Code Snippet Box */}
-              <div className="bg-[#1F1F1F] text-gray-200 rounded-lg p-3 font-mono text-[10px] leading-relaxed shadow-inner border border-white/[0.06]">
-                <div className="flex items-center justify-between border-b border-white/10 pb-1.5 mb-2 text-[10px] text-gray-400">
+              <div className="bg-[#1F1F1F] text-gray-200 rounded-lg p-2.5 sm:p-3 font-mono text-[10px] leading-relaxed shadow-inner border border-white/[0.06] overflow-x-auto max-w-full">
+                <div className="flex items-center justify-between gap-2 border-b border-white/10 pb-1.5 mb-2 text-[10px] text-gray-400">
                   <div className="flex items-center gap-1.5">
-                    <Code2 className="w-3 h-3 text-blue-400" />
+                    <Code2 className="w-3 h-3 text-blue-400 shrink-0" />
                     <span>Javascript</span>
                   </div>
-                  <div className="flex items-center gap-1">
+                  <div className="flex items-center gap-1 shrink-0">
                     <span className="px-1.5 py-0.5 rounded bg-white/10 text-[9px] hover:text-white cursor-pointer flex items-center gap-1">
                       <Copy className="w-2.5 h-2.5" />
                       <span>Copy</span>
@@ -246,7 +246,7 @@ export const SmarterWorkflowsSection: React.FC = () => {
                     </span>
                   </div>
                 </div>
-                <div>
+                <div className="break-all sm:break-normal">
                   <div className="text-gray-500">1 &lt;!-- Stripe js integration --&gt;</div>
                   <div>
                     <span className="text-gray-500">2 </span>

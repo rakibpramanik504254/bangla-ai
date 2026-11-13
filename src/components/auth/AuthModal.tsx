@@ -109,21 +109,21 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, defaultTa
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in overflow-y-auto">
       <div 
-        className="relative w-full max-w-sm my-8 bg-white dark:bg-[#262626] rounded-[16px] shadow-2xl border border-black/[0.12] dark:border-white/[0.15] overflow-hidden"
+        className="relative w-full max-w-sm max-h-[92vh] overflow-y-auto my-auto bg-white dark:bg-[#262626] rounded-[16px] shadow-2xl border border-black/[0.12] dark:border-white/[0.15]"
         role="dialog"
         aria-modal="true"
       >
         {/* Close Button */}
         <button
           onClick={onClose}
-          className="absolute top-4 right-4 w-8 h-8 rounded-full flex items-center justify-center text-gray-400 hover:text-black dark:hover:text-white hover:bg-black/[0.05] dark:hover:bg-white/[0.05] transition-colors cursor-pointer"
+          className="absolute top-4 right-4 w-8 h-8 rounded-full flex items-center justify-center text-gray-400 hover:text-black dark:hover:text-white hover:bg-black/[0.05] dark:hover:bg-white/[0.05] transition-colors cursor-pointer z-10"
           aria-label="Close"
         >
           <X className="w-4 h-4" />
         </button>
 
         {/* Modal Header */}
-        <div className="px-6 pt-6 pb-4 border-b border-black/[0.08] dark:border-white/[0.08] text-center">
+        <div className="px-4 sm:px-6 pt-6 pb-4 border-b border-black/[0.08] dark:border-white/[0.08] text-center">
           <div className="inline-flex items-center justify-center w-10 h-10 rounded-full border border-black/10 dark:border-white/10 bg-white dark:bg-[#1F1F1F] text-black dark:text-white mb-2.5 font-bold shadow-xs">
             <Sparkles className="w-4 h-4" />
           </div>
@@ -176,7 +176,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, defaultTa
         </div>
 
         {/* Modal Body */}
-        <div className="p-6 space-y-4">
+        <div className="p-4 sm:p-6 space-y-4">
           {error && (
             <div className="p-3 text-xs bg-red-50 dark:bg-red-950/40 border border-red-200 dark:border-red-900 text-red-600 dark:text-red-300 rounded-[8px] flex items-start gap-2">
               <AlertCircle className="w-4 h-4 shrink-0 mt-0.5" />

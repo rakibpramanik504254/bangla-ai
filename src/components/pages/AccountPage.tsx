@@ -115,11 +115,11 @@ export const AccountPage: React.FC = () => {
         </div>
 
         {/* Subscription Status Card */}
-        <div className="md:col-span-2 bg-white dark:bg-[#262626] rounded-[8px] p-6 border border-black/[0.08] dark:border-white/[0.08] shadow-xs flex flex-col justify-between">
+        <div className="md:col-span-2 bg-white dark:bg-[#262626] rounded-[8px] p-5 sm:p-6 border border-black/[0.08] dark:border-white/[0.08] shadow-xs flex flex-col justify-between min-w-0">
           <div>
-            <div className="flex items-center justify-between mb-5">
+            <div className="flex flex-wrap items-center justify-between gap-2 mb-5">
               <div className="flex items-center gap-2">
-                <CreditCard className="w-4 h-4 text-black dark:text-white" />
+                <CreditCard className="w-4 h-4 text-black dark:text-white shrink-0" />
                 <h3 className="font-bold text-black dark:text-white text-sm">Active Plan</h3>
               </div>
               <span
@@ -129,7 +129,7 @@ export const AccountPage: React.FC = () => {
                     : 'border-red-300 dark:border-red-800 bg-red-50/50 dark:bg-red-950/20 text-red-700 dark:text-red-400'
                 }`}
               >
-                <span className={`w-1.5 h-1.5 rounded-full ${active ? 'bg-emerald-500' : 'bg-red-500'}`} />
+                <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${active ? 'bg-emerald-500' : 'bg-red-500'}`} />
                 {active ? 'Subscription Active' : 'No Active Plan'}
               </span>
             </div>
@@ -171,7 +171,7 @@ export const AccountPage: React.FC = () => {
 
             {/* Usage Progress Bar */}
             <div className="mt-6 space-y-2">
-              <div className="flex justify-between text-xs">
+              <div className="flex flex-wrap justify-between items-baseline gap-1 text-xs">
                 <span className="text-gray-500">Token Quota:</span>
                 <span className="font-mono text-black dark:text-white">
                   {user.usage_limit > 0 ? (
@@ -200,16 +200,16 @@ export const AccountPage: React.FC = () => {
             <span className="text-gray-500">
               {!active ? 'Subscribe to activate your 1M token quota:' : 'Need more quota or want to renew early?'}
             </span>
-            <div className="flex items-center gap-2">
+            <div className="flex flex-col sm:flex-row w-full sm:w-auto items-stretch sm:items-center gap-2">
               <button
                 onClick={() => openPaymentModal('monthly')}
-                className="h-9 px-4 rounded-full text-xs font-semibold border border-black/[0.12] dark:border-white/[0.15] hover:border-black/30 dark:hover:border-white/30 text-black dark:text-white transition-colors cursor-pointer"
+                className="min-h-9 h-auto py-2 px-4 rounded-full text-xs font-semibold border border-black/[0.12] dark:border-white/[0.15] hover:border-black/30 dark:hover:border-white/30 text-black dark:text-white transition-colors cursor-pointer text-center"
               >
                 {!active ? 'Subscribe Monthly (৳699)' : 'Renew Monthly (৳699)'}
               </button>
               <button
                 onClick={() => openPaymentModal('yearly')}
-                className="h-9 px-4 rounded-full text-xs font-semibold bg-black hover:bg-black/90 dark:bg-white dark:hover:bg-white/90 text-white dark:text-black transition-all cursor-pointer shadow-xs"
+                className="min-h-9 h-auto py-2 px-4 rounded-full text-xs font-semibold bg-black hover:bg-black/90 dark:bg-white dark:hover:bg-white/90 text-white dark:text-black transition-all cursor-pointer shadow-xs text-center"
               >
                 {!active ? 'Subscribe Yearly (৳5,999)' : 'Upgrade Yearly (৳5,999)'}
               </button>
@@ -234,68 +234,118 @@ export const AccountPage: React.FC = () => {
       )}
 
       {/* Payment History */}
-      <div className="bg-white dark:bg-[#262626] rounded-[8px] p-6 border border-black/[0.08] dark:border-white/[0.08] shadow-xs space-y-4">
+      <div className="bg-white dark:bg-[#262626] rounded-[8px] p-4 sm:p-6 border border-black/[0.08] dark:border-white/[0.08] shadow-xs space-y-4">
         <h3 className="font-bold text-black dark:text-white text-sm">Payment History</h3>
         {loadingPayments ? (
           <div className="py-8 text-center text-xs text-gray-500">Loading payment history...</div>
         ) : payments.length === 0 ? (
           <div className="py-8 text-center text-xs text-gray-500">No payment records found.</div>
         ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full text-left text-xs">
-              <thead className="border-b border-black/[0.08] dark:border-white/[0.08] text-gray-400 font-mono text-[11px]">
-                <tr>
-                  <th className="pb-3 font-medium">Date</th>
-                  <th className="pb-3 font-medium">Gateway</th>
-                  <th className="pb-3 font-medium">Transaction ID</th>
-                  <th className="pb-3 font-medium">Sender</th>
-                  <th className="pb-3 font-medium">Amount</th>
-                  <th className="pb-3 font-medium text-right">Status</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-black/[0.04] dark:divide-white/[0.04] font-mono text-[11px]">
-                {payments.map(p => {
-                  const status = p.status || 'completed';
-                  return (
-                    <tr key={p.id} className="hover:bg-black/[0.02] dark:hover:bg-white/[0.02] transition-colors">
-                      <td className="py-3 text-gray-600 dark:text-gray-400">
-                        {new Date(p.created_at).toLocaleDateString('en-US')}
-                      </td>
-                      <td className="py-3 font-semibold text-black dark:text-white uppercase">
-                        {p.gateway}
-                      </td>
-                      <td className="py-3 text-gray-700 dark:text-gray-300 font-bold">
-                        {p.trx_id}
-                      </td>
-                      <td className="py-3 text-gray-500">
-                        {p.sender_number || p.phone || '—'}
-                      </td>
-                      <td className="py-3 font-bold text-black dark:text-white">
-                        {formatBDT(p.amount)}
-                      </td>
-                      <td className="py-3 text-right">
-                        {status === 'completed' && (
-                          <span className="px-2.5 py-0.5 rounded-full bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 text-[10px] font-bold border border-emerald-500/20">
-                            COMPLETED
-                          </span>
-                        )}
-                        {status === 'pending' && (
-                          <span className="px-2.5 py-0.5 rounded-full bg-amber-500/10 text-amber-600 dark:text-amber-400 text-[10px] font-bold border border-amber-500/20 animate-pulse">
-                            PENDING REVIEW
-                          </span>
-                        )}
-                        {status === 'rejected' && (
-                          <span className="px-2.5 py-0.5 rounded-full bg-red-500/10 text-red-600 dark:text-red-400 text-[10px] font-bold border border-red-500/20">
-                            REJECTED
-                          </span>
-                        )}
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
-          </div>
+          <>
+            {/* Mobile Stacked Cards */}
+            <div className="sm:hidden space-y-3">
+              {payments.map(p => {
+                const status = p.status || 'completed';
+                return (
+                  <div
+                    key={p.id}
+                    className="p-3.5 rounded-[8px] border border-black/[0.08] dark:border-white/[0.08] bg-[#FAFAFA] dark:bg-[#1F1F1F] space-y-2 text-xs"
+                  >
+                    <div className="flex flex-wrap items-center justify-between gap-2">
+                      <span className="font-bold text-black dark:text-white uppercase font-mono">
+                        {p.gateway} • {formatBDT(p.amount)}
+                      </span>
+                      {status === 'completed' && (
+                        <span className="px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 text-[10px] font-bold font-mono border border-emerald-500/20">
+                          COMPLETED
+                        </span>
+                      )}
+                      {status === 'pending' && (
+                        <span className="px-2 py-0.5 rounded-full bg-amber-500/10 text-amber-600 dark:text-amber-400 text-[10px] font-bold font-mono border border-amber-500/20 animate-pulse">
+                          PENDING REVIEW
+                        </span>
+                      )}
+                      {status === 'rejected' && (
+                        <span className="px-2 py-0.5 rounded-full bg-red-500/10 text-red-600 dark:text-red-400 text-[10px] font-bold font-mono border border-red-500/20">
+                          REJECTED
+                        </span>
+                      )}
+                    </div>
+                    <div className="grid grid-cols-2 gap-2 font-mono text-[11px] text-gray-500">
+                      <div>
+                        <span className="text-[10px] text-gray-400 block">TrxID</span>
+                        <span className="font-bold text-black dark:text-white break-all">{p.trx_id}</span>
+                      </div>
+                      <div>
+                        <span className="text-[10px] text-gray-400 block">Sender</span>
+                        <span className="text-gray-700 dark:text-gray-300">{p.sender_number || p.phone || '—'}</span>
+                      </div>
+                    </div>
+                    <div className="text-[10px] font-mono text-gray-400 pt-1 border-t border-black/[0.05] dark:border-white/[0.05]">
+                      {new Date(p.created_at).toLocaleDateString('en-US')}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+
+            {/* Desktop Table */}
+            <div className="hidden sm:block overflow-x-auto">
+              <table className="w-full text-left text-xs">
+                <thead className="border-b border-black/[0.08] dark:border-white/[0.08] text-gray-400 font-mono text-[11px]">
+                  <tr>
+                    <th className="pb-3 font-medium">Date</th>
+                    <th className="pb-3 font-medium">Gateway</th>
+                    <th className="pb-3 font-medium">Transaction ID</th>
+                    <th className="pb-3 font-medium">Sender</th>
+                    <th className="pb-3 font-medium">Amount</th>
+                    <th className="pb-3 font-medium text-right">Status</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-black/[0.04] dark:divide-white/[0.04] font-mono text-[11px]">
+                  {payments.map(p => {
+                    const status = p.status || 'completed';
+                    return (
+                      <tr key={p.id} className="hover:bg-black/[0.02] dark:hover:bg-white/[0.02] transition-colors">
+                        <td className="py-3 text-gray-600 dark:text-gray-400">
+                          {new Date(p.created_at).toLocaleDateString('en-US')}
+                        </td>
+                        <td className="py-3 font-semibold text-black dark:text-white uppercase">
+                          {p.gateway}
+                        </td>
+                        <td className="py-3 text-gray-700 dark:text-gray-300 font-bold">
+                          {p.trx_id}
+                        </td>
+                        <td className="py-3 text-gray-500">
+                          {p.sender_number || p.phone || '—'}
+                        </td>
+                        <td className="py-3 font-bold text-black dark:text-white">
+                          {formatBDT(p.amount)}
+                        </td>
+                        <td className="py-3 text-right">
+                          {status === 'completed' && (
+                            <span className="px-2.5 py-0.5 rounded-full bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 text-[10px] font-bold border border-emerald-500/20">
+                              COMPLETED
+                            </span>
+                          )}
+                          {status === 'pending' && (
+                            <span className="px-2.5 py-0.5 rounded-full bg-amber-500/10 text-amber-600 dark:text-amber-400 text-[10px] font-bold border border-amber-500/20 animate-pulse">
+                              PENDING REVIEW
+                            </span>
+                          )}
+                          {status === 'rejected' && (
+                            <span className="px-2.5 py-0.5 rounded-full bg-red-500/10 text-red-600 dark:text-red-400 text-[10px] font-bold border border-red-500/20">
+                              REJECTED
+                            </span>
+                          )}
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+          </>
         )}
       </div>
     </div>

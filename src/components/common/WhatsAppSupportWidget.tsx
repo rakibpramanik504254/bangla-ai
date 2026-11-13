@@ -58,14 +58,14 @@ export const WhatsAppSupportWidget: React.FC = () => {
   return (
     <div
       data-testid="whatsapp-support-widget"
-      className="fixed bottom-5 right-5 z-40 flex flex-col items-end gap-3"
+      className="fixed bottom-4 right-4 sm:bottom-5 sm:right-5 z-40 flex flex-col items-end gap-3"
     >
       {/* Expandable Live Chat Popover */}
       {isOpen && (
         <div
           role="dialog"
           aria-label="WhatsApp Live Support"
-          className="w-[310px] sm:w-[340px] rounded-[16px] overflow-hidden bg-white dark:bg-[#262626] border border-black/[0.1] dark:border-white/[0.12] shadow-2xl animate-in fade-in slide-in-from-bottom-2 duration-200"
+          className="w-[calc(100vw-2rem)] max-w-[340px] rounded-[16px] overflow-hidden bg-white dark:bg-[#262626] border border-black/[0.1] dark:border-white/[0.12] shadow-2xl animate-in fade-in slide-in-from-bottom-2 duration-200"
         >
           {/* Header */}
           <div className="bg-[#075E54] dark:bg-[#1B4338] text-white px-4 py-3.5 flex items-center justify-between gap-3">

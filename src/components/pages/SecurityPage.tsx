@@ -3,7 +3,7 @@ import { ShieldCheck, Lock, Server, Key, RefreshCw, EyeOff, FileText, CheckCircl
 
 export const SecurityPage: React.FC = () => {
   return (
-    <div className="max-w-4xl mx-auto px-4 sm:px-6 py-20 space-y-12 text-xs sm:text-sm text-gray-700 dark:text-gray-300 leading-relaxed">
+    <div className="max-w-4xl mx-auto px-4 sm:px-6 py-12 sm:py-20 space-y-10 sm:space-y-12 text-xs sm:text-sm text-gray-700 dark:text-gray-300 leading-relaxed break-words">
       {/* Header */}
       <div className="space-y-2">
         <span className="text-[11px] font-mono uppercase tracking-wider text-gray-500 block">
@@ -89,7 +89,7 @@ export const SecurityPage: React.FC = () => {
             4. Vulnerability Disclosure & Incident Response
           </h2>
           <p>
-            We take system vulnerabilities seriously. If you discover a security flaw or vulnerability within the Bangla AI infrastructure, please notify our security team at <a href="mailto:ourbangla.ai@gmail.com" className="underline font-mono text-black dark:text-white">ourbangla.ai@gmail.com</a> or call our hotline <a href="tel:+8801622860128" className="underline font-mono text-black dark:text-white">+880 1622-860128</a>. We acknowledge verified reports within 24 hours and do not pursue legal action against responsible, good-faith researchers.
+            We take system vulnerabilities seriously. If you discover a security flaw or vulnerability within the Bangla AI infrastructure, please notify our security team at <a href="mailto:ourbangla.ai@gmail.com" className="underline font-mono text-black dark:text-white break-all">ourbangla.ai@gmail.com</a> or call our hotline <a href="tel:+8801622860128" className="underline font-mono text-black dark:text-white">+880 1622-860128</a>. We acknowledge verified reports within 24 hours and do not pursue legal action against responsible, good-faith researchers.
           </p>
         </section>
       </div>

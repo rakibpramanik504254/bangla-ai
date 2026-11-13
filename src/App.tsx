@@ -43,10 +43,10 @@ function MainApp() {
   }, [currentView]);
 
   return (
-    <div className="min-h-screen flex flex-col bg-white dark:bg-[#1F1F1F] text-gray-900 dark:text-gray-100 transition-colors">
+    <div className="min-h-screen w-full overflow-x-clip flex flex-col bg-white dark:bg-[#1F1F1F] text-gray-900 dark:text-gray-100 transition-colors">
       <Navbar currentView={currentView} setCurrentView={setCurrentView} />
 
-      <div className="flex-1">
+      <div className="flex-1 min-w-0">
         {currentView === 'home' && <HomePage onStartChat={() => setCurrentView('chat')} />}
         {currentView === 'about' && <AboutPage />}
         {currentView === 'privacy' && <PrivacyPolicyPage />}

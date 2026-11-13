@@ -3,7 +3,7 @@ import { Shield, AlertTriangle, Lock, Eye, Database, Scale, Mail } from 'lucide-
 
 export const PrivacyPolicyPage: React.FC = () => {
   return (
-    <div className="max-w-4xl mx-auto px-4 sm:px-6 py-20 space-y-12 text-xs sm:text-sm text-gray-700 dark:text-gray-300 leading-relaxed">
+    <div className="max-w-4xl mx-auto px-4 sm:px-6 py-12 sm:py-20 space-y-10 sm:space-y-12 text-xs sm:text-sm text-gray-700 dark:text-gray-300 leading-relaxed break-words">
       {/* Header */}
       <div className="space-y-2">
         <span className="text-[11px] font-mono uppercase tracking-wider text-gray-500 block">
@@ -18,7 +18,7 @@ export const PrivacyPolicyPage: React.FC = () => {
       {/* Legal Notice */}
       <div className="bg-[#FAFAFA] dark:bg-[#262626] border border-black/[0.1] dark:border-white/[0.1] rounded-[8px] p-5 text-xs flex items-start gap-3.5">
         <AlertTriangle className="w-4 h-4 text-black dark:text-white shrink-0 mt-0.5" />
-        <div className="space-y-1">
+        <div className="space-y-1 min-w-0">
           <p className="font-bold text-xs uppercase tracking-wide text-black dark:text-white">Legal Notice:</p>
           <p className="leading-relaxed text-gray-600 dark:text-gray-400">
             This document represents a comprehensive privacy policy reflecting Bangla AI's data collection workflows, AI model transit architecture, and local regulatory considerations in Bangladesh. Prior to full-scale commercial deployment, this policy should be formally reviewed by a qualified cyber law practitioner.
@@ -27,7 +27,7 @@ export const PrivacyPolicyPage: React.FC = () => {
       </div>
 
       {/* Policy Sections */}
-      <div className="space-y-8 bg-white dark:bg-[#262626] p-6 sm:p-8 rounded-[8px] border border-black/[0.08] dark:border-white/[0.08] shadow-xs">
+      <div className="space-y-8 bg-white dark:bg-[#262626] p-5 sm:p-8 rounded-[8px] border border-black/[0.08] dark:border-white/[0.08] shadow-xs">
         <section className="space-y-2">
           <h2 className="text-xs font-bold text-black dark:text-white uppercase tracking-wider font-mono">
             1. Overview & Scope
@@ -98,7 +98,7 @@ export const PrivacyPolicyPage: React.FC = () => {
             For questions or requests concerning data protection, account deletion, or statutory rights, please contact:
           </p>
           <div className="font-mono text-xs text-black dark:text-white space-y-1">
-            <p>Email: <a href="mailto:ourbangla.ai@gmail.com" className="underline">ourbangla.ai@gmail.com</a></p>
+            <p>Email: <a href="mailto:ourbangla.ai@gmail.com" className="underline break-all">ourbangla.ai@gmail.com</a></p>
             <p>Hotline: <a href="tel:+8801622860128" className="underline">+880 1622-860128</a></p>
             <p>Website: <a href="https://bangla-ai.pro" target="_blank" rel="noopener noreferrer" className="underline">bangla-ai.pro</a></p>
           </div>
