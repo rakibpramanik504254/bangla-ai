@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { X, CheckCircle2, ShieldCheck, Copy, Check, ArrowRight, Smartphone, AlertCircle, Clock } from 'lucide-react';
+import { X, ShieldCheck, Copy, Check, ArrowRight, AlertCircle, Clock } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext.tsx';
 import { PLANS, formatBDT } from '../../utils/billing.ts';
 import { trackMetaInitiateCheckout, trackMetaAddPaymentInfo } from '../../utils/metaPixel.ts';
@@ -25,6 +25,33 @@ interface SubmittedState {
   planName: string;
 }
 
+const MFS_GATEWAYS = [
+  {
+    id: 'bkash' as const,
+    name: 'bKash',
+    bangla: 'বিকাশ',
+    icon: 'https://bongotopup.com/wp-content/uploads/2026/01/bkash-icon.png',
+    activeClass: 'border-[#E2136E] ring-1 ring-[#E2136E]/40 bg-[#E2136E]/[0.06] dark:bg-[#E2136E]/[0.14]',
+    accentText: 'text-[#E2136E] dark:text-pink-400'
+  },
+  {
+    id: 'nagad' as const,
+    name: 'Nagad',
+    bangla: 'নগদ',
+    icon: 'https://bongotopup.com/wp-content/uploads/2026/01/nagad-icon1.png',
+    activeClass: 'border-[#F7941D] ring-1 ring-[#F7941D]/40 bg-[#F7941D]/[0.06] dark:bg-[#F7941D]/[0.14]',
+    accentText: 'text-[#F7941D] dark:text-orange-400'
+  },
+  {
+    id: 'rocket' as const,
+    name: 'Rocket',
+    bangla: 'রকেট',
+    icon: 'https://bongotopup.com/wp-content/uploads/2026/01/rocket-icon-removebg-preview.png',
+    activeClass: 'border-[#8C3494] ring-1 ring-[#8C3494]/40 bg-[#8C3494]/[0.06] dark:bg-[#8C3494]/[0.14]',
+    accentText: 'text-[#8C3494] dark:text-purple-400'
+  }
+];
+
 export const PaymentModal: React.FC<PaymentModalProps> = ({
   isOpen,
   onClose,
@@ -48,6 +75,12 @@ export const PaymentModal: React.FC<PaymentModalProps> = ({
   });
 
   const plan = PLANS[selectedPlan];
+
+  useEffect(() => {
+    if (isOpen) {
+      setSelectedPlan(defaultPlan);
+    }
+  }, [isOpen, defaultPlan]);
 
   useEffect(() => {
     if (isOpen) {
@@ -80,6 +113,8 @@ export const PaymentModal: React.FC<PaymentModalProps> = ({
   }, [user]);
 
   if (!isOpen) return null;
+
+  const activeGateway = MFS_GATEWAYS.find(g => g.id === gateway) || MFS_GATEWAYS[0];
 
   const activeMerchantNumber =
     gateway === 'bkash' ? paymentSettings.bkash_number :
@@ -116,7 +151,8 @@ export const PaymentModal: React.FC<PaymentModalProps> = ({
     setLoading(true);
 
     try {
-      const res = await fetch('/api/payments/verify', {
+      const minDelay = new Promise(resolve => setTimeout(resolve, 3000));
+      const fetchPromise = fetch('/api/payments/verify', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -129,6 +165,8 @@ export const PaymentModal: React.FC<PaymentModalProps> = ({
           trxId: cleanTrx
         })
       });
+
+      const [res] = await Promise.all([fetchPromise, minDelay]);
 
       let resData: any = {};
       const responseText = await res.text();
@@ -309,67 +347,68 @@ export const PaymentModal: React.FC<PaymentModalProps> = ({
                   Select Mobile Financial Service (MFS):
                 </label>
                 <div className="grid grid-cols-3 gap-2.5">
-                  <button
-                    type="button"
-                    onClick={() => setGateway('bkash')}
-                    className={`py-2.5 px-2 rounded-full border flex flex-col items-center justify-center transition-all cursor-pointer ${
-                      gateway === 'bkash'
-                        ? 'border-black dark:border-white bg-black/[0.05] dark:bg-white/[0.08] font-bold text-black dark:text-white'
-                        : 'border-black/[0.08] dark:border-white/[0.08] text-gray-600 dark:text-gray-400 hover:border-black/30'
-                    }`}
-                  >
-                    <span className="text-xs font-bold">bKash</span>
-                    <span className="text-[10px] font-mono text-gray-400">বিকাশ</span>
-                  </button>
-
-                  <button
-                    type="button"
-                    onClick={() => setGateway('nagad')}
-                    className={`py-2.5 px-2 rounded-full border flex flex-col items-center justify-center transition-all cursor-pointer ${
-                      gateway === 'nagad'
-                        ? 'border-black dark:border-white bg-black/[0.05] dark:bg-white/[0.08] font-bold text-black dark:text-white'
-                        : 'border-black/[0.08] dark:border-white/[0.08] text-gray-600 dark:text-gray-400 hover:border-black/30'
-                    }`}
-                  >
-                    <span className="text-xs font-bold">Nagad</span>
-                    <span className="text-[10px] font-mono text-gray-400">নগদ</span>
-                  </button>
-
-                  <button
-                    type="button"
-                    onClick={() => setGateway('rocket')}
-                    className={`py-2.5 px-2 rounded-full border flex flex-col items-center justify-center transition-all cursor-pointer ${
-                      gateway === 'rocket'
-                        ? 'border-black dark:border-white bg-black/[0.05] dark:bg-white/[0.08] font-bold text-black dark:text-white'
-                        : 'border-black/[0.08] dark:border-white/[0.08] text-gray-600 dark:text-gray-400 hover:border-black/30'
-                    }`}
-                  >
-                    <span className="text-xs font-bold">Rocket</span>
-                    <span className="text-[10px] font-mono text-gray-400">রকেট</span>
-                  </button>
+                  {MFS_GATEWAYS.map(item => (
+                    <button
+                      key={item.id}
+                      type="button"
+                      onClick={() => setGateway(item.id)}
+                      className={`py-2.5 px-2.5 rounded-[12px] border flex items-center justify-center gap-2 transition-all cursor-pointer ${
+                        gateway === item.id
+                          ? `${item.activeClass} font-bold text-black dark:text-white shadow-2xs`
+                          : 'border-black/[0.08] dark:border-white/[0.08] bg-white dark:bg-[#1F1F1F] text-gray-600 dark:text-gray-400 hover:border-black/30 dark:hover:border-white/30'
+                      }`}
+                    >
+                      <img
+                        src={item.icon}
+                        alt={item.name}
+                        className="w-7 h-7 object-contain rounded-md shrink-0 bg-white p-0.5 shadow-2xs"
+                      />
+                      <div className="text-left leading-tight">
+                        <span className="text-xs font-bold block">{item.name}</span>
+                        <span className="text-[10px] font-mono text-gray-500 dark:text-gray-400 block">{item.bangla}</span>
+                      </div>
+                    </button>
+                  ))}
                 </div>
               </div>
 
-              {/* Payment Instructions Box with Dynamic Number */}
-              <div className="bg-[#F8F9FA] dark:bg-[#1F1F1F] rounded-[8px] p-4 border border-black/[0.08] dark:border-white/[0.08] text-xs text-gray-600 dark:text-gray-400 space-y-2.5">
-                <div className="flex items-center justify-between">
-                  <span className="font-semibold text-black dark:text-white flex items-center gap-1.5">
-                    <Smartphone className="w-3.5 h-3.5 text-gray-400" />
-                    <span>Send {formatBDT(plan.priceBDT)} to {gateway.toUpperCase()}:</span>
-                  </span>
+              {/* Payment Instructions Box with Prominent Big Number */}
+              <div className="bg-[#F8F9FA] dark:bg-[#1F1F1F] rounded-[12px] p-4 border border-black/[0.08] dark:border-white/[0.08] text-xs text-gray-600 dark:text-gray-400 space-y-3.5">
+                {/* Highlighted Large Merchant Number Card */}
+                <div className="bg-white dark:bg-[#2A2A2A] rounded-[10px] p-3.5 border border-black/[0.08] dark:border-white/[0.1] shadow-xs flex items-center justify-between gap-3">
+                  <div className="flex items-center gap-3 min-w-0">
+                    <img
+                      src={activeGateway.icon}
+                      alt={activeGateway.name}
+                      className="w-10 h-10 object-contain rounded-lg bg-white p-1 border border-black/[0.08] shrink-0 shadow-2xs"
+                    />
+                    <div className="min-w-0">
+                      <span className="text-[11px] font-medium text-gray-500 dark:text-gray-400 block">
+                        Send <strong className="text-black dark:text-white font-mono">{formatBDT(plan.priceBDT)}</strong> to {activeGateway.name}
+                      </span>
+                      <p className="text-xl sm:text-2xl font-extrabold font-mono tracking-wider text-black dark:text-white mt-0.5 select-all truncate">
+                        {activeMerchantNumber}
+                      </p>
+                    </div>
+                  </div>
                   <button
                     type="button"
                     onClick={handleCopyMerchant}
-                    className="px-2.5 py-1 text-[11px] bg-white dark:bg-[#2D2D2D] border border-black/[0.1] dark:border-white/[0.1] rounded-full font-mono font-bold text-black dark:text-white flex items-center gap-1 hover:bg-black/[0.03] transition-colors cursor-pointer"
+                    className={`shrink-0 px-3.5 py-2 text-xs rounded-full border font-semibold flex items-center gap-1.5 transition-all cursor-pointer shadow-2xs ${
+                      copied
+                        ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-600 dark:text-emerald-400'
+                        : 'bg-[#F8F9FA] dark:bg-[#1F1F1F] border-black/[0.12] dark:border-white/[0.15] text-black dark:text-white hover:border-black/30 dark:hover:border-white/30'
+                    }`}
                     title="Click to copy number"
                   >
-                    {copied ? <Check className="w-3 h-3 text-emerald-500" /> : <Copy className="w-3 h-3 text-gray-400" />}
-                    <span>{copied ? 'Copied' : activeMerchantNumber}</span>
+                    {copied ? <Check className="w-3.5 h-3.5 text-emerald-500" /> : <Copy className="w-3.5 h-3.5 text-gray-500 dark:text-gray-400" />}
+                    <span>{copied ? 'Copied' : 'Copy'}</span>
                   </button>
                 </div>
-                <ol className="list-decimal list-inside space-y-1 text-[11px] text-gray-500 dark:text-gray-400">
-                  <li>Open your <strong>{gateway.toUpperCase()}</strong> app on your mobile device.</li>
-                  <li>Select <strong>Send Money</strong> or <strong>Payment</strong> to: <code className="font-mono font-bold text-black dark:text-white">{activeMerchantNumber}</code></li>
+
+                <ol className="list-decimal list-inside space-y-1 text-[11px] text-gray-500 dark:text-gray-400 px-0.5">
+                  <li>Open your <strong>{activeGateway.name}</strong> app on your mobile device.</li>
+                  <li>Select <strong>Send Money</strong> or <strong>Payment</strong> to: <code className="font-mono font-bold text-xs text-black dark:text-white">{activeMerchantNumber}</code></li>
                   <li>Send exact amount: <strong className="font-mono text-black dark:text-white">{formatBDT(plan.priceBDT)}</strong></li>
                   <li>Copy the <strong>Transaction ID (TrxID)</strong> from your SMS receipt and submit below.</li>
                 </ol>
@@ -418,10 +457,13 @@ export const PaymentModal: React.FC<PaymentModalProps> = ({
                 <button
                   type="submit"
                   disabled={loading}
-                  className="w-full h-11 px-5 rounded-full font-semibold text-xs text-white dark:text-black bg-black hover:bg-black/90 dark:bg-white dark:hover:bg-white/90 transition-all flex items-center justify-center gap-2 disabled:opacity-50 mt-2 shadow-xs cursor-pointer"
+                  className="w-full h-11 px-5 rounded-full font-semibold text-xs text-white dark:text-black bg-black hover:bg-black/90 dark:bg-white dark:hover:bg-white/90 transition-all flex items-center justify-center gap-2 disabled:opacity-75 mt-2 shadow-xs cursor-pointer"
                 >
                   {loading ? (
-                    <span className="w-4 h-4 border-2 border-white dark:border-black border-t-transparent rounded-full animate-spin" />
+                    <>
+                      <span className="w-4 h-4 border-2 border-white dark:border-black border-t-transparent rounded-full animate-spin" />
+                      <span>Verifying Transaction...</span>
+                    </>
                   ) : (
                     <>
                       <ShieldCheck className="w-4 h-4" />
