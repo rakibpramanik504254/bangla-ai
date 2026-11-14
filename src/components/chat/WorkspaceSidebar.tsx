@@ -15,6 +15,7 @@ import {
 import { Chat, User } from '../../types/index.ts';
 import { partitionWorkspaceChats } from '../../utils/workspaceSidebar.ts';
 import { BrandLogo } from '../common/BrandLogo.tsx';
+import { UserAvatar } from '../common/UserAvatar.tsx';
 
 interface WorkspaceSidebarProps {
   sidebarOpen: boolean;
@@ -373,17 +374,12 @@ export const WorkspaceSidebar: React.FC<WorkspaceSidebarProps> = ({
             className="w-full px-2.5 py-2 rounded-xl hover:bg-black/[0.05] dark:hover:bg-white/[0.06] flex items-center justify-between gap-2.5 transition-colors cursor-pointer text-left"
           >
             <div className="flex items-center gap-2.5 min-w-0">
-              {user?.avatar_url ? (
-                <img
-                  src={user.avatar_url}
-                  alt={user.name}
-                  className="w-8 h-8 rounded-full object-cover shrink-0 border border-black/10 dark:border-white/15"
-                />
-              ) : (
-                <div className="w-8 h-8 rounded-full bg-[#1f1f1f] text-white dark:bg-[#e3e3e3] dark:text-[#131314] font-semibold text-xs flex items-center justify-center shrink-0">
-                  {(user?.name || 'U').slice(0, 1).toUpperCase()}
-                </div>
-              )}
+              <UserAvatar
+                user={user}
+                sizeClassName="w-8 h-8 text-xs"
+                imgClassName="border border-black/10 dark:border-white/15"
+                testId="workspace-sidebar-user-avatar"
+              />
               <div className="min-w-0">
                 <div className="flex items-center gap-1.5 min-w-0">
                   <span className="text-[13px] font-medium text-[#1f1f1f] dark:text-[#e3e3e3] truncate">

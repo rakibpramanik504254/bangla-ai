@@ -1,7 +1,6 @@
 import React, { useState } from 'react';
 import {
   ArrowRight,
-  ShieldCheck,
   Sparkles,
   Code2,
   Cpu,
@@ -298,14 +297,14 @@ export const HomePage: React.FC<HomePageProps> = ({ onStartChat }) => {
         </div>
       </section>
 
-      {/* Curated Foundation Models (All 10 Models Displayed Cleanly) */}
-      <section className="max-w-5xl mx-auto px-4 sm:px-6">
+      {/* Curated Foundation Models (6 Flagship Models Displayed Cleanly) */}
+      <section data-testid="curated-models-section" className="max-w-5xl mx-auto px-4 sm:px-6">
         <div className="text-center mb-10 space-y-2.5">
           <span className="text-[11px] font-mono uppercase tracking-wider text-[#444746] dark:text-[#9aa0a6] block">
             Engine Fleet
           </span>
           <h2 className="text-2xl sm:text-3xl font-semibold tracking-tight text-[#1f1f1f] dark:text-[#e3e3e3]">
-            10 Curated Foundation Models
+            6 Curated Foundation Models
           </h2>
           <p className="text-sm text-[#444746] dark:text-[#9aa0a6] max-w-lg mx-auto leading-[1.7]">
             State-of-the-art weights from Anthropic, Google, OpenAI, xAI, DeepSeek, and Moonshot ready for production tasks.
@@ -516,142 +515,6 @@ export const HomePage: React.FC<HomePageProps> = ({ onStartChat }) => {
               Document Synthesis • Long Context
             </div>
           </div>
-
-          {/* 7. Gemini 2.5 Flash */}
-          <div className="card-minimal flex flex-col justify-between p-5 group">
-            <div className="space-y-3">
-              <div className="flex items-center justify-between text-xs text-[#444746] dark:text-[#9aa0a6]">
-                <div className="flex items-center gap-1.5 font-medium">
-                  <span>Google</span>
-                  <span>·</span>
-                  <span>1M Context</span>
-                </div>
-                <span className="font-mono text-[10px] uppercase font-semibold text-[#444746] dark:text-[#9aa0a6] px-2 py-0.5 rounded-full bg-[#f0f4f9] dark:bg-[#282a2c] border border-black/[0.06] dark:border-white/[0.08]">
-                  BALANCED
-                </span>
-              </div>
-              <div className="flex items-center gap-2.5">
-                <div className="w-9 h-9 rounded-xl bg-[#f0f4f9] dark:bg-[#282a2c] border border-black/[0.06] dark:border-white/[0.08] flex items-center justify-center shrink-0">
-                  <img
-                    src={CURATED_MODEL_MAP['gemini-2-5-flash'].iconSrc}
-                    alt={CURATED_MODEL_MAP['gemini-2-5-flash'].iconAlt}
-                    className="w-[18px] h-[18px] object-contain"
-                  />
-                </div>
-                <h3 className="text-base font-semibold text-[#1f1f1f] dark:text-[#e3e3e3] leading-snug">
-                  Gemini 2.5 Flash
-                </h3>
-              </div>
-              <p className="text-xs text-[#444746] dark:text-[#9aa0a6] leading-[1.7]">
-                Ultra-fast versatile workhorse designed for high-frequency queries, instant summarization, and rapid draft iterations.
-              </p>
-            </div>
-            <div className="mt-4 pt-3 border-t border-black/[0.06] dark:border-white/[0.06] text-[11px] text-[#444746] dark:text-[#9aa0a6] font-mono">
-              Sub-second Latency • Efficient
-            </div>
-          </div>
-
-          {/* 8. Gemini 2.5 Pro */}
-          <div className="card-minimal flex flex-col justify-between p-5 group">
-            <div className="space-y-3">
-              <div className="flex items-center justify-between text-xs text-[#444746] dark:text-[#9aa0a6]">
-                <div className="flex items-center gap-1.5 font-medium">
-                  <span>Google</span>
-                  <span>·</span>
-                  <span>2M Context</span>
-                </div>
-                <span className="font-mono text-[10px] uppercase font-semibold text-[#444746] dark:text-[#9aa0a6] px-2 py-0.5 rounded-full bg-[#f0f4f9] dark:bg-[#282a2c] border border-black/[0.06] dark:border-white/[0.08]">
-                  PRO
-                </span>
-              </div>
-              <div className="flex items-center gap-2.5">
-                <div className="w-9 h-9 rounded-xl bg-[#f0f4f9] dark:bg-[#282a2c] border border-black/[0.06] dark:border-white/[0.08] flex items-center justify-center shrink-0">
-                  <img
-                    src={CURATED_MODEL_MAP['gemini-2-5-pro'].iconSrc}
-                    alt={CURATED_MODEL_MAP['gemini-2-5-pro'].iconAlt}
-                    className="w-[18px] h-[18px] object-contain"
-                  />
-                </div>
-                <h3 className="text-base font-semibold text-[#1f1f1f] dark:text-[#e3e3e3] leading-snug">
-                  Gemini 2.5 Pro
-                </h3>
-              </div>
-              <p className="text-xs text-[#444746] dark:text-[#9aa0a6] leading-[1.7]">
-                Deep analytical reasoning model optimized for cross-modal datasets, video timestamps, and multi-file codebases.
-              </p>
-            </div>
-            <div className="mt-4 pt-3 border-t border-black/[0.06] dark:border-white/[0.06] text-[11px] text-[#444746] dark:text-[#9aa0a6] font-mono">
-              Complex Analysis • Deep Reasoning
-            </div>
-          </div>
-
-          {/* 9. OpenAI GPT-4o */}
-          <div className="card-minimal flex flex-col justify-between p-5 group">
-            <div className="space-y-3">
-              <div className="flex items-center justify-between text-xs text-[#444746] dark:text-[#9aa0a6]">
-                <div className="flex items-center gap-1.5 font-medium">
-                  <span>OpenAI</span>
-                  <span>·</span>
-                  <span>128k Context</span>
-                </div>
-                <span className="font-mono text-[10px] uppercase font-semibold text-[#444746] dark:text-[#9aa0a6] px-2 py-0.5 rounded-full bg-[#f0f4f9] dark:bg-[#282a2c] border border-black/[0.06] dark:border-white/[0.08]">
-                  OMNI
-                </span>
-              </div>
-              <div className="flex items-center gap-2.5">
-                <div className="w-9 h-9 rounded-xl bg-[#f0f4f9] dark:bg-[#282a2c] border border-black/[0.06] dark:border-white/[0.08] flex items-center justify-center shrink-0">
-                  <img
-                    src={CURATED_MODEL_MAP['openai-gpt-4o'].iconSrc}
-                    alt={CURATED_MODEL_MAP['openai-gpt-4o'].iconAlt}
-                    className="w-[18px] h-[18px] object-contain dark:invert"
-                  />
-                </div>
-                <h3 className="text-base font-semibold text-[#1f1f1f] dark:text-[#e3e3e3] leading-snug">
-                  OpenAI GPT-4o
-                </h3>
-              </div>
-              <p className="text-xs text-[#444746] dark:text-[#9aa0a6] leading-[1.7]">
-                Flagship multimodal intelligence. Excels at nuanced reasoning, creative writing, vision synthesis, and production conversational logic.
-              </p>
-            </div>
-            <div className="mt-4 pt-3 border-t border-black/[0.06] dark:border-white/[0.06] text-[11px] text-[#444746] dark:text-[#9aa0a6] font-mono">
-              Industry Standard • Multimodal
-            </div>
-          </div>
-
-          {/* 10. Claude 3.5 Sonnet */}
-          <div className="card-minimal flex flex-col justify-between p-5 group">
-            <div className="space-y-3">
-              <div className="flex items-center justify-between text-xs text-[#444746] dark:text-[#9aa0a6]">
-                <div className="flex items-center gap-1.5 font-medium">
-                  <span>Anthropic</span>
-                  <span>·</span>
-                  <span>200k Context</span>
-                </div>
-                <span className="font-mono text-[10px] uppercase font-semibold text-[#444746] dark:text-[#9aa0a6] px-2 py-0.5 rounded-full bg-[#f0f4f9] dark:bg-[#282a2c] border border-black/[0.06] dark:border-white/[0.08]">
-                  CODING
-                </span>
-              </div>
-              <div className="flex items-center gap-2.5">
-                <div className="w-9 h-9 rounded-xl bg-[#f0f4f9] dark:bg-[#282a2c] border border-black/[0.06] dark:border-white/[0.08] flex items-center justify-center shrink-0">
-                  <img
-                    src={CURATED_MODEL_MAP['claude-3-5-sonnet'].iconSrc}
-                    alt={CURATED_MODEL_MAP['claude-3-5-sonnet'].iconAlt}
-                    className="w-[18px] h-[18px] object-contain"
-                  />
-                </div>
-                <h3 className="text-base font-semibold text-[#1f1f1f] dark:text-[#e3e3e3] leading-snug">
-                  Claude 3.5 Sonnet
-                </h3>
-              </div>
-              <p className="text-xs text-[#444746] dark:text-[#9aa0a6] leading-[1.7]">
-                Industry-leading software engineering and prose refinement. Unmatched code generation, debugging, and architecture review.
-              </p>
-            </div>
-            <div className="mt-4 pt-3 border-t border-black/[0.06] dark:border-white/[0.06] text-[11px] text-[#444746] dark:text-[#9aa0a6] font-mono">
-              Engineering Benchmark • Nuance
-            </div>
-          </div>
         </div>
       </section>
 
@@ -808,23 +671,6 @@ export const HomePage: React.FC<HomePageProps> = ({ onStartChat }) => {
             <p className="text-xs text-[#444746] dark:text-[#9aa0a6] leading-[1.7]">
               Summarize extensive academic papers, format LaTeX equations, and verify mathematical theorems with Kimi K3.1 and DeepSeek.
             </p>
-          </div>
-        </div>
-      </section>
-
-      {/* MFS Trust Section */}
-      <section className="max-w-3xl mx-auto px-4 sm:px-6">
-        <div className="rounded-2xl bg-[#f0f4f9] dark:bg-[#1e1f20] border border-black/[0.08] dark:border-white/[0.08] p-4 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs">
-          <div className="flex items-center gap-2 text-[#444746] dark:text-[#9aa0a6]">
-            <ShieldCheck className="w-4 h-4 text-[#1f1f1f] dark:text-[#e3e3e3]" />
-            <span>Supported payment channels:</span>
-          </div>
-          <div className="flex items-center gap-4 text-xs font-medium text-[#1f1f1f] dark:text-[#e3e3e3]">
-            <span>bKash</span>
-            <span>·</span>
-            <span>Nagad</span>
-            <span>·</span>
-            <span>Rocket</span>
           </div>
         </div>
       </section>

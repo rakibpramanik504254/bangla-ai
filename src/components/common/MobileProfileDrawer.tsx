@@ -13,6 +13,7 @@ import {
 } from 'lucide-react';
 import { User } from '../../types/index.ts';
 import { AppView, getAccountRoleLabel } from '../../utils/navigation.ts';
+import { UserAvatar } from './UserAvatar.tsx';
 
 interface MobileProfileTriggerButtonProps {
   user: User;
@@ -36,18 +37,11 @@ export const MobileProfileTriggerButton: React.FC<MobileProfileTriggerButtonProp
       data-testid="mobile-unified-menu-trigger"
       className="md:hidden h-9 pl-1.5 pr-2.5 rounded-full bg-[#f0f4f9] dark:bg-[#1e1f20] hover:bg-[#e9eef6] dark:hover:bg-[#282a2c] border border-black/[0.08] dark:border-white/[0.08] text-[#1f1f1f] dark:text-[#e3e3e3] flex items-center gap-1.5 sm:gap-2 transition-colors whitespace-nowrap shrink-0 cursor-pointer"
     >
-      {user.avatar_url ? (
-        <img
-          src={user.avatar_url}
-          alt={user.name}
-          referrerPolicy="no-referrer"
-          className="w-6 h-6 rounded-full object-cover shrink-0"
-        />
-      ) : (
-        <div className="w-6 h-6 rounded-full bg-[#1f1f1f] text-white dark:bg-[#e3e3e3] dark:text-[#131314] font-semibold text-[11px] flex items-center justify-center shrink-0">
-          {user.name.slice(0, 1).toUpperCase()}
-        </div>
-      )}
+      <UserAvatar
+        user={user}
+        sizeClassName="w-6 h-6 text-[11px]"
+        testId="mobile-trigger-user-avatar"
+      />
       <span
         className={`text-xs font-medium truncate ${
           compactName ? 'max-w-[72px]' : 'max-w-[90px]'
@@ -128,18 +122,12 @@ export const MobileProfileDrawer: React.FC<MobileProfileDrawerProps> = ({
         <div className="p-4 border-b border-black/[0.08] dark:border-white/[0.08] space-y-3">
           <div className="flex items-start justify-between gap-2">
             <div className="flex items-center gap-3 min-w-0">
-              {user.avatar_url ? (
-                <img
-                  src={user.avatar_url}
-                  alt={user.name}
-                  referrerPolicy="no-referrer"
-                  className="w-10 h-10 rounded-full object-cover shrink-0 border border-black/[0.08] dark:border-white/[0.1]"
-                />
-              ) : (
-                <div className="w-10 h-10 rounded-full bg-[#1f1f1f] text-white dark:bg-[#e3e3e3] dark:text-[#131314] font-semibold text-sm flex items-center justify-center shrink-0">
-                  {user.name.slice(0, 1).toUpperCase()}
-                </div>
-              )}
+              <UserAvatar
+                user={user}
+                sizeClassName="w-10 h-10 text-sm"
+                imgClassName="border border-black/[0.08] dark:border-white/[0.1]"
+                testId="mobile-drawer-user-avatar"
+              />
               <div className="min-w-0 space-y-1">
                 <p className="text-sm font-semibold text-[#1f1f1f] dark:text-[#e3e3e3] truncate">
                   {user.name}

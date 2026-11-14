@@ -9,6 +9,14 @@ export interface User {
   current_usage: number;
   firebase_uid?: string;
   avatar_url?: string;
+  photoURL?: string;
+  picture?: string;
+  avatar?: string;
+  user_metadata?: {
+    avatar_url?: string;
+    picture?: string;
+    [key: string]: unknown;
+  };
   created_at?: string;
   subscription?: Subscription | null;
   isSubscribed: boolean;

@@ -12,6 +12,7 @@ import {
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext.tsx';
 import { BrandLogo } from './common/BrandLogo.tsx';
+import { UserAvatar } from './common/UserAvatar.tsx';
 import {
   MobileProfileDrawer,
   MobileProfileTriggerButton,
@@ -171,18 +172,11 @@ export const Navbar: React.FC<NavbarProps> = ({ currentView, setCurrentView }) =
                     data-testid="desktop-profile-trigger"
                     className="btn-pill-secondary !min-h-0 !h-9 !py-0 !pl-1.5 !pr-3 gap-2 !whitespace-nowrap"
                   >
-                    {user.avatar_url ? (
-                      <img
-                        src={user.avatar_url}
-                        alt={user.name}
-                        referrerPolicy="no-referrer"
-                        className="w-6 h-6 rounded-full object-cover shrink-0"
-                      />
-                    ) : (
-                      <div className="w-6 h-6 rounded-full bg-[#1f1f1f] text-white dark:bg-[#e3e3e3] dark:text-[#131314] font-semibold text-[11px] flex items-center justify-center shrink-0">
-                        {user.name.slice(0, 1).toUpperCase()}
-                      </div>
-                    )}
+                    <UserAvatar
+                      user={user}
+                      sizeClassName="w-6 h-6 text-[11px]"
+                      testId="desktop-header-user-avatar"
+                    />
                     <span className="text-xs font-medium truncate max-w-[110px]">
                       {user.name.split(' ')[0]}
                     </span>

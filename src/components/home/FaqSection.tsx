@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { ChevronDown, ChevronUp } from 'lucide-react';
+import { ChevronDown, ChevronUp, ShieldCheck } from 'lucide-react';
 import { FAQ_CATEGORIES, type FaqCategory, getFaqCategoryById } from '../../utils/faqData.ts';
 
 export const FaqSection: React.FC = () => {
@@ -117,6 +117,33 @@ export const FaqSection: React.FC = () => {
               </div>
             );
           })}
+        </div>
+      </div>
+
+      {/* Supported payment channels strip */}
+      <div className="mt-12 sm:mt-14 flex justify-center">
+        <div
+          data-testid="faq-payment-channels-bar"
+          className="inline-flex flex-wrap items-center justify-center gap-x-4 gap-y-2 px-5 py-2.5 rounded-full bg-[#f0f4f9] dark:bg-[#1e1f20] border border-black/[0.08] dark:border-white/[0.08] text-xs"
+        >
+          <div className="flex items-center gap-2 text-[#444746] dark:text-[#9aa0a6]">
+            <ShieldCheck
+              className="w-4 h-4 text-[#1f1f1f] dark:text-[#e3e3e3] shrink-0"
+              aria-hidden="true"
+            />
+            <span>Supported payment channels:</span>
+          </div>
+          <div className="flex items-center gap-2.5 font-medium text-[#1f1f1f] dark:text-[#e3e3e3]">
+            <span>bKash</span>
+            <span aria-hidden="true" className="text-[#444746]/50 dark:text-[#9aa0a6]/50">
+              ·
+            </span>
+            <span>Nagad</span>
+            <span aria-hidden="true" className="text-[#444746]/50 dark:text-[#9aa0a6]/50">
+              ·
+            </span>
+            <span>Rocket</span>
+          </div>
         </div>
       </div>
     </section>

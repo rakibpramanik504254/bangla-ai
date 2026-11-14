@@ -11,6 +11,7 @@ import { sanitizeModelForWorkspace } from './src/server/model-sanitizer.ts';
 import { normalizeApiKey, buildProviderUpdatePayload } from './src/server/openrouter.ts';
 import { isSubscriptionActive, calculateUsageStats, PLANS } from './src/utils/billing.ts';
 import { sanitizeIncomingAttachments } from './src/utils/chatAttachments.ts';
+import { resolveUserAvatarUrl } from './src/utils/avatar.ts';
 
 dotenv.config();
 
@@ -71,6 +72,7 @@ app.post('/api/auth/register', (req: Request, res: Response) => {
         role: newUser.role,
         usage_limit: newUser.usage_limit,
         current_usage: newUser.current_usage,
+        avatar_url: newUser.avatar_url || '',
         subscription: sub || null,
         isSubscribed: isSubscriptionActive(sub)
       }
@@ -117,6 +119,7 @@ app.post('/api/auth/login', (req: Request, res: Response) => {
         role: user.role,
         usage_limit: user.usage_limit,
         current_usage: user.current_usage,
+        avatar_url: user.avatar_url || '',
         subscription: sub || null,
         isSubscribed: user.role === 'admin' || isSubscriptionActive(sub)
       }
@@ -128,17 +131,25 @@ app.post('/api/auth/login', (req: Request, res: Response) => {
 
 app.post('/api/auth/google', (req: Request, res: Response) => {
   try {
-    const { email, name, photoURL, uid } = req.body;
+    const { email, name, photoURL, picture, avatar_url, avatar, user_metadata, uid } = req.body;
     if (!email || !uid) {
       res.status(400).json({ error: 'Valid Google account credentials required.' });
       return;
     }
 
+    const incomingAvatar = resolveUserAvatarUrl({
+      photoURL,
+      picture,
+      avatar_url,
+      avatar,
+      user_metadata
+    });
+
     const user = db.upsertGoogleUser({
       email,
       name: name || email.split('@')[0],
       uid,
-      avatar_url: photoURL
+      avatar_url: incomingAvatar
     });
 
     if (user.status === 'suspended') {
@@ -148,6 +159,7 @@ app.post('/api/auth/google', (req: Request, res: Response) => {
 
     const token = generateToken(user);
     const sub = db.getSubscriptionByUserId(user.id);
+    const resolvedAvatar = user.avatar_url || incomingAvatar || '';
 
     res.json({
       token,
@@ -159,7 +171,7 @@ app.post('/api/auth/google', (req: Request, res: Response) => {
         role: user.role,
         usage_limit: user.usage_limit,
         current_usage: user.current_usage,
-        avatar_url: user.avatar_url,
+        avatar_url: resolvedAvatar,
         subscription: sub || null,
         isSubscribed: user.role === 'admin' || isSubscriptionActive(sub)
       }
@@ -181,6 +193,7 @@ app.get('/api/auth/me', authenticate, (req: AuthenticatedRequest, res: Response)
     name: user.name,
     phone: user.phone,
     role: user.role,
+    avatar_url: user.avatar_url || '',
     usage: usageStats,
     subscription: sub || null,
     isSubscribed: user.role === 'admin' || isSubscriptionActive(sub)

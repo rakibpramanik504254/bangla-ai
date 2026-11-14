@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { User } from '../types/index.ts';
-import { signInWithGoogle, signOutFromFirebase } from '../firebase.ts';
+import { auth, signInWithGoogle, signOutFromFirebase } from '../firebase.ts';
+import { resolveUserAvatarUrl } from '../utils/avatar.ts';
 
 interface AuthContextType {
   user: User | null;
@@ -79,8 +80,18 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       });
       if (res.ok) {
         const data = await res.json();
+        const currentFbUser = auth.currentUser;
+        const fbPhoto =
+          currentFbUser &&
+          currentFbUser.email?.toLowerCase() === data.email?.toLowerCase()
+            ? currentFbUser.photoURL?.trim() ||
+              currentFbUser.providerData?.find((p) => p?.photoURL)?.photoURL?.trim() ||
+              undefined
+            : undefined;
+        const resolvedAvatar = resolveUserAvatarUrl(data) || fbPhoto;
         setUser({
           ...data,
+          ...(resolvedAvatar ? { avatar_url: resolvedAvatar } : {}),
           current_usage: data.usage.used,
           usage_limit: data.usage.limit
         });
@@ -109,13 +120,20 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         throw new Error('Google account must have an associated email address.');
       }
 
+      const googlePhotoUrl =
+        fbUser.photoURL?.trim() ||
+        fbUser.providerData?.find((p) => p?.photoURL)?.photoURL?.trim() ||
+        '';
+
       const res = await fetch('/api/auth/google', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           email: fbUser.email,
           name: fbUser.displayName || fbUser.email.split('@')[0],
-          photoURL: fbUser.photoURL,
+          photoURL: googlePhotoUrl,
+          picture: googlePhotoUrl,
+          avatar_url: googlePhotoUrl,
           uid: fbUser.uid,
           idToken
         })
@@ -126,11 +144,17 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         throw new Error(data.error || 'Google authentication failed');
       }
 
+      const resolvedAvatar = resolveUserAvatarUrl(data.user) || googlePhotoUrl || undefined;
+      const hydratedUser: User = {
+        ...data.user,
+        ...(resolvedAvatar ? { avatar_url: resolvedAvatar } : {})
+      };
+
       localStorage.setItem('bangla_ai_token', data.token);
       setToken(data.token);
-      setUser(data.user);
+      setUser(hydratedUser);
       setIsAuthModalOpen(false);
-      return data.user as User;
+      return hydratedUser;
     } catch (err: any) {
       if (err?.code === 'auth/popup-closed-by-user' || err?.code === 'auth/cancelled-popup-request') {
         throw new Error('Sign-in cancelled. Please complete the Google prompt.');
