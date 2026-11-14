@@ -42,13 +42,13 @@ export const PricingComparisonSection: React.FC = () => {
       aria-label="Pricing and AI Value Comparison"
       className="max-w-5xl mx-auto px-4 sm:px-6 scroll-mt-24"
     >
-      <div className="rounded-3xl bg-[#F8F9FA] dark:bg-[#242424] border border-black/[0.08] dark:border-white/[0.08] shadow-[0_1px_2px_rgba(0,0,0,0.03),0_12px_32px_-12px_rgba(0,0,0,0.06)] dark:shadow-[0_12px_32px_-12px_rgba(0,0,0,0.4)] p-5 sm:p-8 lg:p-11">
+      <div className="rounded-3xl bg-[#f0f4f9] dark:bg-[#1e1f20] border border-black/[0.08] dark:border-white/[0.08] p-5 sm:p-8 lg:p-11">
         {/* Centered Header */}
         <div className="text-center max-w-2xl mx-auto mb-8 sm:mb-10 space-y-2.5">
-          <h2 className="text-3xl sm:text-4xl lg:text-[40px] font-bold tracking-tight leading-[1.15] text-black dark:text-white text-balance">
+          <h2 className="text-3xl sm:text-4xl lg:text-[40px] font-bold tracking-tight leading-[1.15] text-[#1f1f1f] dark:text-[#e3e3e3] text-balance">
             The best value in AI
           </h2>
-          <p className="text-sm sm:text-base text-gray-600 dark:text-gray-400 leading-relaxed">
+          <p className="text-sm sm:text-base text-[#444746] dark:text-[#9aa0a6] leading-[1.7]">
             One subscription replaces every model and app for less than you already spend.
           </p>
         </div>
@@ -56,23 +56,23 @@ export const PricingComparisonSection: React.FC = () => {
         {/* Two-Column Comparison Cards + Center VS Badge */}
         <div className="grid grid-cols-1 lg:grid-cols-[minmax(0,0.92fr)_auto_minmax(0,1.18fr)] gap-4 lg:gap-4 items-stretch">
           {/* Left Card: WHAT YOU PAY TODAY */}
-          <div className="rounded-2xl bg-white dark:bg-[#262626] border border-black/[0.08] dark:border-white/[0.1] shadow-[0_1px_3px_rgba(0,0,0,0.04)] p-5 sm:p-6 flex flex-col justify-between">
+          <div className="rounded-2xl bg-white dark:bg-[#131314] border border-black/[0.08] dark:border-white/[0.08] p-5 sm:p-6 flex flex-col justify-between">
             <div>
               {/* Card Header */}
               <div className="flex items-center justify-between gap-2 mb-3">
-                <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-red-500/[0.07] dark:bg-red-500/[0.12] border border-red-500/20 text-red-600 dark:text-red-400 text-[10px] sm:text-[11px] font-semibold uppercase tracking-wider">
+                <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-red-500/[0.08] dark:bg-red-500/[0.12] border border-red-500/20 text-red-700 dark:text-red-400 text-[10px] sm:text-[11px] font-semibold uppercase tracking-wider">
                   <AlertTriangle className="w-3 h-3 shrink-0" aria-hidden="true" />
                   <span>WHAT YOU PAY TODAY</span>
                 </span>
                 <span
                   data-testid="selected-tools-count"
-                  className="text-[11px] font-mono font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider tabular-nums shrink-0"
+                  className="text-[11px] font-mono font-semibold text-[#444746] dark:text-[#9aa0a6] uppercase tracking-wider tabular-nums shrink-0"
                 >
                   {summary.toolsBadgeLabel}
                 </span>
               </div>
 
-              <p className="text-xs sm:text-[13px] font-medium text-gray-700 dark:text-gray-300 mb-3.5">
+              <p className="text-xs sm:text-[13px] font-medium text-[#444746] dark:text-[#9aa0a6] mb-3.5">
                 Which AI models do you use?
               </p>
 
@@ -88,16 +88,16 @@ export const PricingComparisonSection: React.FC = () => {
                       aria-pressed={isSelected}
                       aria-label={`Toggle ${tool.name} (${formatBDT(tool.monthlyBDT)}/month)`}
                       title={`${tool.name} • ${formatBDT(tool.monthlyBDT)}/mo`}
-                      className={`relative aspect-square rounded-xl flex items-center justify-center p-2.5 transition-all duration-150 cursor-pointer focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-600 ${
+                      className={`relative aspect-square rounded-xl flex items-center justify-center p-2.5 transition-all duration-150 cursor-pointer focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#1f1f1f] dark:focus-visible:outline-[#e3e3e3] ${
                         isSelected
-                          ? 'bg-blue-50/40 dark:bg-blue-950/25 border-2 border-blue-600 dark:border-blue-400 shadow-xs opacity-100'
-                          : 'bg-black/[0.02] dark:bg-white/[0.03] border border-black/[0.08] dark:border-white/[0.1] opacity-55 hover:opacity-85 hover:border-black/20 dark:hover:border-white/25'
+                          ? 'bg-[#e9eef6] dark:bg-[#282a2c] border-2 border-[#1f1f1f] dark:border-[#e3e3e3] opacity-100'
+                          : 'bg-[#f0f4f9]/70 dark:bg-[#1e1f20] border border-black/[0.08] dark:border-white/[0.08] opacity-60 hover:opacity-90 hover:border-black/20 dark:hover:border-white/20'
                       }`}
                     >
                       {isSelected && (
                         <span
                           aria-hidden="true"
-                          className="absolute -top-1.5 -right-1.5 w-4.5 h-4.5 rounded-full bg-black dark:bg-white text-white dark:text-black flex items-center justify-center shadow-xs"
+                          className="absolute -top-1.5 -right-1.5 w-4.5 h-4.5 rounded-full bg-[#1f1f1f] dark:bg-[#e3e3e3] text-white dark:text-[#131314] flex items-center justify-center"
                         >
                           <Check className="w-2.5 h-2.5 stroke-[3]" />
                         </span>
@@ -121,7 +121,7 @@ export const PricingComparisonSection: React.FC = () => {
                       className="py-2.5 flex items-center justify-between gap-3 text-xs sm:text-[13px]"
                     >
                       <div className="flex items-center gap-2.5 min-w-0">
-                        <span className="w-6 h-6 rounded-md bg-black/[0.04] dark:bg-white/[0.06] border border-black/[0.06] dark:border-white/[0.08] flex items-center justify-center shrink-0">
+                        <span className="w-6 h-6 rounded-lg bg-[#f0f4f9] dark:bg-[#1e1f20] border border-black/[0.06] dark:border-white/[0.08] flex items-center justify-center shrink-0">
                           <img
                             src={tool.iconSrc}
                             alt=""
@@ -129,17 +129,17 @@ export const PricingComparisonSection: React.FC = () => {
                             className={`w-4 h-4 object-contain ${tool.invertDark ? 'dark:invert' : ''}`}
                           />
                         </span>
-                        <span className="font-medium text-gray-800 dark:text-gray-200 truncate">
+                        <span className="font-medium text-[#1f1f1f] dark:text-[#e3e3e3] truncate">
                           {tool.name}
                         </span>
                       </div>
-                      <span className="font-mono font-semibold text-black dark:text-white tabular-nums shrink-0">
+                      <span className="font-mono font-semibold text-[#1f1f1f] dark:text-[#e3e3e3] tabular-nums shrink-0">
                         {formatBDT(tool.monthlyBDT)}
                       </span>
                     </div>
                   ))
                 ) : (
-                  <p className="py-6 text-center text-xs text-gray-500 dark:text-gray-400">
+                  <p className="py-6 text-center text-xs text-[#444746] dark:text-[#9aa0a6]">
                     Select one or more AI tools above to calculate your current monthly cost.
                   </p>
                 )}
@@ -147,10 +147,10 @@ export const PricingComparisonSection: React.FC = () => {
             </div>
 
             {/* Left Card Summary Footer */}
-            <div className="mt-5 pt-4 px-4 py-3.5 rounded-xl bg-red-500/[0.04] dark:bg-red-500/[0.08] border border-red-500/20 flex items-center justify-between gap-3">
+            <div className="mt-5 pt-4 px-4 py-3.5 rounded-xl bg-red-500/[0.05] dark:bg-red-500/[0.09] border border-red-500/20 flex items-center justify-between gap-3">
               <div className="min-w-0">
-                <p className="text-sm font-bold text-black dark:text-white">Total</p>
-                <p className="text-[11px] leading-snug text-gray-500 dark:text-gray-400">
+                <p className="text-sm font-bold text-[#1f1f1f] dark:text-[#e3e3e3]">Total</p>
+                <p className="text-[11px] leading-snug text-[#444746] dark:text-[#9aa0a6]">
                   {summary.loginsLabel}
                 </p>
               </div>
@@ -161,7 +161,7 @@ export const PricingComparisonSection: React.FC = () => {
                 >
                   {summary.formattedTotalBDT}
                 </span>
-                <span className="text-xs font-medium text-red-500 dark:text-red-400/90 ml-0.5">
+                <span className="text-xs font-medium text-red-600/80 dark:text-red-400/90 ml-0.5">
                   /month
                 </span>
               </div>
@@ -172,14 +172,14 @@ export const PricingComparisonSection: React.FC = () => {
           <div className="flex items-center justify-center py-0.5 lg:py-0">
             <div
               aria-hidden="true"
-              className="w-10 h-10 rounded-full bg-black text-white dark:bg-white dark:text-black text-xs font-bold tracking-wider flex items-center justify-center shadow-xs ring-4 ring-[#F8F9FA] dark:ring-[#242424]"
+              className="w-10 h-10 rounded-full bg-[#1f1f1f] text-white dark:bg-[#e3e3e3] dark:text-[#131314] text-xs font-bold tracking-wider flex items-center justify-center ring-4 ring-[#f0f4f9] dark:ring-[#1e1f20]"
             >
               VS
             </div>
           </div>
 
           {/* Right Card: Interactive Plan Selector (Monthly vs Yearly) */}
-          <div className="rounded-2xl bg-white dark:bg-[#262626] border border-black/[0.08] dark:border-white/[0.1] shadow-[0_1px_3px_rgba(0,0,0,0.04)] p-5 sm:p-6 flex flex-col justify-between">
+          <div className="rounded-2xl bg-white dark:bg-[#131314] border border-black/[0.08] dark:border-white/[0.08] p-5 sm:p-6 flex flex-col justify-between">
             <div>
               {/* Side-by-Side Interactive Monthly vs Yearly Boxes */}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
@@ -188,38 +188,38 @@ export const PricingComparisonSection: React.FC = () => {
                   type="button"
                   onClick={() => setSelectedPlan('monthly')}
                   aria-pressed={selectedPlan === 'monthly'}
-                  className={`relative text-left rounded-xl p-4 transition-all duration-150 cursor-pointer focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-600 ${
+                  className={`relative text-left rounded-xl p-4 transition-all duration-150 cursor-pointer focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#1f1f1f] dark:focus-visible:outline-[#e3e3e3] ${
                     selectedPlan === 'monthly'
-                      ? 'border-2 border-blue-600 dark:border-blue-400 bg-blue-50/45 dark:bg-blue-950/25'
-                      : 'border border-black/[0.1] dark:border-white/[0.12] bg-black/[0.02] dark:bg-white/[0.03] hover:border-black/25 dark:hover:border-white/25'
+                      ? 'border-2 border-[#1f1f1f] dark:border-[#e3e3e3] bg-[#e9eef6] dark:bg-[#282a2c]'
+                      : 'border border-black/[0.08] dark:border-white/[0.08] bg-[#f0f4f9]/70 dark:bg-[#1e1f20] hover:border-black/20 dark:hover:border-white/20'
                   }`}
                 >
                   <div className="flex items-center justify-between gap-2">
-                    <span className="text-xs font-semibold text-gray-800 dark:text-gray-200">
+                    <span className="text-xs font-semibold text-[#1f1f1f] dark:text-[#e3e3e3]">
                       Pay monthly
                     </span>
                     <span
                       aria-hidden="true"
                       className={`w-4.5 h-4.5 rounded-full border-2 flex items-center justify-center shrink-0 transition-colors ${
                         selectedPlan === 'monthly'
-                          ? 'border-blue-600 bg-blue-600 dark:border-blue-400 dark:bg-blue-400'
-                          : 'border-gray-300 dark:border-gray-600 bg-transparent'
+                          ? 'border-[#1f1f1f] bg-[#1f1f1f] dark:border-[#e3e3e3] dark:bg-[#e3e3e3]'
+                          : 'border-black/25 dark:border-white/25 bg-transparent'
                       }`}
                     >
                       {selectedPlan === 'monthly' && (
-                        <span className="w-1.5 h-1.5 rounded-full bg-white dark:bg-black" />
+                        <span className="w-1.5 h-1.5 rounded-full bg-white dark:bg-[#131314]" />
                       )}
                     </span>
                   </div>
 
                   <div className="mt-2.5 flex items-baseline gap-1 whitespace-nowrap">
-                    <span className="text-xl sm:text-[22px] xl:text-2xl font-bold font-mono text-black dark:text-white tabular-nums">
+                    <span className="text-xl sm:text-[22px] xl:text-2xl font-bold font-mono text-[#1f1f1f] dark:text-[#e3e3e3] tabular-nums">
                       {formatBDT(planInfo.monthlyPriceBDT)}
                     </span>
-                    <span className="text-xs text-gray-500 dark:text-gray-400">/month</span>
+                    <span className="text-xs text-[#444746] dark:text-[#9aa0a6]">/month</span>
                   </div>
 
-                  <p className="mt-1 text-[11px] text-gray-500 dark:text-gray-400">
+                  <p className="mt-1 text-[11px] text-[#444746] dark:text-[#9aa0a6]">
                     That&apos;s {formatBDT(planInfo.monthlyAnnualizedBDT)} a year
                   </p>
                 </button>
@@ -229,48 +229,48 @@ export const PricingComparisonSection: React.FC = () => {
                   type="button"
                   onClick={() => setSelectedPlan('yearly')}
                   aria-pressed={selectedPlan === 'yearly'}
-                  className={`relative text-left rounded-xl p-4 transition-all duration-150 cursor-pointer focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-600 ${
+                  className={`relative text-left rounded-xl p-4 transition-all duration-150 cursor-pointer focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#1f1f1f] dark:focus-visible:outline-[#e3e3e3] ${
                     selectedPlan === 'yearly'
-                      ? 'border-2 border-blue-600 dark:border-blue-400 bg-blue-50/45 dark:bg-blue-950/25'
-                      : 'border border-black/[0.1] dark:border-white/[0.12] bg-black/[0.02] dark:bg-white/[0.03] hover:border-black/25 dark:hover:border-white/25'
+                      ? 'border-2 border-[#1f1f1f] dark:border-[#e3e3e3] bg-[#e9eef6] dark:bg-[#282a2c]'
+                      : 'border border-black/[0.08] dark:border-white/[0.08] bg-[#f0f4f9]/70 dark:bg-[#1e1f20] hover:border-black/20 dark:hover:border-white/20'
                   }`}
                 >
                   {/* Floating dark pill badge at top-right */}
-                  <span className="absolute -top-2.5 right-3 px-2.5 py-0.5 rounded-full bg-black text-white dark:bg-white dark:text-black text-[10px] font-bold tracking-tight whitespace-nowrap shadow-xs">
+                  <span className="absolute -top-2.5 right-3 px-2.5 py-0.5 rounded-full bg-[#1f1f1f] text-white dark:bg-[#e3e3e3] dark:text-[#131314] text-[10px] font-bold tracking-tight whitespace-nowrap">
                     Save {formatBDT(planInfo.yearlySavingsBDT)}
                   </span>
 
                   <div className="flex items-center justify-between gap-2">
-                    <span className="text-xs font-semibold text-gray-800 dark:text-gray-200">
+                    <span className="text-xs font-semibold text-[#1f1f1f] dark:text-[#e3e3e3]">
                       Pay once a year
                     </span>
                     <span
                       aria-hidden="true"
                       className={`w-4.5 h-4.5 rounded-full border-2 flex items-center justify-center shrink-0 transition-colors ${
                         selectedPlan === 'yearly'
-                          ? 'border-blue-600 bg-blue-600 dark:border-blue-400 dark:bg-blue-400'
-                          : 'border-gray-300 dark:border-gray-600 bg-transparent'
+                          ? 'border-[#1f1f1f] bg-[#1f1f1f] dark:border-[#e3e3e3] dark:bg-[#e3e3e3]'
+                          : 'border-black/25 dark:border-white/25 bg-transparent'
                       }`}
                     >
                       {selectedPlan === 'yearly' && (
-                        <span className="w-1.5 h-1.5 rounded-full bg-white dark:bg-black" />
+                        <span className="w-1.5 h-1.5 rounded-full bg-white dark:bg-[#131314]" />
                       )}
                     </span>
                   </div>
 
                   <div className="mt-2.5 flex items-baseline gap-1.5 flex-wrap">
-                    <span className="text-xl sm:text-[22px] xl:text-2xl font-bold font-mono text-black dark:text-white tabular-nums whitespace-nowrap">
+                    <span className="text-xl sm:text-[22px] xl:text-2xl font-bold font-mono text-[#1f1f1f] dark:text-[#e3e3e3] tabular-nums whitespace-nowrap">
                       {formatBDT(planInfo.yearlyPriceBDT)}
                     </span>
-                    <span className="text-xs text-gray-500 dark:text-gray-400 whitespace-nowrap">
+                    <span className="text-xs text-[#444746] dark:text-[#9aa0a6] whitespace-nowrap">
                       /year
                     </span>
-                    <span className="text-xs font-mono text-gray-400 line-through tabular-nums whitespace-nowrap">
+                    <span className="text-xs font-mono text-[#444746]/70 dark:text-[#9aa0a6]/70 line-through tabular-nums whitespace-nowrap">
                       {formatBDT(planInfo.monthlyAnnualizedBDT)}
                     </span>
                   </div>
 
-                  <p className="mt-1 text-[11px] text-gray-500 dark:text-gray-400">
+                  <p className="mt-1 text-[11px] text-[#444746] dark:text-[#9aa0a6]">
                     Just {formatBDT(planInfo.yearlyEquivalentMonthlyBDT)}/month, billed yearly
                   </p>
                 </button>
@@ -284,11 +284,11 @@ export const PricingComparisonSection: React.FC = () => {
                 {activeFeatures.map((feature) => (
                   <li
                     key={feature}
-                    className="py-3 flex items-start gap-2.5 text-xs sm:text-[13px] text-gray-700 dark:text-gray-300 leading-snug"
+                    className="py-3 flex items-start gap-2.5 text-xs sm:text-[13px] text-[#444746] dark:text-[#e3e3e3] leading-snug"
                   >
                     <span
                       aria-hidden="true"
-                      className="w-4.5 h-4.5 rounded-full border border-blue-600/30 bg-blue-500/[0.08] text-blue-600 dark:border-blue-400/35 dark:text-blue-400 flex items-center justify-center shrink-0 mt-0.5"
+                      className="w-4.5 h-4.5 rounded-full border border-black/[0.08] dark:border-white/[0.1] bg-[#f0f4f9] dark:bg-[#282a2c] text-[#1f1f1f] dark:text-[#e3e3e3] flex items-center justify-center shrink-0 mt-0.5"
                     >
                       <Check className="w-2.5 h-2.5 stroke-[2.75]" />
                     </span>

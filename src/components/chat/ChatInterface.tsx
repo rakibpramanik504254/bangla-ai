@@ -35,6 +35,10 @@ import { formatFileSize } from '../../utils/chatAttachments.ts';
 import { copyTextSafely } from '../../utils/clipboard.ts';
 import { formatCompactTokens } from '../../utils/workspaceSidebar.ts';
 import { BrandLogo } from '../common/BrandLogo.tsx';
+import {
+  MobileProfileDrawer,
+  MobileProfileTriggerButton,
+} from '../common/MobileProfileDrawer.tsx';
 
 function renderInlineSegments(text: string): React.ReactNode {
   const segments = parseInlineSegments(text);
@@ -219,7 +223,7 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({
   onNavigateAccount,
   onNavigateAdmin,
 }) => {
-  const { user, token, refreshUser, openPaymentModal } = useAuth();
+  const { user, token, refreshUser, openPaymentModal, openAccountModal, logout } = useAuth();
   const [chats, setChats] = useState<Chat[]>([]);
   const [activeChatId, setActiveChatId] = useState<string | null>(null);
   const [messages, setMessages] = useState<Message[]>([]);
@@ -237,6 +241,7 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({
   );
   const [modelDropdownOpen, setModelDropdownOpen] = useState(false);
   const [settingsModalOpen, setSettingsModalOpen] = useState(false);
+  const [profileDrawerOpen, setProfileDrawerOpen] = useState(false);
 
   const [copiedMessageId, setCopiedMessageId] = useState<string | null>(null);
   const [speakingMessageId, setSpeakingMessageId] = useState<string | null>(null);
@@ -784,6 +789,23 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({
         onNavigateAdmin={onNavigateAdmin}
       />
 
+      {/* Unified Right-Side Profile Drawer on Mobile (Matches Homepage) */}
+      {user && (
+        <MobileProfileDrawer
+          isOpen={profileDrawerOpen}
+          onClose={() => setProfileDrawerOpen(false)}
+          user={user}
+          currentView="chat"
+          onNavigateChat={() => setProfileDrawerOpen(false)}
+          onNavigateAdmin={() => onNavigateAdmin?.()}
+          onNavigateHome={() => onNavigateHome?.()}
+          onOpenAccount={() =>
+            onNavigateAccount ? onNavigateAccount() : openAccountModal()
+          }
+          onSignOut={() => logout()}
+        />
+      )}
+
       {/* Main Editorial Chat Canvas */}
       <main
         onDragEnter={(e) => {
@@ -843,8 +865,12 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({
           <div className="flex items-center gap-1 sm:gap-2 min-w-0 flex-1">
             <button
               type="button"
-              onClick={() => setSidebarOpen(true)}
-              aria-label="Open menu"
+              onClick={() => {
+                setProfileDrawerOpen(false);
+                setSidebarOpen(true);
+              }}
+              aria-label="Open chat history sidebar"
+              data-testid="workspace-mobile-sidebar-trigger"
               className="w-9 h-9 md:hidden shrink-0 rounded-full flex items-center justify-center text-[#444746] dark:text-[#c4c7c5] hover:bg-black/[0.05] dark:hover:bg-white/[0.06] transition-colors cursor-pointer"
             >
               <Menu className="w-5 h-5" />
@@ -963,6 +989,18 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({
             >
               <SquarePen className="w-[18px] h-[18px]" />
             </button>
+
+            {user && (
+              <MobileProfileTriggerButton
+                user={user}
+                isOpen={profileDrawerOpen}
+                compactName
+                onClick={() => {
+                  setSidebarOpen(false);
+                  setProfileDrawerOpen(true);
+                }}
+              />
+            )}
           </div>
         </header>
 

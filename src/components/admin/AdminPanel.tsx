@@ -86,18 +86,6 @@ export const AdminPanel: React.FC = () => {
   const [savingModelId, setSavingModelId] = useState<string | null>(null);
   const [feedback, setFeedback] = useState<string | null>(null);
 
-  if (!user || user.role !== 'admin') {
-    return (
-      <div className="max-w-md mx-auto py-24 text-center px-4">
-        <Shield className="w-10 h-10 text-gray-400 mx-auto mb-3" />
-        <h2 className="text-xl font-bold tracking-tight text-black dark:text-white">Unauthorized Access</h2>
-        <p className="text-xs text-gray-500 mt-1">
-          This portal is restricted to authorized platform administrators.
-        </p>
-      </div>
-    );
-  }
-
   const fetchStats = async () => {
     if (!token) return;
     setLoadingStats(true);
@@ -169,11 +157,24 @@ export const AdminPanel: React.FC = () => {
   };
 
   useEffect(() => {
+    if (!token || user?.role !== 'admin') return;
     fetchStats();
     fetchUsers();
     fetchPayments();
     fetchProvidersAndModels();
-  }, [token]);
+  }, [token, user?.role]);
+
+  if (!user || user.role !== 'admin') {
+    return (
+      <div className="max-w-md mx-auto py-24 text-center px-4">
+        <Shield className="w-10 h-10 text-[#444746] dark:text-[#9aa0a6] mx-auto mb-3" />
+        <h2 className="text-xl font-semibold tracking-tight text-[#1f1f1f] dark:text-[#e3e3e3]">Unauthorized Access</h2>
+        <p className="text-xs text-[#444746] dark:text-[#9aa0a6] mt-1 leading-[1.7]">
+          This portal is restricted to authorized platform administrators.
+        </p>
+      </div>
+    );
+  }
 
   const handleCopyText = (text: string, id: string) => {
     navigator.clipboard.writeText(text);
@@ -604,17 +605,17 @@ export const AdminPanel: React.FC = () => {
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-black/[0.08] dark:border-white/[0.08] pb-6">
         <div className="flex items-start sm:items-center gap-3 min-w-0">
-          <div className="w-10 h-10 rounded-full border border-black/10 dark:border-white/10 bg-white dark:bg-[#1F1F1F] flex items-center justify-center text-black dark:text-white shrink-0">
+          <div className="w-10 h-10 rounded-full border border-black/[0.08] dark:border-white/[0.08] bg-[#f0f4f9] dark:bg-[#1e1f20] flex items-center justify-center text-[#1f1f1f] dark:text-[#e3e3e3] shrink-0">
             <Shield className="w-5 h-5" />
           </div>
           <div className="min-w-0">
-            <span className="text-[10px] font-mono uppercase tracking-wider text-gray-500 block">
+            <span className="text-[10px] font-mono uppercase tracking-wider text-[#444746] dark:text-[#9aa0a6] block">
               Platform Administration
             </span>
-            <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-black dark:text-white break-words">
+            <h1 className="text-xl sm:text-2xl font-semibold tracking-tight text-[#1f1f1f] dark:text-[#e3e3e3] break-words">
               System Control Console
             </h1>
-            <p className="text-xs text-gray-500 mt-0.5">
+            <p className="text-xs text-[#444746] dark:text-[#9aa0a6] mt-0.5 leading-[1.7]">
               MFS payment verification, Meta Pixel automation, users & AI model catalog
             </p>
           </div>
@@ -627,7 +628,7 @@ export const AdminPanel: React.FC = () => {
             fetchPayments();
             fetchProvidersAndModels();
           }}
-          className="self-start sm:self-auto h-9 px-4 rounded-full border border-black/[0.12] dark:border-white/[0.15] hover:border-black/30 dark:hover:border-white/30 text-xs font-semibold text-black dark:text-white flex items-center gap-1.5 transition-colors cursor-pointer shadow-2xs shrink-0"
+          className="self-start sm:self-auto h-9 px-4 rounded-full border border-black/[0.1] dark:border-white/[0.12] hover:bg-[#f0f4f9] dark:hover:bg-[#282a2c] text-xs font-semibold text-[#1f1f1f] dark:text-[#e3e3e3] flex items-center gap-1.5 transition-colors cursor-pointer shrink-0"
         >
           <RefreshCw className="w-3.5 h-3.5" />
           <span>Refresh</span>
@@ -635,12 +636,12 @@ export const AdminPanel: React.FC = () => {
       </div>
 
       {feedback && (
-        <div className="p-3.5 text-xs bg-[#FAFAFA] dark:bg-[#1F1F1F] border border-black/[0.1] dark:border-white/[0.1] rounded-[8px] flex items-start sm:items-center justify-between gap-2">
+        <div className="p-3.5 text-xs bg-[#f0f4f9] dark:bg-[#1e1f20] border border-black/[0.08] dark:border-white/[0.08] rounded-2xl flex items-start sm:items-center justify-between gap-2">
           <div className="flex items-start sm:items-center gap-2 min-w-0">
-            <CheckCircle2 className="w-4 h-4 text-emerald-500 shrink-0 mt-0.5 sm:mt-0" />
-            <span className="text-black dark:text-white font-medium break-words">{feedback}</span>
+            <CheckCircle2 className="w-4 h-4 text-emerald-600 dark:text-emerald-400 shrink-0 mt-0.5 sm:mt-0" />
+            <span className="text-[#1f1f1f] dark:text-[#e3e3e3] font-medium break-words">{feedback}</span>
           </div>
-          <button onClick={() => setFeedback(null)} className="text-gray-400 hover:text-black dark:hover:text-white cursor-pointer shrink-0">
+          <button onClick={() => setFeedback(null)} className="text-[#444746] dark:text-[#9aa0a6] hover:text-[#1f1f1f] dark:hover:text-[#e3e3e3] cursor-pointer shrink-0">
             ✕
           </button>
         </div>
@@ -650,10 +651,10 @@ export const AdminPanel: React.FC = () => {
       <div className="flex flex-wrap items-center gap-1.5 sm:gap-2 border-b border-black/[0.08] dark:border-white/[0.08] pb-3 text-xs font-medium">
         <button
           onClick={() => setActiveTab('overview')}
-          className={`min-h-8 sm:min-h-9 h-auto py-1.5 px-3 sm:px-4 rounded-full transition-all flex items-center gap-1.5 cursor-pointer ${
+          className={`min-h-8 sm:min-h-9 h-auto py-1.5 px-3 sm:px-4 rounded-full transition-colors flex items-center gap-1.5 cursor-pointer ${
             activeTab === 'overview'
-              ? 'bg-black text-white dark:bg-white dark:text-black font-semibold shadow-xs'
-              : 'text-gray-500 hover:text-black dark:hover:text-white'
+              ? 'bg-[#e9eef6] text-[#1f1f1f] dark:bg-[#282a2c] dark:text-[#e3e3e3] font-semibold'
+              : 'text-[#444746] dark:text-[#9aa0a6] hover:bg-[#f0f4f9] dark:hover:bg-[#1e1f20] hover:text-[#1f1f1f] dark:hover:text-[#e3e3e3]'
           }`}
         >
           <TrendingUp className="w-3.5 h-3.5 shrink-0" />
@@ -662,16 +663,16 @@ export const AdminPanel: React.FC = () => {
 
         <button
           onClick={() => setActiveTab('payments')}
-          className={`min-h-8 sm:min-h-9 h-auto py-1.5 px-3 sm:px-4 rounded-full transition-all flex items-center gap-1.5 cursor-pointer ${
+          className={`min-h-8 sm:min-h-9 h-auto py-1.5 px-3 sm:px-4 rounded-full transition-colors flex items-center gap-1.5 cursor-pointer ${
             activeTab === 'payments'
-              ? 'bg-black text-white dark:bg-white dark:text-black font-semibold shadow-xs'
-              : 'text-gray-500 hover:text-black dark:hover:text-white'
+              ? 'bg-[#e9eef6] text-[#1f1f1f] dark:bg-[#282a2c] dark:text-[#e3e3e3] font-semibold'
+              : 'text-[#444746] dark:text-[#9aa0a6] hover:bg-[#f0f4f9] dark:hover:bg-[#1e1f20] hover:text-[#1f1f1f] dark:hover:text-[#e3e3e3]'
           }`}
         >
           <CreditCard className="w-3.5 h-3.5 shrink-0" />
           <span>Payments Verification</span>
           {pendingPayments.length > 0 && (
-            <span className="px-1.5 py-0.2 rounded-full text-[10px] font-mono font-bold bg-amber-400 text-black">
+            <span className="px-1.5 py-0.2 rounded-full text-[10px] font-mono font-bold bg-amber-400 text-[#131314]">
               {pendingPayments.length}
             </span>
           )}
@@ -679,10 +680,10 @@ export const AdminPanel: React.FC = () => {
 
         <button
           onClick={() => setActiveTab('users')}
-          className={`min-h-8 sm:min-h-9 h-auto py-1.5 px-3 sm:px-4 rounded-full transition-all flex items-center gap-1.5 cursor-pointer ${
+          className={`min-h-8 sm:min-h-9 h-auto py-1.5 px-3 sm:px-4 rounded-full transition-colors flex items-center gap-1.5 cursor-pointer ${
             activeTab === 'users'
-              ? 'bg-black text-white dark:bg-white dark:text-black font-semibold shadow-xs'
-              : 'text-gray-500 hover:text-black dark:hover:text-white'
+              ? 'bg-[#e9eef6] text-[#1f1f1f] dark:bg-[#282a2c] dark:text-[#e3e3e3] font-semibold'
+              : 'text-[#444746] dark:text-[#9aa0a6] hover:bg-[#f0f4f9] dark:hover:bg-[#1e1f20] hover:text-[#1f1f1f] dark:hover:text-[#e3e3e3]'
           }`}
         >
           <Users className="w-3.5 h-3.5 shrink-0" />
@@ -691,10 +692,10 @@ export const AdminPanel: React.FC = () => {
 
         <button
           onClick={() => setActiveTab('providers')}
-          className={`min-h-8 sm:min-h-9 h-auto py-1.5 px-3 sm:px-4 rounded-full transition-all flex items-center gap-1.5 cursor-pointer ${
+          className={`min-h-8 sm:min-h-9 h-auto py-1.5 px-3 sm:px-4 rounded-full transition-colors flex items-center gap-1.5 cursor-pointer ${
             activeTab === 'providers'
-              ? 'bg-black text-white dark:bg-white dark:text-black font-semibold shadow-xs'
-              : 'text-gray-500 hover:text-black dark:hover:text-white'
+              ? 'bg-[#e9eef6] text-[#1f1f1f] dark:bg-[#282a2c] dark:text-[#e3e3e3] font-semibold'
+              : 'text-[#444746] dark:text-[#9aa0a6] hover:bg-[#f0f4f9] dark:hover:bg-[#1e1f20] hover:text-[#1f1f1f] dark:hover:text-[#e3e3e3]'
           }`}
         >
           <Key className="w-3.5 h-3.5 shrink-0" />
@@ -703,10 +704,10 @@ export const AdminPanel: React.FC = () => {
 
         <button
           onClick={() => setActiveTab('models')}
-          className={`min-h-8 sm:min-h-9 h-auto py-1.5 px-3 sm:px-4 rounded-full transition-all flex items-center gap-1.5 cursor-pointer ${
+          className={`min-h-8 sm:min-h-9 h-auto py-1.5 px-3 sm:px-4 rounded-full transition-colors flex items-center gap-1.5 cursor-pointer ${
             activeTab === 'models'
-              ? 'bg-black text-white dark:bg-white dark:text-black font-semibold shadow-xs'
-              : 'text-gray-500 hover:text-black dark:hover:text-white'
+              ? 'bg-[#e9eef6] text-[#1f1f1f] dark:bg-[#282a2c] dark:text-[#e3e3e3] font-semibold'
+              : 'text-[#444746] dark:text-[#9aa0a6] hover:bg-[#f0f4f9] dark:hover:bg-[#1e1f20] hover:text-[#1f1f1f] dark:hover:text-[#e3e3e3]'
           }`}
         >
           <Cpu className="w-3.5 h-3.5 shrink-0" />
@@ -715,10 +716,10 @@ export const AdminPanel: React.FC = () => {
 
         <button
           onClick={() => setActiveTab('settings')}
-          className={`min-h-8 sm:min-h-9 h-auto py-1.5 px-3 sm:px-4 rounded-full transition-all flex items-center gap-1.5 cursor-pointer ${
+          className={`min-h-8 sm:min-h-9 h-auto py-1.5 px-3 sm:px-4 rounded-full transition-colors flex items-center gap-1.5 cursor-pointer ${
             activeTab === 'settings'
-              ? 'bg-black text-white dark:bg-white dark:text-black font-semibold shadow-xs'
-              : 'text-gray-500 hover:text-black dark:hover:text-white'
+              ? 'bg-[#e9eef6] text-[#1f1f1f] dark:bg-[#282a2c] dark:text-[#e3e3e3] font-semibold'
+              : 'text-[#444746] dark:text-[#9aa0a6] hover:bg-[#f0f4f9] dark:hover:bg-[#1e1f20] hover:text-[#1f1f1f] dark:hover:text-[#e3e3e3]'
           }`}
         >
           <Settings className="w-3.5 h-3.5 shrink-0" />
@@ -730,46 +731,46 @@ export const AdminPanel: React.FC = () => {
       {activeTab === 'overview' && (
         <div className="space-y-6">
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-            <div className="bg-white dark:bg-[#262626] p-5 rounded-[8px] border border-black/[0.08] dark:border-white/[0.08] shadow-xs">
-              <span className="text-[10px] text-gray-400 block font-mono uppercase tracking-wider">Total Registered</span>
-              <p className="text-2xl font-bold tracking-tight text-black dark:text-white mt-1">
+            <div className="bg-white dark:bg-[#1e1f20] p-5 rounded-2xl border border-black/[0.08] dark:border-white/[0.08]">
+              <span className="text-[10px] text-[#444746] dark:text-[#9aa0a6] block font-mono uppercase tracking-wider">Total Registered</span>
+              <p className="text-2xl font-semibold tracking-tight text-[#1f1f1f] dark:text-[#e3e3e3] mt-1">
                 {stats ? stats.totalUsers : '...'} users
               </p>
-              <span className="text-[11px] text-gray-500">Active accounts</span>
+              <span className="text-[11px] text-[#444746] dark:text-[#9aa0a6]">Active accounts</span>
             </div>
 
-            <div className="bg-white dark:bg-[#262626] p-5 rounded-[8px] border border-black/[0.08] dark:border-white/[0.08] shadow-xs">
-              <span className="text-[10px] text-gray-400 block font-mono uppercase tracking-wider">Paid Subscribers</span>
-              <p className="text-2xl font-bold tracking-tight text-black dark:text-white mt-1">
+            <div className="bg-white dark:bg-[#1e1f20] p-5 rounded-2xl border border-black/[0.08] dark:border-white/[0.08]">
+              <span className="text-[10px] text-[#444746] dark:text-[#9aa0a6] block font-mono uppercase tracking-wider">Paid Subscribers</span>
+              <p className="text-2xl font-semibold tracking-tight text-[#1f1f1f] dark:text-[#e3e3e3] mt-1">
                 {stats ? stats.activeSubscribers : '...'} subscribers
               </p>
-              <span className="text-[11px] text-gray-500">Active workspace access</span>
+              <span className="text-[11px] text-[#444746] dark:text-[#9aa0a6]">Active workspace access</span>
             </div>
 
-            <div className="bg-white dark:bg-[#262626] p-5 rounded-[8px] border border-black/[0.08] dark:border-white/[0.08] shadow-xs">
-              <span className="text-[10px] text-gray-400 block font-mono uppercase tracking-wider">Cumulative Revenue</span>
-              <p className="text-2xl font-bold tracking-tight text-black dark:text-white mt-1 font-mono">
+            <div className="bg-white dark:bg-[#1e1f20] p-5 rounded-2xl border border-black/[0.08] dark:border-white/[0.08]">
+              <span className="text-[10px] text-[#444746] dark:text-[#9aa0a6] block font-mono uppercase tracking-wider">Cumulative Revenue</span>
+              <p className="text-2xl font-semibold tracking-tight text-[#1f1f1f] dark:text-[#e3e3e3] mt-1 font-mono">
                 {stats ? formatBDT(stats.totalRevenue) : '...'}
               </p>
-              <span className="text-[11px] text-gray-500">bKash, Nagad & Rocket</span>
+              <span className="text-[11px] text-[#444746] dark:text-[#9aa0a6]">bKash, Nagad & Rocket</span>
             </div>
 
-            <div className="bg-white dark:bg-[#262626] p-5 rounded-[8px] border border-black/[0.08] dark:border-white/[0.08] shadow-xs">
-              <span className="text-[10px] text-gray-400 block font-mono uppercase tracking-wider">Pending Verification</span>
-              <p className="text-2xl font-bold tracking-tight text-amber-500 mt-1 font-mono">
+            <div className="bg-white dark:bg-[#1e1f20] p-5 rounded-2xl border border-black/[0.08] dark:border-white/[0.08]">
+              <span className="text-[10px] text-[#444746] dark:text-[#9aa0a6] block font-mono uppercase tracking-wider">Pending Verification</span>
+              <p className="text-2xl font-semibold tracking-tight text-amber-600 dark:text-amber-400 mt-1 font-mono">
                 {pendingPayments.length} payments
               </p>
               <button
                 onClick={() => setActiveTab('payments')}
-                className="text-[11px] text-black dark:text-white font-medium hover:underline inline-block mt-0.5"
+                className="text-[11px] text-[#1f1f1f] dark:text-[#e3e3e3] font-medium hover:underline inline-block mt-0.5 cursor-pointer"
               >
                 Review in Payments tab →
               </button>
             </div>
           </div>
 
-          <div className="bg-white dark:bg-[#262626] p-4 sm:p-6 rounded-[8px] border border-black/[0.08] dark:border-white/[0.08] shadow-xs">
-            <h3 className="font-bold text-black dark:text-white text-sm mb-4">
+          <div className="bg-white dark:bg-[#1e1f20] p-4 sm:p-6 rounded-2xl border border-black/[0.08] dark:border-white/[0.08]">
+            <h3 className="font-semibold text-[#1f1f1f] dark:text-[#e3e3e3] text-sm mb-4">
               Model Token Consumption Breakdown
             </h3>
             {stats && Object.keys(stats.modelUsageMap).length > 0 ? (
@@ -777,15 +778,15 @@ export const AdminPanel: React.FC = () => {
                 {Object.entries(stats.modelUsageMap).map(([modelId, tokens]) => {
                   const m = models.find(mod => mod.id === modelId);
                   return (
-                    <div key={modelId} className="flex flex-wrap items-center justify-between gap-2 text-xs py-2.5 border-b border-black/[0.04] dark:border-white/[0.04] font-mono">
-                      <span className="font-sans font-semibold text-black dark:text-white truncate">{m?.display_name || modelId}</span>
-                      <span className="font-bold shrink-0">{tokens.toLocaleString()} tokens</span>
+                    <div key={modelId} className="flex flex-wrap items-center justify-between gap-2 text-xs py-2.5 border-b border-black/[0.06] dark:border-white/[0.06] font-mono">
+                      <span className="font-sans font-semibold text-[#1f1f1f] dark:text-[#e3e3e3] truncate">{m?.display_name || modelId}</span>
+                      <span className="font-semibold shrink-0">{tokens.toLocaleString()} tokens</span>
                     </div>
                   );
                 })}
               </div>
             ) : (
-              <p className="text-xs text-gray-500">No token activity recorded yet.</p>
+              <p className="text-xs text-[#444746] dark:text-[#9aa0a6]">No token activity recorded yet.</p>
             )}
           </div>
         </div>
@@ -797,26 +798,26 @@ export const AdminPanel: React.FC = () => {
           <div className="flex flex-col md:flex-row items-stretch md:items-center justify-between gap-3">
             <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2.5">
               <div className="relative w-full sm:w-72">
-                <Search className="w-3.5 h-3.5 absolute left-3 top-3 text-gray-400" />
+                <Search className="w-3.5 h-3.5 absolute left-3 top-3 text-[#444746] dark:text-[#9aa0a6]" />
                 <input
                   type="text"
                   value={paymentSearch}
                   onChange={e => setPaymentSearch(e.target.value)}
                   placeholder="Search by TrxID, phone, or name..."
-                  className="w-full pl-9 pr-3 py-2 text-xs rounded-[12px] border border-black/[0.12] dark:border-white/[0.15] bg-white dark:bg-[#1F1F1F] text-black dark:text-white focus:outline-none focus:border-black dark:focus:border-white transition-colors"
+                  className="w-full pl-9 pr-3 py-2 text-xs rounded-xl border border-black/[0.08] dark:border-white/[0.08] bg-[#f0f4f9] dark:bg-[#131314] text-[#1f1f1f] dark:text-[#e3e3e3] focus:outline-none focus:border-[#1f1f1f] dark:focus:border-[#e3e3e3] transition-colors"
                 />
               </div>
 
               {/* Status Filters */}
-              <div className="flex flex-wrap items-center gap-1 bg-black/[0.04] dark:bg-white/[0.05] p-1 rounded-[12px] sm:rounded-full text-xs w-fit max-w-full">
+              <div className="flex flex-wrap items-center gap-1 bg-[#f0f4f9] dark:bg-[#1e1f20] border border-black/[0.06] dark:border-white/[0.06] p-1 rounded-xl sm:rounded-full text-xs w-fit max-w-full">
                 {(['all', 'pending', 'completed', 'rejected'] as const).map(f => (
                   <button
                     key={f}
                     onClick={() => setPaymentFilter(f)}
                     className={`px-2.5 sm:px-3 py-1 rounded-full capitalize text-xs font-semibold cursor-pointer transition-colors ${
                       paymentFilter === f
-                        ? 'bg-white dark:bg-[#2D2D2D] text-black dark:text-white shadow-xs'
-                        : 'text-gray-500 hover:text-black dark:hover:text-white'
+                        ? 'bg-white dark:bg-[#282a2c] text-[#1f1f1f] dark:text-[#e3e3e3] shadow-2xs'
+                        : 'text-[#444746] dark:text-[#9aa0a6] hover:text-[#1f1f1f] dark:hover:text-[#e3e3e3]'
                     }`}
                   >
                     {f}
@@ -826,16 +827,16 @@ export const AdminPanel: React.FC = () => {
               </div>
             </div>
 
-            <span className="text-xs text-gray-500 font-mono">
+            <span className="text-xs text-[#444746] dark:text-[#9aa0a6] font-mono">
               Total Records: {filteredPayments.length}
             </span>
           </div>
 
-          <div className="bg-white dark:bg-[#262626] rounded-[8px] border border-black/[0.08] dark:border-white/[0.08] shadow-xs overflow-hidden">
+          <div className="bg-white dark:bg-[#1e1f20] rounded-2xl border border-black/[0.08] dark:border-white/[0.08] overflow-hidden">
             {loadingPayments ? (
-              <div className="py-12 text-center text-xs text-gray-400">Loading payment records...</div>
+              <div className="py-12 text-center text-xs text-[#444746] dark:text-[#9aa0a6]">Loading payment records...</div>
             ) : filteredPayments.length === 0 ? (
-              <div className="py-12 text-center text-xs text-gray-400">No payment requests match your criteria.</div>
+              <div className="py-12 text-center text-xs text-[#444746] dark:text-[#9aa0a6]">No payment requests match your criteria.</div>
             ) : (
               <>
                 {/* Mobile Card Layout */}
@@ -844,18 +845,18 @@ export const AdminPanel: React.FC = () => {
                     <div key={p.id} className="p-4 space-y-3">
                       <div className="flex flex-wrap items-start justify-between gap-2">
                         <div className="min-w-0">
-                          <div className="font-semibold text-black dark:text-white truncate">{p.user_name || 'Subscriber'}</div>
-                          <div className="text-[11px] text-gray-500 break-all">{p.user_email}</div>
-                          <div className="text-[10px] text-gray-400 font-mono mt-0.5">
+                          <div className="font-semibold text-[#1f1f1f] dark:text-[#e3e3e3] truncate">{p.user_name || 'Subscriber'}</div>
+                          <div className="text-[11px] text-[#444746] dark:text-[#9aa0a6] break-all">{p.user_email}</div>
+                          <div className="text-[10px] text-[#444746] dark:text-[#9aa0a6] font-mono mt-0.5">
                             {new Date(p.created_at).toLocaleString('en-US', { dateStyle: 'short', timeStyle: 'short' })}
                           </div>
                         </div>
                         <span className={`px-2.5 py-0.5 rounded-full text-[10px] font-mono font-bold uppercase inline-flex items-center gap-1 shrink-0 ${
                           p.status === 'completed'
-                            ? 'bg-emerald-50 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-400 border border-emerald-200'
+                            ? 'bg-emerald-50 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-800'
                             : p.status === 'pending'
-                            ? 'bg-amber-50 text-amber-700 dark:bg-amber-950/40 dark:text-amber-300 border border-amber-200 animate-pulse'
-                            : 'bg-red-50 text-red-700 dark:bg-red-950/40 dark:text-red-400 border border-red-200'
+                            ? 'bg-amber-50 text-amber-700 dark:bg-amber-950/40 dark:text-amber-300 border border-amber-200 dark:border-amber-800'
+                            : 'bg-red-50 text-red-700 dark:bg-red-950/40 dark:text-red-400 border border-red-200 dark:border-red-800'
                         }`}>
                           <span className={`w-1.5 h-1.5 rounded-full ${
                             p.status === 'completed' ? 'bg-emerald-500' : p.status === 'pending' ? 'bg-amber-500' : 'bg-red-500'
@@ -864,34 +865,34 @@ export const AdminPanel: React.FC = () => {
                         </span>
                       </div>
 
-                      <div className="grid grid-cols-2 gap-2.5 bg-[#FAFAFA] dark:bg-[#1F1F1F] p-3 rounded-[8px] border border-black/[0.05] dark:border-white/[0.06]">
+                      <div className="grid grid-cols-2 gap-2.5 bg-[#f0f4f9] dark:bg-[#131314] p-3 rounded-xl border border-black/[0.06] dark:border-white/[0.06]">
                         <div>
-                          <span className="text-[10px] font-mono text-gray-400 block">Gateway & Plan</span>
-                          <span className="font-bold text-black dark:text-white uppercase">{p.gateway}</span>
-                          <span className="text-[11px] font-mono text-gray-600 dark:text-gray-300 block">{formatBDT(p.amount)}</span>
+                          <span className="text-[10px] font-mono text-[#444746] dark:text-[#9aa0a6] block">Gateway & Plan</span>
+                          <span className="font-semibold text-[#1f1f1f] dark:text-[#e3e3e3] uppercase">{p.gateway}</span>
+                          <span className="text-[11px] font-mono text-[#444746] dark:text-[#9aa0a6] block">{formatBDT(p.amount)}</span>
                         </div>
                         <div>
-                          <span className="text-[10px] font-mono text-gray-400 block">Sender Number</span>
-                          <div className="flex items-center gap-1.5 font-mono font-bold text-black dark:text-white">
+                          <span className="text-[10px] font-mono text-[#444746] dark:text-[#9aa0a6] block">Sender Number</span>
+                          <div className="flex items-center gap-1.5 font-mono font-semibold text-[#1f1f1f] dark:text-[#e3e3e3]">
                             <span>{p.sender_number}</span>
                             <button
                               type="button"
                               onClick={() => handleCopyText(p.sender_number, `ph_m_${p.id}`)}
-                              className="text-gray-400 hover:text-black dark:hover:text-white cursor-pointer"
+                              className="text-[#444746] dark:text-[#9aa0a6] hover:text-[#1f1f1f] dark:hover:text-[#e3e3e3] cursor-pointer"
                               aria-label="Copy sender number"
                             >
                               {copiedId === `ph_m_${p.id}` ? <Check className="w-3 h-3 text-emerald-500" /> : <Copy className="w-3 h-3" />}
                             </button>
                           </div>
                         </div>
-                        <div className="col-span-2 pt-1 border-t border-black/[0.05] dark:border-white/[0.06]">
-                          <span className="text-[10px] font-mono text-gray-400 block mb-0.5">Transaction ID (TrxID)</span>
-                          <div className="flex items-center justify-between gap-2 font-mono font-bold text-black dark:text-white">
+                        <div className="col-span-2 pt-1 border-t border-black/[0.06] dark:border-white/[0.06]">
+                          <span className="text-[10px] font-mono text-[#444746] dark:text-[#9aa0a6] block mb-0.5">Transaction ID (TrxID)</span>
+                          <div className="flex items-center justify-between gap-2 font-mono font-semibold text-[#1f1f1f] dark:text-[#e3e3e3]">
                             <span className="break-all">{p.trx_id}</span>
                             <button
                               type="button"
                               onClick={() => handleCopyText(p.trx_id, `trx_m_${p.id}`)}
-                              className="text-gray-400 hover:text-black dark:hover:text-white cursor-pointer shrink-0"
+                              className="text-[#444746] dark:text-[#9aa0a6] hover:text-[#1f1f1f] dark:hover:text-[#e3e3e3] cursor-pointer shrink-0"
                               aria-label="Copy transaction ID"
                             >
                               {copiedId === `trx_m_${p.id}` ? <Check className="w-3 h-3 text-emerald-500" /> : <Copy className="w-3 h-3" />}
@@ -905,7 +906,7 @@ export const AdminPanel: React.FC = () => {
                           <button
                             type="button"
                             onClick={() => handleApprovePayment(p)}
-                            className="flex-1 min-h-9 py-1.5 px-3 rounded-full bg-black hover:bg-black/90 dark:bg-white dark:hover:bg-white/90 text-white dark:text-black font-semibold text-xs flex items-center justify-center gap-1.5 transition-all shadow-xs cursor-pointer"
+                            className="flex-1 min-h-9 py-1.5 px-3 rounded-full bg-[#1f1f1f] hover:bg-[#1f1f1f]/90 dark:bg-[#e3e3e3] dark:hover:bg-[#e3e3e3]/90 text-white dark:text-[#131314] font-semibold text-xs flex items-center justify-center gap-1.5 transition-colors cursor-pointer"
                           >
                             <Check className="w-3.5 h-3.5 text-emerald-400 dark:text-emerald-600 shrink-0" />
                             <span>Approve & Activate</span>
@@ -913,13 +914,13 @@ export const AdminPanel: React.FC = () => {
                           <button
                             type="button"
                             onClick={() => handleRejectPayment(p)}
-                            className="min-h-9 py-1.5 px-3.5 rounded-full border border-red-200 text-red-600 hover:bg-red-50 dark:hover:bg-red-950/30 text-xs font-semibold cursor-pointer transition-colors"
+                            className="min-h-9 py-1.5 px-3.5 rounded-full border border-red-200 dark:border-red-900 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-950/30 text-xs font-semibold cursor-pointer transition-colors"
                           >
                             Reject
                           </button>
                         </div>
                       ) : (
-                        <div className="text-gray-400 font-mono text-[11px]">
+                        <div className="text-[#444746] dark:text-[#9aa0a6] font-mono text-[11px]">
                           {p.status === 'completed' ? 'Verified & Active' : 'Rejected'}
                         </div>
                       )}
@@ -930,7 +931,7 @@ export const AdminPanel: React.FC = () => {
                 {/* Desktop Table Layout */}
                 <div className="hidden md:block overflow-x-auto">
                   <table className="w-full text-left text-xs">
-                    <thead className="border-b border-black/[0.08] dark:border-white/[0.08] text-gray-400 font-mono text-[11px]">
+                    <thead className="border-b border-black/[0.08] dark:border-white/[0.08] text-[#444746] dark:text-[#9aa0a6] font-mono text-[11px]">
                       <tr>
                         <th className="py-3 px-4 font-medium">User Profile</th>
                         <th className="py-3 px-4 font-medium">MFS Gateway</th>
@@ -941,13 +942,13 @@ export const AdminPanel: React.FC = () => {
                         <th className="py-3 px-4 font-medium text-right">Verification Action</th>
                       </tr>
                     </thead>
-                    <tbody className="divide-y divide-black/[0.04] dark:divide-white/[0.04]">
+                    <tbody className="divide-y divide-black/[0.06] dark:divide-white/[0.06]">
                       {filteredPayments.map(p => (
-                        <tr key={p.id} className="hover:bg-black/[0.02] dark:hover:bg-white/[0.02] transition-colors">
+                        <tr key={p.id} className="hover:bg-[#f0f4f9]/60 dark:hover:bg-[#282a2c]/60 transition-colors">
                           <td className="py-3.5 px-4">
-                            <div className="font-semibold text-black dark:text-white">{p.user_name || 'Subscriber'}</div>
-                            <div className="text-[11px] text-gray-500">{p.user_email}</div>
-                            <div className="text-[10px] text-gray-400 font-mono">
+                            <div className="font-semibold text-[#1f1f1f] dark:text-[#e3e3e3]">{p.user_name || 'Subscriber'}</div>
+                            <div className="text-[11px] text-[#444746] dark:text-[#9aa0a6]">{p.user_email}</div>
+                            <div className="text-[10px] text-[#444746] dark:text-[#9aa0a6] font-mono">
                               {new Date(p.created_at).toLocaleString('en-US', { dateStyle: 'short', timeStyle: 'short' })}
                             </div>
                           </td>
@@ -964,13 +965,13 @@ export const AdminPanel: React.FC = () => {
                             </span>
                           </td>
 
-                          <td className="py-3.5 px-4 font-mono font-bold text-black dark:text-white">
+                          <td className="py-3.5 px-4 font-mono font-semibold text-[#1f1f1f] dark:text-[#e3e3e3]">
                             <div className="flex items-center gap-1.5">
                               <span>{p.sender_number}</span>
                               <button
                                 type="button"
                                 onClick={() => handleCopyText(p.sender_number, `ph_${p.id}`)}
-                                className="text-gray-400 hover:text-black dark:hover:text-white cursor-pointer"
+                                className="text-[#444746] dark:text-[#9aa0a6] hover:text-[#1f1f1f] dark:hover:text-[#e3e3e3] cursor-pointer"
                                 title="Copy sender number"
                               >
                                 {copiedId === `ph_${p.id}` ? <Check className="w-3 h-3 text-emerald-500" /> : <Copy className="w-3 h-3" />}
@@ -979,12 +980,12 @@ export const AdminPanel: React.FC = () => {
                           </td>
 
                           <td className="py-3.5 px-4">
-                            <div className="flex items-center gap-1.5 font-mono font-bold text-black dark:text-white bg-black/[0.03] dark:bg-white/[0.05] px-2 py-1 rounded-[6px] w-fit">
+                            <div className="flex items-center gap-1.5 font-mono font-semibold text-[#1f1f1f] dark:text-[#e3e3e3] bg-[#f0f4f9] dark:bg-[#131314] px-2.5 py-1 rounded-lg w-fit">
                               <span>{p.trx_id}</span>
                               <button
                                 type="button"
                                 onClick={() => handleCopyText(p.trx_id, `trx_${p.id}`)}
-                                className="text-gray-400 hover:text-black dark:hover:text-white cursor-pointer"
+                                className="text-[#444746] dark:text-[#9aa0a6] hover:text-[#1f1f1f] dark:hover:text-[#e3e3e3] cursor-pointer"
                                 title="Copy TrxID to check MFS statement"
                               >
                                 {copiedId === `trx_${p.id}` ? <Check className="w-3 h-3 text-emerald-500" /> : <Copy className="w-3 h-3" />}
@@ -993,17 +994,17 @@ export const AdminPanel: React.FC = () => {
                           </td>
 
                           <td className="py-3.5 px-4">
-                            <div className="font-bold text-black dark:text-white">{formatBDT(p.amount)}</div>
-                            <span className="text-[10px] text-gray-500 capitalize">{p.plan_id} Plan</span>
+                            <div className="font-semibold text-[#1f1f1f] dark:text-[#e3e3e3]">{formatBDT(p.amount)}</div>
+                            <span className="text-[10px] text-[#444746] dark:text-[#9aa0a6] capitalize">{p.plan_id} Plan</span>
                           </td>
 
                           <td className="py-3.5 px-4">
                             <span className={`px-2.5 py-0.5 rounded-full text-[10px] font-mono font-bold uppercase inline-flex items-center gap-1 ${
                               p.status === 'completed'
-                                ? 'bg-emerald-50 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-400 border border-emerald-200'
+                                ? 'bg-emerald-50 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-800'
                                 : p.status === 'pending'
-                                ? 'bg-amber-50 text-amber-700 dark:bg-amber-950/40 dark:text-amber-300 border border-amber-200 animate-pulse'
-                                : 'bg-red-50 text-red-700 dark:bg-red-950/40 dark:text-red-400 border border-red-200'
+                                ? 'bg-amber-50 text-amber-700 dark:bg-amber-950/40 dark:text-amber-300 border border-amber-200 dark:border-amber-800'
+                                : 'bg-red-50 text-red-700 dark:bg-red-950/40 dark:text-red-400 border border-red-200 dark:border-red-800'
                             }`}>
                               <span className={`w-1.5 h-1.5 rounded-full ${
                                 p.status === 'completed' ? 'bg-emerald-500' : p.status === 'pending' ? 'bg-amber-500' : 'bg-red-500'
@@ -1011,7 +1012,7 @@ export const AdminPanel: React.FC = () => {
                               {p.status}
                             </span>
                             {p.admin_note && (
-                              <div className="text-[10px] text-gray-400 mt-0.5 line-clamp-1">{p.admin_note}</div>
+                              <div className="text-[10px] text-[#444746] dark:text-[#9aa0a6] mt-0.5 line-clamp-1">{p.admin_note}</div>
                             )}
                           </td>
 
@@ -1021,7 +1022,7 @@ export const AdminPanel: React.FC = () => {
                                 <button
                                   type="button"
                                   onClick={() => handleApprovePayment(p)}
-                                  className="h-8 px-3.5 rounded-full bg-black hover:bg-black/90 dark:bg-white dark:hover:bg-white/90 text-white dark:text-black font-semibold text-xs flex items-center gap-1.5 transition-all shadow-xs cursor-pointer"
+                                  className="h-8 px-3.5 rounded-full bg-[#1f1f1f] hover:bg-[#1f1f1f]/90 dark:bg-[#e3e3e3] dark:hover:bg-[#e3e3e3]/90 text-white dark:text-[#131314] font-semibold text-xs flex items-center gap-1.5 transition-colors cursor-pointer"
                                   title="Approve payment, activate subscription and fire Meta Pixel Purchase event"
                                 >
                                   <Check className="w-3.5 h-3.5 text-emerald-400 dark:text-emerald-600" />
@@ -1031,14 +1032,14 @@ export const AdminPanel: React.FC = () => {
                                 <button
                                   type="button"
                                   onClick={() => handleRejectPayment(p)}
-                                  className="h-8 px-2.5 rounded-full border border-red-200 text-red-600 hover:bg-red-50 dark:hover:bg-red-950/30 text-xs font-semibold cursor-pointer transition-colors"
+                                  className="h-8 px-2.5 rounded-full border border-red-200 dark:border-red-900 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-950/30 text-xs font-semibold cursor-pointer transition-colors"
                                   title="Reject transaction if TrxID does not match"
                                 >
                                   Reject
                                 </button>
                               </div>
                             ) : (
-                              <span className="text-gray-400 font-mono text-[11px]">
+                              <span className="text-[#444746] dark:text-[#9aa0a6] font-mono text-[11px]">
                                 {p.status === 'completed' ? 'Verified & Active' : 'Rejected'}
                               </span>
                             )}
@@ -1059,37 +1060,37 @@ export const AdminPanel: React.FC = () => {
         <div className="space-y-4">
           <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3">
             <div className="relative w-full sm:w-80">
-              <Search className="w-3.5 h-3.5 absolute left-3 top-3 text-gray-400" />
+              <Search className="w-3.5 h-3.5 absolute left-3 top-3 text-[#444746] dark:text-[#9aa0a6]" />
               <input
                 type="text"
                 value={userSearch}
                 onChange={e => setUserSearch(e.target.value)}
                 onKeyDown={e => e.key === 'Enter' && fetchUsers()}
                 placeholder="Search by name or email..."
-                className="w-full pl-9 pr-3 py-2 text-xs rounded-[12px] border border-black/[0.12] dark:border-white/[0.15] bg-white dark:bg-[#1F1F1F] text-black dark:text-white focus:outline-none focus:border-black dark:focus:border-white transition-colors"
+                className="w-full pl-9 pr-3 py-2 text-xs rounded-xl border border-black/[0.08] dark:border-white/[0.08] bg-[#f0f4f9] dark:bg-[#131314] text-[#1f1f1f] dark:text-[#e3e3e3] focus:outline-none focus:border-[#1f1f1f] dark:focus:border-[#e3e3e3] transition-colors"
               />
             </div>
-            <span className="text-xs text-gray-500 font-mono self-end sm:self-auto">
+            <span className="text-xs text-[#444746] dark:text-[#9aa0a6] font-mono self-end sm:self-auto">
               Total Accounts: {users.length}
             </span>
           </div>
 
-          <div className="bg-white dark:bg-[#262626] rounded-[8px] border border-black/[0.08] dark:border-white/[0.08] shadow-xs overflow-hidden">
+          <div className="bg-white dark:bg-[#1e1f20] rounded-2xl border border-black/[0.08] dark:border-white/[0.08] overflow-hidden">
             {/* Mobile Card Layout */}
             <div className="md:hidden divide-y divide-black/[0.06] dark:divide-white/[0.06] text-xs">
               {users.map(u => (
                 <div key={u.id} className="p-4 space-y-3">
                   <div className="flex items-start justify-between gap-2">
                     <div className="min-w-0">
-                      <div className="font-semibold text-black dark:text-white truncate">{u.name}</div>
-                      <div className="text-[11px] text-gray-500 break-all">{u.email}</div>
-                      {u.phone && <div className="text-[10px] text-gray-400 font-mono">{u.phone}</div>}
+                      <div className="font-semibold text-[#1f1f1f] dark:text-[#e3e3e3] truncate">{u.name}</div>
+                      <div className="text-[11px] text-[#444746] dark:text-[#9aa0a6] break-all">{u.email}</div>
+                      {u.phone && <div className="text-[10px] text-[#444746] dark:text-[#9aa0a6] font-mono">{u.phone}</div>}
                     </div>
                     <div className="flex items-center gap-1.5 shrink-0">
                       <span className={`px-2 py-0.5 rounded-full text-[10px] font-mono uppercase ${
                         u.role === 'admin'
-                          ? 'bg-black text-white dark:bg-white dark:text-black font-bold'
-                          : 'bg-black/[0.05] text-gray-700 dark:bg-white/[0.08] dark:text-gray-300'
+                          ? 'bg-[#1f1f1f] text-white dark:bg-[#e3e3e3] dark:text-[#131314] font-bold'
+                          : 'bg-[#f0f4f9] text-[#444746] dark:bg-[#282a2c] dark:text-[#e3e3e3]'
                       }`}>
                         {u.role}
                       </span>
@@ -1097,8 +1098,8 @@ export const AdminPanel: React.FC = () => {
                         onClick={() => handleToggleUserStatus(u)}
                         className={`px-2 py-0.5 rounded-full text-[10px] font-mono uppercase cursor-pointer ${
                           u.status === 'active'
-                            ? 'bg-emerald-50 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-400 border border-emerald-200'
-                            : 'bg-red-50 text-red-700 dark:bg-red-950/40 dark:text-red-400 border border-red-200'
+                            ? 'bg-emerald-50 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-800'
+                            : 'bg-red-50 text-red-700 dark:bg-red-950/40 dark:text-red-400 border border-red-200 dark:border-red-800'
                         }`}
                       >
                         {u.status}
@@ -1106,27 +1107,27 @@ export const AdminPanel: React.FC = () => {
                     </div>
                   </div>
 
-                  <div className="grid grid-cols-1 gap-2 bg-[#FAFAFA] dark:bg-[#1F1F1F] p-3 rounded-[8px] border border-black/[0.05] dark:border-white/[0.06]">
+                  <div className="grid grid-cols-1 gap-2 bg-[#f0f4f9] dark:bg-[#131314] p-3 rounded-xl border border-black/[0.06] dark:border-white/[0.06]">
                     <div className="flex flex-wrap items-center justify-between gap-2">
-                      <span className="text-[10px] font-mono text-gray-400">Subscription</span>
+                      <span className="text-[10px] font-mono text-[#444746] dark:text-[#9aa0a6]">Subscription</span>
                       {u.subscription ? (
-                        <span className="font-semibold text-black dark:text-white">
+                        <span className="font-semibold text-[#1f1f1f] dark:text-[#e3e3e3]">
                           {u.subscription.plan_name} (Exp: {new Date(u.subscription.expires_at).toLocaleDateString('en-US')})
                         </span>
                       ) : (
-                        <span className="text-gray-400 italic">None</span>
+                        <span className="text-[#444746] dark:text-[#9aa0a6] italic">None</span>
                       )}
                     </div>
                     <div className="flex flex-wrap items-center justify-between gap-2 font-mono text-[11px]">
-                      <span className="text-[10px] font-mono text-gray-400">Tokens / Limit</span>
+                      <span className="text-[10px] font-mono text-[#444746] dark:text-[#9aa0a6]">Tokens / Limit</span>
                       <div className="flex items-center gap-1.5">
                         <span>{(u.current_usage || 0).toLocaleString()}</span>
-                        <span className="text-gray-400">/</span>
+                        <span className="text-[#444746] dark:text-[#9aa0a6]">/</span>
                         <input
                           type="number"
                           defaultValue={u.usage_limit}
                           onBlur={e => handleUpdateUserLimit(u.id, e.target.value)}
-                          className="w-24 px-2 py-1 rounded-[4px] border border-black/[0.1] dark:border-white/[0.1] bg-white dark:bg-[#262626] text-[11px] font-mono"
+                          className="w-24 px-2 py-1 rounded-lg border border-black/[0.08] dark:border-white/[0.08] bg-white dark:bg-[#1e1f20] text-[11px] font-mono"
                         />
                       </div>
                     </div>
@@ -1135,14 +1136,14 @@ export const AdminPanel: React.FC = () => {
                   <div className="flex items-center justify-between gap-2 pt-1">
                     <button
                       onClick={() => setSelectedUserForSub(u)}
-                      className="h-8 px-3.5 rounded-full text-xs border border-black/[0.12] dark:border-white/[0.15] hover:border-black/30 font-medium cursor-pointer"
+                      className="h-8 px-3.5 rounded-full text-xs border border-black/[0.1] dark:border-white/[0.12] hover:bg-[#f0f4f9] dark:hover:bg-[#282a2c] font-medium cursor-pointer transition-colors"
                     >
                       Grant Plan
                     </button>
                     {u.role !== 'admin' && (
                       <button
                         onClick={() => handleDeleteUser(u.id)}
-                        className="h-8 px-2.5 text-gray-400 hover:text-red-500 rounded-full border border-transparent hover:border-red-200 flex items-center gap-1 cursor-pointer"
+                        className="h-8 px-2.5 text-[#444746] dark:text-[#9aa0a6] hover:text-red-500 rounded-full border border-transparent hover:border-red-200 dark:hover:border-red-900 flex items-center gap-1 cursor-pointer"
                         title="Delete user"
                       >
                         <Trash2 className="w-3.5 h-3.5" />
@@ -1157,7 +1158,7 @@ export const AdminPanel: React.FC = () => {
             {/* Desktop Table Layout */}
             <div className="hidden md:block overflow-x-auto">
               <table className="w-full text-left text-xs">
-                <thead className="border-b border-black/[0.08] dark:border-white/[0.08] text-gray-400 font-mono text-[11px]">
+                <thead className="border-b border-black/[0.08] dark:border-white/[0.08] text-[#444746] dark:text-[#9aa0a6] font-mono text-[11px]">
                   <tr>
                     <th className="py-3 px-4 font-medium">User Profile</th>
                     <th className="py-3 px-4 font-medium">Role</th>
@@ -1167,19 +1168,19 @@ export const AdminPanel: React.FC = () => {
                     <th className="py-3 px-4 font-medium text-right">Actions</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-black/[0.04] dark:divide-white/[0.04]">
+                <tbody className="divide-y divide-black/[0.06] dark:divide-white/[0.06]">
                   {users.map(u => (
-                    <tr key={u.id} className="hover:bg-black/[0.02] dark:hover:bg-white/[0.02] transition-colors">
+                    <tr key={u.id} className="hover:bg-[#f0f4f9]/60 dark:hover:bg-[#282a2c]/60 transition-colors">
                       <td className="py-3 px-4">
-                        <div className="font-semibold text-black dark:text-white">{u.name}</div>
-                        <div className="text-[11px] text-gray-500">{u.email}</div>
-                        {u.phone && <div className="text-[10px] text-gray-400 font-mono">{u.phone}</div>}
+                        <div className="font-semibold text-[#1f1f1f] dark:text-[#e3e3e3]">{u.name}</div>
+                        <div className="text-[11px] text-[#444746] dark:text-[#9aa0a6]">{u.email}</div>
+                        {u.phone && <div className="text-[10px] text-[#444746] dark:text-[#9aa0a6] font-mono">{u.phone}</div>}
                       </td>
                       <td className="py-3 px-4">
                         <span className={`px-2 py-0.5 rounded-full text-[10px] font-mono uppercase ${
                           u.role === 'admin'
-                            ? 'bg-black text-white dark:bg-white dark:text-black font-bold'
-                            : 'bg-black/[0.05] text-gray-700 dark:bg-white/[0.08] dark:text-gray-300'
+                            ? 'bg-[#1f1f1f] text-white dark:bg-[#e3e3e3] dark:text-[#131314] font-bold'
+                            : 'bg-[#f0f4f9] text-[#444746] dark:bg-[#282a2c] dark:text-[#e3e3e3]'
                         }`}>
                           {u.role}
                         </span>
@@ -1187,24 +1188,24 @@ export const AdminPanel: React.FC = () => {
                       <td className="py-3 px-4">
                         {u.subscription ? (
                           <div>
-                            <span className="font-semibold text-black dark:text-white block">{u.subscription.plan_name}</span>
-                            <span className="text-[10px] text-gray-500 font-mono">
+                            <span className="font-semibold text-[#1f1f1f] dark:text-[#e3e3e3] block">{u.subscription.plan_name}</span>
+                            <span className="text-[10px] text-[#444746] dark:text-[#9aa0a6] font-mono">
                               Exp: {new Date(u.subscription.expires_at).toLocaleDateString('en-US')}
                             </span>
                           </div>
                         ) : (
-                          <span className="text-gray-400 italic">None</span>
+                          <span className="text-[#444746] dark:text-[#9aa0a6] italic">None</span>
                         )}
                       </td>
                       <td className="py-3 px-4">
                         <div className="flex items-center gap-1.5 font-mono text-[11px]">
                           <span>{(u.current_usage || 0).toLocaleString()}</span>
-                          <span className="text-gray-400">/</span>
+                          <span className="text-[#444746] dark:text-[#9aa0a6]">/</span>
                           <input
                             type="number"
                             defaultValue={u.usage_limit}
                             onBlur={e => handleUpdateUserLimit(u.id, e.target.value)}
-                            className="w-20 px-1.5 py-0.5 rounded-[4px] border border-black/[0.1] dark:border-white/[0.1] bg-white dark:bg-[#1F1F1F] text-[11px] font-mono"
+                            className="w-20 px-2 py-0.5 rounded-lg border border-black/[0.08] dark:border-white/[0.08] bg-[#f0f4f9] dark:bg-[#131314] text-[11px] font-mono"
                           />
                         </div>
                       </td>
@@ -1213,8 +1214,8 @@ export const AdminPanel: React.FC = () => {
                           onClick={() => handleToggleUserStatus(u)}
                           className={`px-2 py-0.5 rounded-full text-[10px] font-mono uppercase cursor-pointer ${
                             u.status === 'active'
-                              ? 'bg-emerald-50 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-400 border border-emerald-200'
-                              : 'bg-red-50 text-red-700 dark:bg-red-950/40 dark:text-red-400 border border-red-200'
+                              ? 'bg-emerald-50 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-800'
+                              : 'bg-red-50 text-red-700 dark:bg-red-950/40 dark:text-red-400 border border-red-200 dark:border-red-800'
                           }`}
                         >
                           {u.status}
@@ -1223,14 +1224,14 @@ export const AdminPanel: React.FC = () => {
                       <td className="py-3 px-4 text-right space-x-2">
                         <button
                           onClick={() => setSelectedUserForSub(u)}
-                          className="h-7 px-3 rounded-full text-xs border border-black/[0.12] dark:border-white/[0.15] hover:border-black/30 font-medium cursor-pointer"
+                          className="h-7 px-3 rounded-full text-xs border border-black/[0.1] dark:border-white/[0.12] hover:bg-[#f0f4f9] dark:hover:bg-[#282a2c] font-medium cursor-pointer transition-colors"
                         >
                           Grant Plan
                         </button>
                         {u.role !== 'admin' && (
                           <button
                             onClick={() => handleDeleteUser(u.id)}
-                            className="p-1 text-gray-400 hover:text-red-500 rounded cursor-pointer"
+                            className="p-1 text-[#444746] dark:text-[#9aa0a6] hover:text-red-500 rounded cursor-pointer"
                             title="Delete user"
                           >
                             <Trash2 className="w-3.5 h-3.5" />
@@ -1246,18 +1247,18 @@ export const AdminPanel: React.FC = () => {
 
           {/* Grant Modal */}
           {selectedUserForSub && (
-            <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
-              <div className="bg-white dark:bg-[#262626] rounded-[16px] p-6 max-w-sm w-full border border-black/[0.12] dark:border-white/[0.15] shadow-2xl">
-                <h3 className="font-bold text-base text-black dark:text-white mb-1">
+            <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-xs">
+              <div className="bg-white dark:bg-[#1e1f20] rounded-3xl p-6 max-w-sm w-full border border-black/[0.08] dark:border-white/[0.08] shadow-xl">
+                <h3 className="font-semibold text-base text-[#1f1f1f] dark:text-[#e3e3e3] mb-1">
                   Grant Subscription
                 </h3>
-                <p className="text-xs text-gray-500 mb-4">
+                <p className="text-xs text-[#444746] dark:text-[#9aa0a6] mb-4">
                   Target: <strong>{selectedUserForSub.name}</strong> ({selectedUserForSub.email})
                 </p>
 
                 <form onSubmit={handleGrantSubscription} className="space-y-3.5 text-xs">
                   <div>
-                    <label className="block font-medium mb-1 text-black dark:text-white">Plan Tier:</label>
+                    <label className="block font-medium mb-1 text-[#1f1f1f] dark:text-[#e3e3e3]">Plan Tier:</label>
                     <select
                       value={grantPlanId}
                       onChange={e => {
@@ -1265,7 +1266,7 @@ export const AdminPanel: React.FC = () => {
                         setGrantPlanId(val);
                         setGrantDays(val === 'yearly' ? 365 : 30);
                       }}
-                      className="w-full p-2.5 rounded-[12px] border border-black/[0.12] dark:border-white/[0.15] bg-white dark:bg-[#1F1F1F]"
+                      className="w-full p-2.5 rounded-xl border border-black/[0.08] dark:border-white/[0.08] bg-[#f0f4f9] dark:bg-[#131314] text-[#1f1f1f] dark:text-[#e3e3e3]"
                     >
                       <option value="monthly">Monthly Plan (30 Days)</option>
                       <option value="yearly">Yearly Plan (365 Days)</option>
@@ -1273,12 +1274,12 @@ export const AdminPanel: React.FC = () => {
                   </div>
 
                   <div>
-                    <label className="block font-medium mb-1 text-black dark:text-white">Duration (Days):</label>
+                    <label className="block font-medium mb-1 text-[#1f1f1f] dark:text-[#e3e3e3]">Duration (Days):</label>
                     <input
                       type="number"
                       value={grantDays}
                       onChange={e => setGrantDays(parseInt(e.target.value, 10))}
-                      className="w-full p-2.5 rounded-[12px] border border-black/[0.12] dark:border-white/[0.15] bg-white dark:bg-[#1F1F1F] font-mono"
+                      className="w-full p-2.5 rounded-xl border border-black/[0.08] dark:border-white/[0.08] bg-[#f0f4f9] dark:bg-[#131314] text-[#1f1f1f] dark:text-[#e3e3e3] font-mono"
                     />
                   </div>
 
@@ -1286,13 +1287,13 @@ export const AdminPanel: React.FC = () => {
                     <button
                       type="button"
                       onClick={() => setSelectedUserForSub(null)}
-                      className="h-9 px-4 rounded-full border border-black/[0.12] dark:border-white/[0.15] text-xs font-semibold cursor-pointer"
+                      className="h-9 px-4 rounded-full border border-black/[0.1] dark:border-white/[0.12] hover:bg-[#f0f4f9] dark:hover:bg-[#282a2c] text-xs font-semibold cursor-pointer"
                     >
                       Cancel
                     </button>
                     <button
                       type="submit"
-                      className="h-9 px-4 rounded-full bg-black hover:bg-black/90 dark:bg-white dark:hover:bg-white/90 text-white dark:text-black font-semibold text-xs cursor-pointer shadow-xs"
+                      className="h-9 px-4 rounded-full bg-[#1f1f1f] hover:bg-[#1f1f1f]/90 dark:bg-[#e3e3e3] dark:hover:bg-[#e3e3e3]/90 text-white dark:text-[#131314] font-semibold text-xs cursor-pointer"
                     >
                       Confirm & Grant
                     </button>
@@ -1307,10 +1308,10 @@ export const AdminPanel: React.FC = () => {
       {/* Tab 3: Providers */}
       {activeTab === 'providers' && (
         <div className="space-y-4">
-          <div className="bg-[#FAFAFA] dark:bg-[#1F1F1F] p-4 rounded-[8px] border border-black/[0.08] dark:border-white/[0.08] text-xs text-gray-600 dark:text-gray-300 flex items-start gap-2.5">
-            <Lock className="w-4 h-4 shrink-0 mt-0.5 text-black dark:text-white" />
+          <div className="bg-[#f0f4f9] dark:bg-[#1e1f20] p-4 rounded-2xl border border-black/[0.08] dark:border-white/[0.08] text-xs text-[#444746] dark:text-[#9aa0a6] flex items-start gap-2.5">
+            <Lock className="w-4 h-4 shrink-0 mt-0.5 text-[#1f1f1f] dark:text-[#e3e3e3]" />
             <span>
-              <strong>Server-Side Secret Isolation:</strong> Configured API keys are stored strictly on the backend and never transmitted back to browser clients. Paste one <strong>OpenRouter API Key</strong> below to power all 10 AI Workspace models automatically.
+              <strong className="text-[#1f1f1f] dark:text-[#e3e3e3]">Server-Side Secret Isolation:</strong> Configured API keys are stored strictly on the backend and never transmitted back to browser clients. Paste one <strong className="text-[#1f1f1f] dark:text-[#e3e3e3]">OpenRouter API Key</strong> below to power all 10 AI Workspace models automatically.
             </span>
           </div>
 
@@ -1322,19 +1323,19 @@ export const AdminPanel: React.FC = () => {
                 return (
                   <div
                     key={p.id}
-                    className={`bg-white dark:bg-[#262626] p-4 sm:p-6 rounded-[8px] shadow-xs space-y-3 min-w-0 ${
+                    className={`bg-white dark:bg-[#1e1f20] p-4 sm:p-6 rounded-2xl space-y-3 min-w-0 ${
                       isOpenRouter
-                        ? 'md:col-span-2 border-2 border-black dark:border-white'
+                        ? 'md:col-span-2 border-2 border-[#1f1f1f] dark:border-[#e3e3e3]'
                         : 'border border-black/[0.08] dark:border-white/[0.08]'
                     }`}
                   >
                     <div className="flex flex-wrap items-center justify-between gap-2">
                       <div className="flex items-center gap-2 min-w-0">
-                        <Key className="w-4 h-4 text-black dark:text-white shrink-0" />
+                        <Key className="w-4 h-4 text-[#1f1f1f] dark:text-[#e3e3e3] shrink-0" />
                         <div className="min-w-0">
-                          <h3 className="font-bold text-black dark:text-white text-sm truncate">{p.name}</h3>
+                          <h3 className="font-semibold text-[#1f1f1f] dark:text-[#e3e3e3] text-sm truncate">{p.name}</h3>
                           {isOpenRouter && (
-                            <p className="text-[11px] text-gray-500 dark:text-gray-400">
+                            <p className="text-[11px] text-[#444746] dark:text-[#9aa0a6]">
                               1 API Key = Access Claude, Gemini, GPT, DeepSeek, Grok &amp; Kimi in Workspace
                             </p>
                           )}
@@ -1345,7 +1346,7 @@ export const AdminPanel: React.FC = () => {
                           className={`text-[10px] font-mono uppercase px-2 py-0.5 rounded-full font-semibold ${
                             p.has_api_key
                               ? 'bg-emerald-50 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-800'
-                              : 'bg-black/[0.05] dark:bg-white/[0.08] text-gray-500'
+                              : 'bg-[#f0f4f9] dark:bg-[#282a2c] text-[#444746] dark:text-[#9aa0a6]'
                           }`}
                         >
                           {p.has_api_key ? 'Key Saved' : 'Not Set'}
@@ -1355,8 +1356,8 @@ export const AdminPanel: React.FC = () => {
                           onClick={() => handleToggleProviderActive(p)}
                           className={`text-[10px] font-mono uppercase px-2.5 py-0.5 rounded-full font-semibold cursor-pointer ${
                             p.is_active
-                              ? 'bg-black text-white dark:bg-white dark:text-black'
-                              : 'bg-red-50 text-red-700 dark:bg-red-950/40 dark:text-red-400 border border-red-200'
+                              ? 'bg-[#1f1f1f] text-white dark:bg-[#e3e3e3] dark:text-[#131314]'
+                              : 'bg-red-50 text-red-700 dark:bg-red-950/40 dark:text-red-400 border border-red-200 dark:border-red-800'
                           }`}
                         >
                           {p.is_active ? 'Active · Pause' : 'Paused · Activate'}
@@ -1365,32 +1366,32 @@ export const AdminPanel: React.FC = () => {
                     </div>
 
                     {p.has_api_key && !p.is_active && (
-                      <div className="p-2.5 rounded-[6px] bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800 text-[11px] text-amber-900 dark:text-amber-200 flex flex-wrap items-center justify-between gap-2">
+                      <div className="p-2.5 rounded-xl bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800 text-[11px] text-amber-900 dark:text-amber-200 flex flex-wrap items-center justify-between gap-2">
                         <span>
                           API key is saved, but this gateway is currently <strong>Paused</strong> and skipped in Workspace.
                         </span>
                         <button
                           type="button"
                           onClick={() => handleToggleProviderActive(p)}
-                          className="h-7 px-3 rounded-full bg-black text-white dark:bg-white dark:text-black font-semibold text-[11px] cursor-pointer shrink-0"
+                          className="h-7 px-3 rounded-full bg-[#1f1f1f] text-white dark:bg-[#e3e3e3] dark:text-[#131314] font-semibold text-[11px] cursor-pointer shrink-0"
                         >
                           Activate Now
                         </button>
                       </div>
                     )}
 
-                    <div className="text-xs space-y-1.5 text-gray-500 font-mono text-[11px]">
+                    <div className="text-xs space-y-1.5 text-[#444746] dark:text-[#9aa0a6] font-mono text-[11px]">
                       <div className="flex items-center justify-between gap-2">
                         <span className="shrink-0">Slug:</span>
-                        <span className="text-black dark:text-white font-semibold truncate">{p.slug}</span>
+                        <span className="text-[#1f1f1f] dark:text-[#e3e3e3] font-semibold truncate">{p.slug}</span>
                       </div>
                       <div className="flex items-center justify-between gap-2">
                         <span className="shrink-0">Base URL:</span>
-                        <span className="text-gray-600 dark:text-gray-400 truncate max-w-[180px] sm:max-w-md">{p.base_url}</span>
+                        <span className="text-[#444746] dark:text-[#9aa0a6] truncate max-w-[180px] sm:max-w-md">{p.base_url}</span>
                       </div>
                       <div className="flex items-center justify-between gap-2">
                         <span className="shrink-0">API Key:</span>
-                        <span className="text-black dark:text-white truncate">
+                        <span className="text-[#1f1f1f] dark:text-[#e3e3e3] truncate">
                           {p.api_key_masked || 'Not configured'}
                         </span>
                       </div>
@@ -1399,7 +1400,7 @@ export const AdminPanel: React.FC = () => {
                     {editingProviderId === p.id ? (
                       <div className="pt-3 border-t border-black/[0.08] dark:border-white/[0.08] space-y-2.5">
                         <div>
-                          <label className="block text-[11px] font-medium text-gray-600 dark:text-gray-300 mb-1">
+                          <label className="block text-[11px] font-medium text-[#444746] dark:text-[#9aa0a6] mb-1">
                             {isOpenRouter ? 'OpenRouter API Key (sk-or-v1-...)' : `${p.name} API Key`}
                           </label>
                           <input
@@ -1407,11 +1408,11 @@ export const AdminPanel: React.FC = () => {
                             placeholder={isOpenRouter ? 'sk-or-v1-...' : 'Enter new API Key...'}
                             value={newApiKey}
                             onChange={e => setNewApiKey(e.target.value)}
-                            className="w-full px-3 py-2 rounded-[8px] border border-black/[0.12] dark:border-white/[0.15] bg-white dark:bg-[#1F1F1F] text-xs font-mono"
+                            className="w-full px-3 py-2 rounded-xl border border-black/[0.08] dark:border-white/[0.08] bg-[#f0f4f9] dark:bg-[#131314] text-[#1f1f1f] dark:text-[#e3e3e3] text-xs font-mono focus:outline-none focus:border-[#1f1f1f] dark:focus:border-[#e3e3e3]"
                           />
                         </div>
                         <div>
-                          <label className="block text-[11px] font-medium text-gray-600 dark:text-gray-300 mb-1">
+                          <label className="block text-[11px] font-medium text-[#444746] dark:text-[#9aa0a6] mb-1">
                             Base URL
                           </label>
                           <input
@@ -1419,7 +1420,7 @@ export const AdminPanel: React.FC = () => {
                             placeholder="https://openrouter.ai/api/v1"
                             value={newBaseUrl}
                             onChange={e => setNewBaseUrl(e.target.value)}
-                            className="w-full px-3 py-2 rounded-[8px] border border-black/[0.12] dark:border-white/[0.15] bg-white dark:bg-[#1F1F1F] text-xs font-mono"
+                            className="w-full px-3 py-2 rounded-xl border border-black/[0.08] dark:border-white/[0.08] bg-[#f0f4f9] dark:bg-[#131314] text-[#1f1f1f] dark:text-[#e3e3e3] text-xs font-mono focus:outline-none focus:border-[#1f1f1f] dark:focus:border-[#e3e3e3]"
                           />
                         </div>
                         <div className="flex flex-wrap justify-end gap-2">
@@ -1430,7 +1431,7 @@ export const AdminPanel: React.FC = () => {
                               setNewApiKey('');
                               setNewBaseUrl('');
                             }}
-                            className="h-8 px-3 rounded-full border border-black/[0.12] dark:border-white/[0.15] text-xs cursor-pointer"
+                            className="h-8 px-3 rounded-full border border-black/[0.1] dark:border-white/[0.12] hover:bg-[#f0f4f9] dark:hover:bg-[#282a2c] text-xs cursor-pointer"
                           >
                             Cancel
                           </button>
@@ -1439,7 +1440,7 @@ export const AdminPanel: React.FC = () => {
                               type="button"
                               disabled={testingProviderId === p.id}
                               onClick={() => handleTestProvider(p.id)}
-                              className="h-8 px-3 rounded-full border border-black/[0.12] dark:border-white/[0.15] text-xs font-semibold cursor-pointer disabled:opacity-50"
+                              className="h-8 px-3 rounded-full border border-black/[0.1] dark:border-white/[0.12] hover:bg-[#f0f4f9] dark:hover:bg-[#282a2c] text-xs font-semibold cursor-pointer disabled:opacity-50"
                             >
                               {testingProviderId === p.id ? 'Testing...' : 'Test Key'}
                             </button>
@@ -1447,7 +1448,7 @@ export const AdminPanel: React.FC = () => {
                           <button
                             type="button"
                             onClick={() => handleSaveProvider(p.id)}
-                            className="h-8 px-4 rounded-full bg-black text-white dark:bg-white dark:text-black font-semibold text-xs cursor-pointer"
+                            className="h-8 px-4 rounded-full bg-[#1f1f1f] text-white dark:bg-[#e3e3e3] dark:text-[#131314] font-semibold text-xs cursor-pointer"
                           >
                             Save Key
                           </button>
@@ -1462,7 +1463,7 @@ export const AdminPanel: React.FC = () => {
                             setNewApiKey('');
                             setNewBaseUrl(p.base_url || '');
                           }}
-                          className="h-8 px-3.5 rounded-full border border-black/[0.12] dark:border-white/[0.15] hover:border-black/30 text-xs font-semibold flex items-center gap-1.5 cursor-pointer"
+                          className="h-8 px-3.5 rounded-full border border-black/[0.1] dark:border-white/[0.12] hover:bg-[#f0f4f9] dark:hover:bg-[#282a2c] text-xs font-semibold flex items-center gap-1.5 cursor-pointer transition-colors"
                         >
                           <Edit className="w-3 h-3" />
                           <span>{p.has_api_key ? 'Update Key' : 'Add API Key'}</span>
@@ -1472,7 +1473,7 @@ export const AdminPanel: React.FC = () => {
                             type="button"
                             disabled={testingProviderId === p.id}
                             onClick={() => handleTestProvider(p.id)}
-                            className="h-8 px-3.5 rounded-full border border-black/[0.12] dark:border-white/[0.15] hover:border-black/30 text-xs font-semibold cursor-pointer disabled:opacity-50"
+                            className="h-8 px-3.5 rounded-full border border-black/[0.1] dark:border-white/[0.12] hover:bg-[#f0f4f9] dark:hover:bg-[#282a2c] text-xs font-semibold cursor-pointer disabled:opacity-50 transition-colors"
                           >
                             {testingProviderId === p.id ? 'Testing...' : 'Verify Connection'}
                           </button>
@@ -1481,7 +1482,7 @@ export const AdminPanel: React.FC = () => {
                           <button
                             type="button"
                             onClick={() => handleClearProviderKey(p)}
-                            className="h-8 px-3 rounded-full text-xs text-red-600 hover:bg-red-50 dark:hover:bg-red-950/40 cursor-pointer"
+                            className="h-8 px-3 rounded-full text-xs text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-950/40 cursor-pointer"
                           >
                             Remove
                           </button>
@@ -1509,15 +1510,15 @@ export const AdminPanel: React.FC = () => {
         return (
           <div className="space-y-4">
             {/* Free Models Toolbar & Filter Controls */}
-            <div className="bg-white dark:bg-[#262626] p-4 rounded-[8px] border border-black/[0.08] dark:border-white/[0.08] shadow-xs flex flex-col lg:flex-row lg:items-center justify-between gap-3 text-xs">
+            <div className="bg-white dark:bg-[#1e1f20] p-4 rounded-2xl border border-black/[0.08] dark:border-white/[0.08] flex flex-col lg:flex-row lg:items-center justify-between gap-3 text-xs">
               <div className="flex flex-wrap items-center gap-1.5">
                 <button
                   type="button"
                   onClick={() => setModelFilter('all')}
                   className={`h-8 px-3 rounded-full font-medium cursor-pointer transition-colors ${
                     modelFilter === 'all'
-                      ? 'bg-black text-white dark:bg-white dark:text-black font-semibold'
-                      : 'bg-black/[0.04] dark:bg-white/[0.06] text-gray-600 dark:text-gray-300'
+                      ? 'bg-[#e9eef6] text-[#1f1f1f] dark:bg-[#282a2c] dark:text-[#e3e3e3] font-semibold'
+                      : 'bg-[#f0f4f9] dark:bg-[#131314] text-[#444746] dark:text-[#9aa0a6]'
                   }`}
                 >
                   All Models ({models.length})
@@ -1527,8 +1528,8 @@ export const AdminPanel: React.FC = () => {
                   onClick={() => setModelFilter('flagship')}
                   className={`h-8 px-3 rounded-full font-medium cursor-pointer transition-colors ${
                     modelFilter === 'flagship'
-                      ? 'bg-black text-white dark:bg-white dark:text-black font-semibold'
-                      : 'bg-black/[0.04] dark:bg-white/[0.06] text-gray-600 dark:text-gray-300'
+                      ? 'bg-[#e9eef6] text-[#1f1f1f] dark:bg-[#282a2c] dark:text-[#e3e3e3] font-semibold'
+                      : 'bg-[#f0f4f9] dark:bg-[#131314] text-[#444746] dark:text-[#9aa0a6]'
                   }`}
                 >
                   Flagship ({flagshipModelsList.length})
@@ -1538,8 +1539,8 @@ export const AdminPanel: React.FC = () => {
                   onClick={() => setModelFilter('free')}
                   className={`h-8 px-3 rounded-full font-medium cursor-pointer transition-colors ${
                     modelFilter === 'free'
-                      ? 'bg-black text-white dark:bg-white dark:text-black font-semibold'
-                      : 'bg-black/[0.04] dark:bg-white/[0.06] text-gray-600 dark:text-gray-300'
+                      ? 'bg-[#e9eef6] text-[#1f1f1f] dark:bg-[#282a2c] dark:text-[#e3e3e3] font-semibold'
+                      : 'bg-[#f0f4f9] dark:bg-[#131314] text-[#444746] dark:text-[#9aa0a6]'
                   }`}
                 >
                   OpenRouter Free ({freeOnCount}/{freeModelsList.length} ON)
@@ -1551,7 +1552,7 @@ export const AdminPanel: React.FC = () => {
                   type="button"
                   disabled={syncingFreeModels}
                   onClick={handleSyncFreeModels}
-                  className="h-8 px-3.5 rounded-full border border-black/[0.12] dark:border-white/[0.15] hover:border-black/30 font-semibold flex items-center gap-1.5 cursor-pointer disabled:opacity-50"
+                  className="h-8 px-3.5 rounded-full border border-black/[0.1] dark:border-white/[0.12] hover:bg-[#f0f4f9] dark:hover:bg-[#282a2c] font-semibold flex items-center gap-1.5 cursor-pointer disabled:opacity-50 transition-colors"
                 >
                   <RefreshCw className={`w-3.5 h-3.5 ${syncingFreeModels ? 'animate-spin' : ''}`} />
                   <span>{syncingFreeModels ? 'Syncing...' : 'Sync Free Models'}</span>
@@ -1566,14 +1567,14 @@ export const AdminPanel: React.FC = () => {
                 <button
                   type="button"
                   onClick={() => handleBulkToggleFreeModels(false)}
-                  className="h-8 px-3 rounded-full border border-black/[0.12] dark:border-white/[0.15] text-gray-600 dark:text-gray-300 hover:text-red-600 font-semibold cursor-pointer"
+                  className="h-8 px-3 rounded-full border border-black/[0.1] dark:border-white/[0.12] text-[#444746] dark:text-[#9aa0a6] hover:text-red-600 font-semibold cursor-pointer"
                 >
                   Turn All Free OFF
                 </button>
               </div>
             </div>
 
-            <div className="bg-white dark:bg-[#262626] rounded-[8px] border border-black/[0.08] dark:border-white/[0.08] shadow-xs overflow-hidden">
+            <div className="bg-white dark:bg-[#1e1f20] rounded-2xl border border-black/[0.08] dark:border-white/[0.08] overflow-hidden">
               {/* Mobile Card Layout */}
               <div className="md:hidden divide-y divide-black/[0.06] dark:divide-white/[0.06] text-xs">
                 {visibleModels.map(m => (
@@ -1600,13 +1601,13 @@ export const AdminPanel: React.FC = () => {
                                 }
                               }}
                               aria-label={`New name for ${m.display_name}`}
-                              className="flex-1 min-w-[140px] px-2.5 py-1 rounded-[6px] border border-black dark:border-white bg-white dark:bg-[#1F1F1F] text-xs font-semibold text-black dark:text-white focus:outline-none"
+                              className="flex-1 min-w-[140px] px-2.5 py-1 rounded-lg border border-[#1f1f1f] dark:border-[#e3e3e3] bg-[#f0f4f9] dark:bg-[#131314] text-xs font-semibold text-[#1f1f1f] dark:text-[#e3e3e3] focus:outline-none"
                             />
                             <button
                               type="submit"
                               disabled={savingModelId === m.id}
                               aria-label="Save model name"
-                              className="h-7 px-2.5 rounded-full bg-black text-white dark:bg-white dark:text-black font-semibold text-[11px] cursor-pointer disabled:opacity-50"
+                              className="h-7 px-2.5 rounded-full bg-[#1f1f1f] text-white dark:bg-[#e3e3e3] dark:text-[#131314] font-semibold text-[11px] cursor-pointer disabled:opacity-50"
                             >
                               {savingModelId === m.id ? 'Saving...' : 'Save'}
                             </button>
@@ -1617,37 +1618,37 @@ export const AdminPanel: React.FC = () => {
                                 setEditingModelName('');
                               }}
                               aria-label="Cancel rename"
-                              className="h-7 px-2.5 rounded-full border border-black/[0.12] dark:border-white/[0.15] text-[11px] cursor-pointer"
+                              className="h-7 px-2.5 rounded-full border border-black/[0.1] dark:border-white/[0.12] text-[11px] cursor-pointer"
                             >
                               Cancel
                             </button>
                           </form>
                         ) : (
                           <div className="flex items-center gap-1.5 flex-wrap">
-                            <div className="font-semibold text-black dark:text-white break-words">{m.display_name}</div>
+                            <div className="font-semibold text-[#1f1f1f] dark:text-[#e3e3e3] break-words">{m.display_name}</div>
                             <button
                               type="button"
                               onClick={() => handleStartModelRename(m)}
                               aria-label={`Rename ${m.display_name}`}
                               title="Rename model for customers"
-                              className="p-1 text-gray-400 hover:text-black dark:hover:text-white rounded cursor-pointer"
+                              className="p-1 text-[#444746] dark:text-[#9aa0a6] hover:text-[#1f1f1f] dark:hover:text-[#e3e3e3] rounded cursor-pointer"
                             >
                               <Edit className="w-3 h-3" />
                             </button>
                           </div>
                         )}
-                        <div className="text-[10px] font-mono text-gray-400 break-all">{m.openrouter_model_id || m.model_name}</div>
+                        <div className="text-[10px] font-mono text-[#444746] dark:text-[#9aa0a6] break-all">{m.openrouter_model_id || m.model_name}</div>
                       </div>
                       <span className={`px-2 py-0.5 rounded-full text-[10px] font-mono uppercase font-bold shrink-0 ${
                         isFreeModel(m)
                           ? 'bg-emerald-50 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-800'
-                          : 'bg-black/[0.05] dark:bg-white/[0.08] text-black dark:text-white'
+                          : 'bg-[#f0f4f9] dark:bg-[#282a2c] text-[#1f1f1f] dark:text-[#e3e3e3]'
                       }`}>
                         {isFreeModel(m) ? 'FREE' : m.badge}
                       </span>
                     </div>
 
-                    <div className="flex flex-wrap items-center justify-between gap-2 text-[11px] font-mono text-gray-500">
+                    <div className="flex flex-wrap items-center justify-between gap-2 text-[11px] font-mono text-[#444746] dark:text-[#9aa0a6]">
                       <span>Ctx: {m.context_window.toLocaleString()}</span>
                       <span>Out: {m.max_output_tokens.toLocaleString()}</span>
                     </div>
@@ -1656,7 +1657,7 @@ export const AdminPanel: React.FC = () => {
                       <span className={`px-2 py-0.5 rounded-full text-[10px] font-mono uppercase ${
                         m.is_enabled
                           ? 'bg-emerald-50 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-400'
-                          : 'bg-black/[0.05] text-gray-500'
+                          : 'bg-[#f0f4f9] dark:bg-[#282a2c] text-[#444746] dark:text-[#9aa0a6]'
                       }`}>
                         {m.is_enabled ? 'ON in Workspace' : 'OFF'}
                       </span>
@@ -1684,7 +1685,7 @@ export const AdminPanel: React.FC = () => {
               {/* Desktop Table Layout */}
               <div className="hidden md:block overflow-x-auto">
                 <table className="w-full text-left text-xs">
-                  <thead className="border-b border-black/[0.08] dark:border-white/[0.08] text-gray-400 font-mono text-[11px]">
+                  <thead className="border-b border-black/[0.08] dark:border-white/[0.08] text-[#444746] dark:text-[#9aa0a6] font-mono text-[11px]">
                     <tr>
                       <th className="py-3 px-4 font-medium">Model Name &amp; Slug</th>
                       <th className="py-3 px-4 font-medium">Tier</th>
@@ -1694,9 +1695,9 @@ export const AdminPanel: React.FC = () => {
                       <th className="py-3 px-4 font-medium text-right">ON / OFF Toggle</th>
                     </tr>
                   </thead>
-                  <tbody className="divide-y divide-black/[0.04] dark:divide-white/[0.04]">
+                  <tbody className="divide-y divide-black/[0.06] dark:divide-white/[0.06]">
                     {visibleModels.map(m => (
-                      <tr key={m.id} className="hover:bg-black/[0.02] dark:hover:bg-white/[0.02] transition-colors">
+                      <tr key={m.id} className="hover:bg-[#f0f4f9]/60 dark:hover:bg-[#282a2c]/60 transition-colors">
                         <td className="py-3 px-4">
                           {editingModelId === m.id ? (
                             <form
@@ -1718,13 +1719,13 @@ export const AdminPanel: React.FC = () => {
                                   }
                                 }}
                                 aria-label={`New name for ${m.display_name}`}
-                                className="w-60 px-2.5 py-1 rounded-[6px] border border-black dark:border-white bg-white dark:bg-[#1F1F1F] text-xs font-semibold text-black dark:text-white focus:outline-none"
+                                className="w-60 px-2.5 py-1 rounded-lg border border-[#1f1f1f] dark:border-[#e3e3e3] bg-[#f0f4f9] dark:bg-[#131314] text-xs font-semibold text-[#1f1f1f] dark:text-[#e3e3e3] focus:outline-none"
                               />
                               <button
                                 type="submit"
                                 disabled={savingModelId === m.id}
                                 aria-label="Save model name"
-                                className="h-7 px-2.5 rounded-full bg-black text-white dark:bg-white dark:text-black font-semibold text-[11px] flex items-center gap-1 cursor-pointer disabled:opacity-50"
+                                className="h-7 px-2.5 rounded-full bg-[#1f1f1f] text-white dark:bg-[#e3e3e3] dark:text-[#131314] font-semibold text-[11px] flex items-center gap-1 cursor-pointer disabled:opacity-50"
                               >
                                 <Check className="w-3 h-3" />
                                 <span>{savingModelId === m.id ? 'Saving...' : 'Save'}</span>
@@ -1736,33 +1737,33 @@ export const AdminPanel: React.FC = () => {
                                   setEditingModelName('');
                                 }}
                                 aria-label="Cancel rename"
-                                className="h-7 px-2.5 rounded-full border border-black/[0.12] dark:border-white/[0.15] text-[11px] cursor-pointer"
+                                className="h-7 px-2.5 rounded-full border border-black/[0.1] dark:border-white/[0.12] text-[11px] cursor-pointer"
                               >
                                 Cancel
                               </button>
                             </form>
                           ) : (
                             <div className="flex items-center gap-2">
-                              <span className="font-semibold text-black dark:text-white">{m.display_name}</span>
+                              <span className="font-semibold text-[#1f1f1f] dark:text-[#e3e3e3]">{m.display_name}</span>
                               <button
                                 type="button"
                                 onClick={() => handleStartModelRename(m)}
                                 aria-label={`Rename ${m.display_name}`}
                                 title="Rename model for customers"
-                                className="px-2 py-0.5 rounded-full border border-black/[0.1] dark:border-white/[0.12] hover:border-black/30 dark:hover:border-white/30 text-[10px] font-medium text-gray-500 hover:text-black dark:hover:text-white flex items-center gap-1 transition-colors cursor-pointer"
+                                className="px-2 py-0.5 rounded-full border border-black/[0.08] dark:border-white/[0.1] hover:bg-[#f0f4f9] dark:hover:bg-[#282a2c] text-[10px] font-medium text-[#444746] dark:text-[#9aa0a6] hover:text-[#1f1f1f] dark:hover:text-[#e3e3e3] flex items-center gap-1 transition-colors cursor-pointer"
                               >
                                 <Edit className="w-2.5 h-2.5" />
                                 <span>Rename</span>
                               </button>
                             </div>
                           )}
-                          <div className="text-[10px] font-mono text-gray-400">{m.openrouter_model_id || m.model_name}</div>
+                          <div className="text-[10px] font-mono text-[#444746] dark:text-[#9aa0a6]">{m.openrouter_model_id || m.model_name}</div>
                         </td>
                         <td className="py-3 px-4">
                           <span className={`px-2 py-0.5 rounded-full text-[10px] font-mono uppercase font-bold ${
                             isFreeModel(m)
                               ? 'bg-emerald-50 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-800'
-                              : 'bg-black/[0.05] dark:bg-white/[0.08] text-black dark:text-white'
+                              : 'bg-[#f0f4f9] dark:bg-[#282a2c] text-[#1f1f1f] dark:text-[#e3e3e3]'
                           }`}>
                             {isFreeModel(m) ? 'FREE' : m.badge}
                           </span>
@@ -1773,7 +1774,7 @@ export const AdminPanel: React.FC = () => {
                           <span className={`px-2 py-0.5 rounded-full text-[10px] font-mono uppercase ${
                             m.is_enabled
                               ? 'bg-emerald-50 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-400'
-                              : 'bg-black/[0.05] text-gray-500'
+                              : 'bg-[#f0f4f9] dark:bg-[#282a2c] text-[#444746] dark:text-[#9aa0a6]'
                           }`}>
                             {m.is_enabled ? 'ON in Workspace' : 'OFF'}
                           </span>
@@ -1808,22 +1809,22 @@ export const AdminPanel: React.FC = () => {
 
       {/* Tab 5: Settings & Facebook Pixel (The requested Meta Pixel setting!) */}
       {activeTab === 'settings' && (
-        <form onSubmit={handleSaveSettings} className="bg-white dark:bg-[#262626] p-4 sm:p-8 rounded-[8px] border border-black/[0.08] dark:border-white/[0.08] shadow-xs space-y-6 max-w-2xl text-xs">
+        <form onSubmit={handleSaveSettings} className="bg-white dark:bg-[#1e1f20] p-4 sm:p-8 rounded-2xl border border-black/[0.08] dark:border-white/[0.08] space-y-6 max-w-2xl text-xs">
           <div>
-            <h3 className="font-bold text-base text-black dark:text-white">
+            <h3 className="font-semibold text-base text-[#1f1f1f] dark:text-[#e3e3e3]">
               Global Platform, OpenRouter API, Payment &amp; Meta Pixel Settings
             </h3>
-            <p className="text-xs text-gray-500 mt-0.5">
+            <p className="text-xs text-[#444746] dark:text-[#9aa0a6] mt-0.5 leading-[1.7]">
               Configure OpenRouter unified AI gateway, system quotas, MFS numbers, and Facebook Pixel.
             </p>
           </div>
 
           {/* OpenRouter Unified Gateway Quick Section */}
-          <div className="p-4 sm:p-5 rounded-[8px] border border-black/[0.15] dark:border-white/[0.2] bg-[#FAFAFA] dark:bg-[#1F1F1F] space-y-3.5">
+          <div className="p-4 sm:p-5 rounded-2xl border border-black/[0.08] dark:border-white/[0.08] bg-[#f0f4f9] dark:bg-[#131314] space-y-3.5">
             <div className="flex flex-wrap items-center justify-between gap-2">
               <div className="flex items-center gap-2 min-w-0">
-                <Key className="w-4 h-4 text-black dark:text-white shrink-0" />
-                <h4 className="font-bold text-sm text-black dark:text-white">
+                <Key className="w-4 h-4 text-[#1f1f1f] dark:text-[#e3e3e3] shrink-0" />
+                <h4 className="font-semibold text-sm text-[#1f1f1f] dark:text-[#e3e3e3]">
                   OpenRouter Unified API (All Workspace Models)
                 </h4>
               </div>
@@ -1832,19 +1833,19 @@ export const AdminPanel: React.FC = () => {
                   type="checkbox"
                   checked={globalSettings.openrouter_enabled !== false}
                   onChange={e => setGlobalSettings({ ...globalSettings, openrouter_enabled: e.target.checked })}
-                  className="rounded w-4 h-4 text-black cursor-pointer"
+                  className="rounded w-4 h-4 text-[#1f1f1f] cursor-pointer"
                 />
-                <span className="font-semibold text-xs text-black dark:text-white">Active</span>
+                <span className="font-semibold text-xs text-[#1f1f1f] dark:text-[#e3e3e3]">Active</span>
               </label>
             </div>
 
-            <p className="text-[11px] text-gray-600 dark:text-gray-400 leading-relaxed">
+            <p className="text-[11px] text-[#444746] dark:text-[#9aa0a6] leading-[1.7]">
               Enter one OpenRouter API key (<span className="font-mono">sk-or-v1-...</span>) to power all 10 models in the AI Workspace (Claude, Gemini, GPT, DeepSeek, Grok &amp; Kimi).
             </p>
 
             <div>
               <div className="flex items-center justify-between gap-2 mb-1">
-                <label className="block font-medium text-black dark:text-white">
+                <label className="block font-medium text-[#1f1f1f] dark:text-[#e3e3e3]">
                   OpenRouter API Key:
                 </label>
                 {globalSettings.openrouter_configured && (
@@ -1864,7 +1865,7 @@ export const AdminPanel: React.FC = () => {
                   }
                 }}
                 placeholder={globalSettings.openrouter_configured ? 'Enter new key to replace saved key...' : 'sk-or-v1-...'}
-                className="w-full px-3.5 py-2.5 rounded-[12px] border border-black/[0.12] dark:border-white/[0.15] bg-white dark:bg-[#262626] font-mono text-xs focus:outline-none focus:border-black dark:focus:border-white"
+                className="w-full px-3.5 py-2.5 rounded-xl border border-black/[0.08] dark:border-white/[0.08] bg-white dark:bg-[#1e1f20] text-[#1f1f1f] dark:text-[#e3e3e3] font-mono text-xs focus:outline-none focus:border-[#1f1f1f] dark:focus:border-[#e3e3e3]"
               />
               {globalSettings.openrouter_configured && globalSettings.openrouter_enabled === false && (
                 <p className="mt-1.5 text-[11px] text-amber-700 dark:text-amber-300 font-medium">
@@ -1875,11 +1876,11 @@ export const AdminPanel: React.FC = () => {
           </div>
 
           {/* Facebook Pixel Setup Section */}
-          <div className="p-4 sm:p-5 rounded-[8px] border border-black/[0.12] dark:border-white/[0.15] bg-[#FAFAFA] dark:bg-[#1F1F1F] space-y-4">
+          <div className="p-4 sm:p-5 rounded-2xl border border-black/[0.08] dark:border-white/[0.08] bg-[#f0f4f9] dark:bg-[#131314] space-y-4">
             <div className="flex flex-wrap items-center justify-between gap-2">
               <div className="flex items-center gap-2 min-w-0">
-                <Activity className="w-4 h-4 text-blue-600 dark:text-blue-400 shrink-0" />
-                <h4 className="font-bold text-sm text-black dark:text-white">
+                <Activity className="w-4 h-4 text-[#1f1f1f] dark:text-[#e3e3e3] shrink-0" />
+                <h4 className="font-semibold text-sm text-[#1f1f1f] dark:text-[#e3e3e3]">
                   Facebook / Meta Pixel Setup (Meta Ads)
                 </h4>
               </div>
@@ -1888,18 +1889,18 @@ export const AdminPanel: React.FC = () => {
                   type="checkbox"
                   checked={!!globalSettings.facebook_pixel_enabled}
                   onChange={e => setGlobalSettings({ ...globalSettings, facebook_pixel_enabled: e.target.checked })}
-                  className="rounded w-4 h-4 text-black cursor-pointer"
+                  className="rounded w-4 h-4 text-[#1f1f1f] cursor-pointer"
                 />
-                <span className="font-semibold text-xs text-black dark:text-white">Enable Pixel</span>
+                <span className="font-semibold text-xs text-[#1f1f1f] dark:text-[#e3e3e3]">Enable Pixel</span>
               </label>
             </div>
 
-            <p className="text-[11px] text-gray-600 dark:text-gray-400 leading-relaxed">
+            <p className="text-[11px] text-[#444746] dark:text-[#9aa0a6] leading-[1.7]">
               When enabled, Bangla AI automatically tracks PageView, InitiateCheckout, AddPaymentInfo on payment submission, and fires the <strong>Purchase</strong> event with exact BDT conversion value when admin approves bKash, Nagad, or Rocket payments.
             </p>
 
             <div>
-              <label className="block font-medium mb-1 text-black dark:text-white">
+              <label className="block font-medium mb-1 text-[#1f1f1f] dark:text-[#e3e3e3]">
                 Meta Pixel ID:
               </label>
               <input
@@ -1907,15 +1908,15 @@ export const AdminPanel: React.FC = () => {
                 value={globalSettings.facebook_pixel_id || ''}
                 onChange={e => setGlobalSettings({ ...globalSettings, facebook_pixel_id: e.target.value.trim() })}
                 placeholder="e.g. 123456789012345"
-                className="w-full px-3.5 py-2.5 rounded-[12px] border border-black/[0.12] dark:border-white/[0.15] bg-white dark:bg-[#262626] font-mono text-xs focus:outline-none focus:border-black dark:focus:border-white"
+                className="w-full px-3.5 py-2.5 rounded-xl border border-black/[0.08] dark:border-white/[0.08] bg-white dark:bg-[#1e1f20] text-[#1f1f1f] dark:text-[#e3e3e3] font-mono text-xs focus:outline-none focus:border-[#1f1f1f] dark:focus:border-[#e3e3e3]"
               />
-              <span className="text-[10px] text-gray-500 block mt-1">
+              <span className="text-[10px] text-[#444746] dark:text-[#9aa0a6] block mt-1">
                 Found in Meta Events Manager &gt; Data Sources &gt; Pixel Settings.
               </span>
             </div>
 
             <div>
-              <label className="block font-medium mb-1 text-black dark:text-white">
+              <label className="block font-medium mb-1 text-[#1f1f1f] dark:text-[#e3e3e3]">
                 Meta Conversions API (CAPI) Access Token (Server-Side Tracking):
               </label>
               <input
@@ -1923,15 +1924,15 @@ export const AdminPanel: React.FC = () => {
                 value={globalSettings.facebook_pixel_access_token || ''}
                 onChange={e => setGlobalSettings({ ...globalSettings, facebook_pixel_access_token: e.target.value.trim() })}
                 placeholder="EAAB..."
-                className="w-full px-3.5 py-2.5 rounded-[12px] border border-black/[0.12] dark:border-white/[0.15] bg-white dark:bg-[#262626] font-mono text-xs focus:outline-none focus:border-black dark:focus:border-white"
+                className="w-full px-3.5 py-2.5 rounded-xl border border-black/[0.08] dark:border-white/[0.08] bg-white dark:bg-[#1e1f20] text-[#1f1f1f] dark:text-[#e3e3e3] font-mono text-xs focus:outline-none focus:border-[#1f1f1f] dark:focus:border-[#e3e3e3]"
               />
-              <span className="text-[10px] text-gray-500 block mt-1">
+              <span className="text-[10px] text-[#444746] dark:text-[#9aa0a6] block mt-1">
                 Generates 100% reliable server-to-server Purchase events even if users use ad-blockers.
               </span>
             </div>
 
             <div>
-              <label className="block font-medium mb-1 text-black dark:text-white">
+              <label className="block font-medium mb-1 text-[#1f1f1f] dark:text-[#e3e3e3]">
                 Test Event Code (Optional for Meta Testing):
               </label>
               <input
@@ -1939,7 +1940,7 @@ export const AdminPanel: React.FC = () => {
                 value={globalSettings.facebook_pixel_test_code || ''}
                 onChange={e => setGlobalSettings({ ...globalSettings, facebook_pixel_test_code: e.target.value.trim() })}
                 placeholder="e.g. TEST12345"
-                className="w-full px-3.5 py-2.5 rounded-[12px] border border-black/[0.12] dark:border-white/[0.15] bg-white dark:bg-[#262626] font-mono text-xs focus:outline-none focus:border-black dark:focus:border-white"
+                className="w-full px-3.5 py-2.5 rounded-xl border border-black/[0.08] dark:border-white/[0.08] bg-white dark:bg-[#1e1f20] text-[#1f1f1f] dark:text-[#e3e3e3] font-mono text-xs focus:outline-none focus:border-[#1f1f1f] dark:focus:border-[#e3e3e3]"
               />
             </div>
 
@@ -1948,12 +1949,12 @@ export const AdminPanel: React.FC = () => {
                 type="button"
                 disabled={testingPixel || !globalSettings.facebook_pixel_id}
                 onClick={handleTestPixel}
-                className="min-h-8 h-auto py-1.5 px-4 rounded-full border border-black/[0.12] dark:border-white/[0.15] hover:border-black/30 text-xs font-semibold flex items-center gap-1.5 cursor-pointer disabled:opacity-50"
+                className="min-h-8 h-auto py-1.5 px-4 rounded-full border border-black/[0.1] dark:border-white/[0.12] hover:bg-white dark:hover:bg-[#282a2c] text-xs font-semibold flex items-center gap-1.5 cursor-pointer disabled:opacity-50 transition-colors"
               >
-                <Activity className="w-3.5 h-3.5 text-blue-500 shrink-0" />
+                <Activity className="w-3.5 h-3.5 text-[#1f1f1f] dark:text-[#e3e3e3] shrink-0" />
                 <span>{testingPixel ? 'Sending Test...' : 'Send Test Purchase Event'}</span>
               </button>
-              <span className="text-[10px] text-gray-500">
+              <span className="text-[10px] text-[#444746] dark:text-[#9aa0a6]">
                 Check Meta Events Manager &gt; Test Events tab.
               </span>
             </div>
@@ -1962,19 +1963,19 @@ export const AdminPanel: React.FC = () => {
           {/* MFS Payment Numbers Configuration */}
           <div className="pt-2 border-t border-black/[0.08] dark:border-white/[0.08] space-y-3.5">
             <div>
-              <h4 className="font-bold text-xs text-black dark:text-white flex flex-wrap items-center justify-between gap-2">
+              <h4 className="font-semibold text-xs text-[#1f1f1f] dark:text-[#e3e3e3] flex flex-wrap items-center justify-between gap-2">
                 <span>MFS Payment Phone Numbers</span>
-                <span className="text-[10px] font-mono text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/40 px-2 py-0.5 rounded-full border border-emerald-200 shrink-0">
+                <span className="text-[10px] font-mono text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/40 px-2 py-0.5 rounded-full border border-emerald-200 dark:border-emerald-800 shrink-0">
                   Live in Checkout
                 </span>
               </h4>
-              <p className="text-[11px] text-gray-500 mt-0.5">
+              <p className="text-[11px] text-[#444746] dark:text-[#9aa0a6] mt-0.5">
                 These numbers are dynamically displayed to subscribers during checkout with 1-click copy.
               </p>
             </div>
 
             <div>
-              <label className="block font-medium mb-1 text-black dark:text-white">
+              <label className="block font-medium mb-1 text-[#1f1f1f] dark:text-[#e3e3e3]">
                 bKash Merchant / Personal Number:
               </label>
               <input
@@ -1982,12 +1983,12 @@ export const AdminPanel: React.FC = () => {
                 value={globalSettings.bkash_number || ''}
                 onChange={e => setGlobalSettings({ ...globalSettings, bkash_number: e.target.value })}
                 placeholder="01812345678"
-                className="w-full px-3.5 py-2.5 rounded-[12px] border border-black/[0.12] dark:border-white/[0.15] bg-white dark:bg-[#1F1F1F] font-mono text-xs focus:outline-none focus:border-black dark:focus:border-white"
+                className="w-full px-3.5 py-2.5 rounded-xl border border-black/[0.08] dark:border-white/[0.08] bg-[#f0f4f9] dark:bg-[#131314] text-[#1f1f1f] dark:text-[#e3e3e3] font-mono text-xs focus:outline-none focus:border-[#1f1f1f] dark:focus:border-[#e3e3e3]"
               />
             </div>
 
             <div>
-              <label className="block font-medium mb-1 text-black dark:text-white">
+              <label className="block font-medium mb-1 text-[#1f1f1f] dark:text-[#e3e3e3]">
                 Nagad Merchant / Personal Number:
               </label>
               <input
@@ -1995,12 +1996,12 @@ export const AdminPanel: React.FC = () => {
                 value={globalSettings.nagad_number || ''}
                 onChange={e => setGlobalSettings({ ...globalSettings, nagad_number: e.target.value })}
                 placeholder="01712345678"
-                className="w-full px-3.5 py-2.5 rounded-[12px] border border-black/[0.12] dark:border-white/[0.15] bg-white dark:bg-[#1F1F1F] font-mono text-xs focus:outline-none focus:border-black dark:focus:border-white"
+                className="w-full px-3.5 py-2.5 rounded-xl border border-black/[0.08] dark:border-white/[0.08] bg-[#f0f4f9] dark:bg-[#131314] text-[#1f1f1f] dark:text-[#e3e3e3] font-mono text-xs focus:outline-none focus:border-[#1f1f1f] dark:focus:border-[#e3e3e3]"
               />
             </div>
 
             <div>
-              <label className="block font-medium mb-1 text-black dark:text-white">
+              <label className="block font-medium mb-1 text-[#1f1f1f] dark:text-[#e3e3e3]">
                 Rocket Merchant / Personal Number:
               </label>
               <input
@@ -2008,49 +2009,49 @@ export const AdminPanel: React.FC = () => {
                 value={globalSettings.rocket_number || ''}
                 onChange={e => setGlobalSettings({ ...globalSettings, rocket_number: e.target.value })}
                 placeholder="01912345678"
-                className="w-full px-3.5 py-2.5 rounded-[12px] border border-black/[0.12] dark:border-white/[0.15] bg-white dark:bg-[#1F1F1F] font-mono text-xs focus:outline-none focus:border-black dark:focus:border-white"
+                className="w-full px-3.5 py-2.5 rounded-xl border border-black/[0.08] dark:border-white/[0.08] bg-[#f0f4f9] dark:bg-[#131314] text-[#1f1f1f] dark:text-[#e3e3e3] font-mono text-xs focus:outline-none focus:border-[#1f1f1f] dark:focus:border-[#e3e3e3]"
               />
             </div>
           </div>
 
           <div className="pt-2 border-t border-black/[0.08] dark:border-white/[0.08] space-y-3.5">
             <div>
-              <label className="block font-medium mb-1 text-black dark:text-white">Default Monthly Token Limit:</label>
+              <label className="block font-medium mb-1 text-[#1f1f1f] dark:text-[#e3e3e3]">Default Monthly Token Limit:</label>
               <input
                 type="number"
                 value={globalSettings.global_usage_limit || 1000000}
                 onChange={e => setGlobalSettings({ ...globalSettings, global_usage_limit: parseInt(e.target.value, 10) })}
-                className="w-full px-3.5 py-2.5 rounded-[12px] border border-black/[0.12] dark:border-white/[0.15] bg-white dark:bg-[#1F1F1F] font-mono text-xs focus:outline-none focus:border-black dark:focus:border-white"
+                className="w-full px-3.5 py-2.5 rounded-xl border border-black/[0.08] dark:border-white/[0.08] bg-[#f0f4f9] dark:bg-[#131314] text-[#1f1f1f] dark:text-[#e3e3e3] font-mono text-xs focus:outline-none focus:border-[#1f1f1f] dark:focus:border-[#e3e3e3]"
               />
             </div>
 
             <div>
-              <label className="block font-medium mb-1 text-black dark:text-white">Support Email:</label>
+              <label className="block font-medium mb-1 text-[#1f1f1f] dark:text-[#e3e3e3]">Support Email:</label>
               <input
                 type="email"
                 value={globalSettings.support_email || 'ourbangla.ai@gmail.com'}
                 onChange={e => setGlobalSettings({ ...globalSettings, support_email: e.target.value })}
-                className="w-full px-3.5 py-2.5 rounded-[12px] border border-black/[0.12] dark:border-white/[0.15] bg-white dark:bg-[#1F1F1F] text-xs focus:outline-none focus:border-black dark:focus:border-white"
+                className="w-full px-3.5 py-2.5 rounded-xl border border-black/[0.08] dark:border-white/[0.08] bg-[#f0f4f9] dark:bg-[#131314] text-[#1f1f1f] dark:text-[#e3e3e3] text-xs focus:outline-none focus:border-[#1f1f1f] dark:focus:border-[#e3e3e3]"
               />
             </div>
 
             <div>
-              <label className="block font-medium mb-1 text-black dark:text-white">Support Phone:</label>
+              <label className="block font-medium mb-1 text-[#1f1f1f] dark:text-[#e3e3e3]">Support Phone:</label>
               <input
                 type="text"
                 value={globalSettings.support_phone || '+880 1622-860128'}
                 onChange={e => setGlobalSettings({ ...globalSettings, support_phone: e.target.value })}
-                className="w-full px-3.5 py-2.5 rounded-[12px] border border-black/[0.12] dark:border-white/[0.15] bg-white dark:bg-[#1F1F1F] text-xs focus:outline-none focus:border-black dark:focus:border-white"
+                className="w-full px-3.5 py-2.5 rounded-xl border border-black/[0.08] dark:border-white/[0.08] bg-[#f0f4f9] dark:bg-[#131314] text-[#1f1f1f] dark:text-[#e3e3e3] text-xs focus:outline-none focus:border-[#1f1f1f] dark:focus:border-[#e3e3e3]"
               />
             </div>
 
             <div className="md:col-span-2">
-              <label className="block font-medium mb-1 text-black dark:text-white">Facebook Page Link:</label>
+              <label className="block font-medium mb-1 text-[#1f1f1f] dark:text-[#e3e3e3]">Facebook Page Link:</label>
               <input
                 type="text"
                 value={globalSettings.facebook_page_url || 'https://www.facebook.com/profile.php?id=61596472081766'}
                 onChange={e => setGlobalSettings({ ...globalSettings, facebook_page_url: e.target.value })}
-                className="w-full px-3.5 py-2.5 rounded-[12px] border border-black/[0.12] dark:border-white/[0.15] bg-white dark:bg-[#1F1F1F] text-xs font-mono focus:outline-none focus:border-black dark:focus:border-white"
+                className="w-full px-3.5 py-2.5 rounded-xl border border-black/[0.08] dark:border-white/[0.08] bg-[#f0f4f9] dark:bg-[#131314] text-[#1f1f1f] dark:text-[#e3e3e3] text-xs font-mono focus:outline-none focus:border-[#1f1f1f] dark:focus:border-[#e3e3e3]"
                 placeholder="https://www.facebook.com/..."
               />
             </div>
@@ -2060,7 +2061,7 @@ export const AdminPanel: React.FC = () => {
             <button
               type="submit"
               disabled={savingSettings}
-              className="w-full sm:w-auto h-10 px-6 rounded-full bg-black hover:bg-black/90 dark:bg-white dark:hover:bg-white/90 text-white dark:text-black font-semibold text-xs flex items-center justify-center gap-2 cursor-pointer shadow-xs"
+              className="w-full sm:w-auto h-10 px-6 rounded-full bg-[#1f1f1f] hover:bg-[#1f1f1f]/90 dark:bg-[#e3e3e3] dark:hover:bg-[#e3e3e3]/90 text-white dark:text-[#131314] font-semibold text-xs flex items-center justify-center gap-2 cursor-pointer transition-colors"
             >
               <Save className="w-3.5 h-3.5" />
               <span>{savingSettings ? 'Saving...' : 'Save Settings & Pixel'}</span>

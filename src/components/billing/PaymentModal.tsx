@@ -200,12 +200,16 @@ export const PaymentModal: React.FC<PaymentModalProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in">
-      <div className="relative w-full max-w-lg bg-white dark:bg-[#262626] rounded-[16px] shadow-2xl border border-black/[0.12] dark:border-white/[0.15] overflow-hidden flex flex-col max-h-[92vh]">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-xs animate-in fade-in">
+      <div
+        role="dialog"
+        aria-modal="true"
+        className="relative w-full max-w-lg bg-white dark:bg-[#1e1f20] rounded-3xl shadow-xl border border-black/[0.08] dark:border-white/[0.08] overflow-hidden flex flex-col max-h-[92vh]"
+      >
         {/* Close Button */}
         <button
           onClick={onClose}
-          className="absolute top-4 right-4 w-8 h-8 rounded-full flex items-center justify-center text-gray-400 hover:text-black dark:hover:text-white hover:bg-black/[0.05] dark:hover:bg-white/[0.05] transition-colors z-10 cursor-pointer"
+          className="absolute top-4 right-4 w-8 h-8 rounded-full flex items-center justify-center text-[#444746] dark:text-[#9aa0a6] hover:text-[#1f1f1f] dark:hover:text-[#e3e3e3] hover:bg-[#f0f4f9] dark:hover:bg-[#282a2c] transition-colors z-10 cursor-pointer"
           aria-label="Close"
         >
           <X className="w-4 h-4" />
@@ -223,34 +227,34 @@ export const PaymentModal: React.FC<PaymentModalProps> = ({
                 <span className="text-[11px] font-mono uppercase tracking-wider text-emerald-600 dark:text-emerald-400 font-bold block">
                   Payment Submitted • Awaiting Verification
                 </span>
-                <h2 className="text-2xl font-bold tracking-tight text-black dark:text-white">
+                <h2 className="text-2xl font-semibold tracking-tight text-[#1f1f1f] dark:text-[#e3e3e3]">
                   Verification Pending
                 </h2>
-                <p className="text-xs text-gray-600 dark:text-gray-400 max-w-sm mx-auto leading-relaxed">
+                <p className="text-xs text-[#444746] dark:text-[#9aa0a6] max-w-sm mx-auto leading-[1.7]">
                   Thank you! We have received your payment submission. An administrator will verify the Transaction ID against our MFS statement and activate your access shortly.
                 </p>
               </div>
 
-              <div className="bg-[#FAFAFA] dark:bg-[#1F1F1F] rounded-[8px] p-4 border border-black/[0.08] dark:border-white/[0.08] text-xs space-y-2.5 text-left font-mono">
-                <div className="flex flex-wrap justify-between items-center gap-2 py-1 border-b border-black/[0.04] dark:border-white/[0.04]">
-                  <span className="text-gray-500 font-sans">Plan Selected:</span>
-                  <span className="font-bold text-black dark:text-white font-sans">{submittedPayment.planName}</span>
+              <div className="bg-[#f0f4f9] dark:bg-[#131314] rounded-2xl p-4 border border-black/[0.08] dark:border-white/[0.08] text-xs space-y-2.5 text-left font-mono">
+                <div className="flex flex-wrap justify-between items-center gap-2 py-1 border-b border-black/[0.06] dark:border-white/[0.06]">
+                  <span className="text-[#444746] dark:text-[#9aa0a6] font-sans">Plan Selected:</span>
+                  <span className="font-semibold text-[#1f1f1f] dark:text-[#e3e3e3] font-sans">{submittedPayment.planName}</span>
                 </div>
-                <div className="flex flex-wrap justify-between items-center gap-2 py-1 border-b border-black/[0.04] dark:border-white/[0.04]">
-                  <span className="text-gray-500 font-sans">Amount:</span>
-                  <span className="font-bold text-black dark:text-white">{formatBDT(submittedPayment.amount)}</span>
+                <div className="flex flex-wrap justify-between items-center gap-2 py-1 border-b border-black/[0.06] dark:border-white/[0.06]">
+                  <span className="text-[#444746] dark:text-[#9aa0a6] font-sans">Amount:</span>
+                  <span className="font-semibold text-[#1f1f1f] dark:text-[#e3e3e3]">{formatBDT(submittedPayment.amount)}</span>
                 </div>
-                <div className="flex flex-wrap justify-between items-center gap-2 py-1 border-b border-black/[0.04] dark:border-white/[0.04]">
-                  <span className="text-gray-500 font-sans">MFS Gateway:</span>
-                  <span className="font-bold text-black dark:text-white uppercase font-sans">{submittedPayment.gateway}</span>
+                <div className="flex flex-wrap justify-between items-center gap-2 py-1 border-b border-black/[0.06] dark:border-white/[0.06]">
+                  <span className="text-[#444746] dark:text-[#9aa0a6] font-sans">MFS Gateway:</span>
+                  <span className="font-semibold text-[#1f1f1f] dark:text-[#e3e3e3] uppercase font-sans">{submittedPayment.gateway}</span>
                 </div>
-                <div className="flex flex-wrap justify-between items-center gap-2 py-1 border-b border-black/[0.04] dark:border-white/[0.04]">
-                  <span className="text-gray-500 font-sans">Sender Mobile:</span>
-                  <span className="font-bold text-black dark:text-white">{submittedPayment.senderNumber}</span>
+                <div className="flex flex-wrap justify-between items-center gap-2 py-1 border-b border-black/[0.06] dark:border-white/[0.06]">
+                  <span className="text-[#444746] dark:text-[#9aa0a6] font-sans">Sender Mobile:</span>
+                  <span className="font-semibold text-[#1f1f1f] dark:text-[#e3e3e3]">{submittedPayment.senderNumber}</span>
                 </div>
                 <div className="flex flex-wrap justify-between items-center gap-2 py-1">
-                  <span className="text-gray-500 font-sans">Transaction ID:</span>
-                  <span className="font-bold text-emerald-600 dark:text-emerald-400 font-mono tracking-wider break-all">{submittedPayment.trxId}</span>
+                  <span className="text-[#444746] dark:text-[#9aa0a6] font-sans">Transaction ID:</span>
+                  <span className="font-semibold text-emerald-600 dark:text-emerald-400 font-mono tracking-wider break-all">{submittedPayment.trxId}</span>
                 </div>
               </div>
 
@@ -258,7 +262,7 @@ export const PaymentModal: React.FC<PaymentModalProps> = ({
                 <button
                   type="button"
                   onClick={onClose}
-                  className="w-full sm:w-auto h-11 px-6 rounded-full font-semibold text-xs text-white dark:text-black bg-black hover:bg-black/90 dark:bg-white dark:hover:bg-white/90 transition-all cursor-pointer shadow-xs"
+                  className="w-full sm:w-auto h-11 px-6 rounded-full font-semibold text-xs text-white dark:text-[#131314] bg-[#1f1f1f] hover:bg-[#1f1f1f]/90 dark:bg-[#e3e3e3] dark:hover:bg-[#e3e3e3]/90 transition-colors cursor-pointer"
                 >
                   Close & Return
                 </button>
@@ -269,7 +273,7 @@ export const PaymentModal: React.FC<PaymentModalProps> = ({
                       onClose();
                       onSuccessRedirectToChat();
                     }}
-                    className="w-full sm:w-auto h-11 px-6 rounded-full font-semibold text-xs text-black dark:text-white border border-black/[0.12] dark:border-white/[0.15] hover:border-black/30 transition-colors cursor-pointer"
+                    className="w-full sm:w-auto h-11 px-6 rounded-full font-semibold text-xs text-[#1f1f1f] dark:text-[#e3e3e3] border border-black/[0.1] dark:border-white/[0.12] hover:bg-[#f0f4f9] dark:hover:bg-[#282a2c] transition-colors cursor-pointer"
                   >
                     Go to Workspace
                   </button>
@@ -280,13 +284,13 @@ export const PaymentModal: React.FC<PaymentModalProps> = ({
             <>
               {/* Header */}
               <div className="text-center">
-                <span className="text-[11px] font-mono uppercase tracking-wider text-gray-500 block mb-1">
+                <span className="text-[11px] font-mono uppercase tracking-wider text-[#444746] dark:text-[#9aa0a6] block mb-1">
                   Official MFS Payment Verification
                 </span>
-                <h2 className="text-2xl font-bold tracking-tight text-black dark:text-white">
+                <h2 className="text-2xl font-semibold tracking-tight text-[#1f1f1f] dark:text-[#e3e3e3]">
                   Activate Subscription
                 </h2>
-                <p className="text-xs text-gray-500 mt-1">
+                <p className="text-xs text-[#444746] dark:text-[#9aa0a6] mt-1 leading-[1.7]">
                   Send BDT via bKash, Nagad, or Rocket and enter your SMS TrxID
                 </p>
               </div>
@@ -296,54 +300,54 @@ export const PaymentModal: React.FC<PaymentModalProps> = ({
                 <button
                   type="button"
                   onClick={() => setSelectedPlan('monthly')}
-                  className={`p-3.5 sm:p-4 rounded-[8px] border text-left transition-all cursor-pointer ${
+                  className={`p-3.5 sm:p-4 rounded-2xl border text-left transition-colors cursor-pointer ${
                     selectedPlan === 'monthly'
-                      ? 'border-black dark:border-white bg-black/[0.02] dark:bg-white/[0.03] ring-1 ring-black dark:ring-white'
-                      : 'border-black/[0.08] dark:border-white/[0.08] hover:border-black/30 dark:hover:border-white/30'
+                      ? 'border-[#1f1f1f] dark:border-[#e3e3e3] bg-[#e9eef6] dark:bg-[#282a2c] ring-1 ring-[#1f1f1f] dark:ring-[#e3e3e3]'
+                      : 'border-black/[0.08] dark:border-white/[0.08] bg-[#f0f4f9]/60 dark:bg-[#131314]/60 hover:bg-[#f0f4f9] dark:hover:bg-[#282a2c]'
                   }`}
                 >
                   <div className="flex justify-between items-start gap-2">
-                    <span className="text-xs font-semibold text-black dark:text-white">Monthly Plan</span>
-                    <span className="w-4 h-4 rounded-full border border-black/30 dark:border-white/30 flex items-center justify-center shrink-0">
-                      {selectedPlan === 'monthly' && <span className="w-2 h-2 rounded-full bg-black dark:bg-white" />}
+                    <span className="text-xs font-semibold text-[#1f1f1f] dark:text-[#e3e3e3]">Monthly Plan</span>
+                    <span className="w-4 h-4 rounded-full border border-[#1f1f1f]/30 dark:border-[#e3e3e3]/30 flex items-center justify-center shrink-0">
+                      {selectedPlan === 'monthly' && <span className="w-2 h-2 rounded-full bg-[#1f1f1f] dark:bg-[#e3e3e3]" />}
                     </span>
                   </div>
-                  <p className="text-xl font-bold text-black dark:text-white mt-1.5 font-mono">
+                  <p className="text-xl font-semibold text-[#1f1f1f] dark:text-[#e3e3e3] mt-1.5 font-mono">
                     {formatBDT(PLANS.monthly.priceBDT)}
-                    <span className="text-xs font-normal text-gray-500">/mo</span>
+                    <span className="text-xs font-normal text-[#444746] dark:text-[#9aa0a6]">/mo</span>
                   </p>
-                  <p className="text-[11px] text-gray-500 mt-1">30 days • 1,000,000 (1M) tokens</p>
+                  <p className="text-[11px] text-[#444746] dark:text-[#9aa0a6] mt-1">30 days • 1,000,000 (1M) tokens</p>
                 </button>
 
                 <button
                   type="button"
                   onClick={() => setSelectedPlan('yearly')}
-                  className={`p-3.5 sm:p-4 rounded-[8px] border text-left transition-all relative cursor-pointer ${
+                  className={`p-3.5 sm:p-4 rounded-2xl border text-left transition-colors relative cursor-pointer ${
                     selectedPlan === 'yearly'
-                      ? 'border-black dark:border-white bg-black/[0.02] dark:bg-white/[0.03] ring-1 ring-black dark:ring-white'
-                      : 'border-black/[0.08] dark:border-white/[0.08] hover:border-black/30 dark:hover:border-white/30'
+                      ? 'border-[#1f1f1f] dark:border-[#e3e3e3] bg-[#e9eef6] dark:bg-[#282a2c] ring-1 ring-[#1f1f1f] dark:ring-[#e3e3e3]'
+                      : 'border-black/[0.08] dark:border-white/[0.08] bg-[#f0f4f9]/60 dark:bg-[#131314]/60 hover:bg-[#f0f4f9] dark:hover:bg-[#282a2c]'
                   }`}
                 >
-                  <span className="absolute -top-2 right-2 bg-black text-white dark:bg-white dark:text-black text-[9px] font-mono font-bold px-2 py-0.5 rounded-full border border-black/10">
+                  <span className="absolute -top-2 right-2 bg-[#1f1f1f] text-white dark:bg-[#e3e3e3] dark:text-[#131314] text-[9px] font-mono font-bold px-2 py-0.5 rounded-full">
                     SAVE 28%
                   </span>
                   <div className="flex justify-between items-start gap-2">
-                    <span className="text-xs font-semibold text-black dark:text-white">Yearly Plan</span>
-                    <span className="w-4 h-4 rounded-full border border-black/30 dark:border-white/30 flex items-center justify-center shrink-0">
-                      {selectedPlan === 'yearly' && <span className="w-2 h-2 rounded-full bg-black dark:bg-white" />}
+                    <span className="text-xs font-semibold text-[#1f1f1f] dark:text-[#e3e3e3]">Yearly Plan</span>
+                    <span className="w-4 h-4 rounded-full border border-[#1f1f1f]/30 dark:border-[#e3e3e3]/30 flex items-center justify-center shrink-0">
+                      {selectedPlan === 'yearly' && <span className="w-2 h-2 rounded-full bg-[#1f1f1f] dark:bg-[#e3e3e3]" />}
                     </span>
                   </div>
-                  <p className="text-xl font-bold text-black dark:text-white mt-1.5 font-mono">
+                  <p className="text-xl font-semibold text-[#1f1f1f] dark:text-[#e3e3e3] mt-1.5 font-mono">
                     {formatBDT(PLANS.yearly.priceBDT)}
-                    <span className="text-xs font-normal text-gray-500">/yr</span>
+                    <span className="text-xs font-normal text-[#444746] dark:text-[#9aa0a6]">/yr</span>
                   </p>
-                  <p className="text-[11px] text-gray-500 mt-1">365 days • 15,000,000 (15M) tokens</p>
+                  <p className="text-[11px] text-[#444746] dark:text-[#9aa0a6] mt-1">365 days • 15,000,000 (15M) tokens</p>
                 </button>
               </div>
 
               {/* Payment Gateway: bKash, Nagad, Rocket */}
               <div>
-                <label className="block text-xs font-semibold text-black dark:text-white mb-2">
+                <label className="block text-xs font-semibold text-[#1f1f1f] dark:text-[#e3e3e3] mb-2">
                   Select Mobile Financial Service (MFS):
                 </label>
                 <div className="grid grid-cols-3 gap-2 sm:gap-2.5">
@@ -352,20 +356,20 @@ export const PaymentModal: React.FC<PaymentModalProps> = ({
                       key={item.id}
                       type="button"
                       onClick={() => setGateway(item.id)}
-                      className={`py-2 px-1.5 sm:py-2.5 sm:px-2.5 rounded-[12px] border flex items-center justify-center gap-1.5 sm:gap-2 transition-all cursor-pointer min-w-0 ${
+                      className={`py-2 px-1.5 sm:py-2.5 sm:px-2.5 rounded-xl border flex items-center justify-center gap-1.5 sm:gap-2 transition-colors cursor-pointer min-w-0 ${
                         gateway === item.id
-                          ? `${item.activeClass} font-bold text-black dark:text-white shadow-2xs`
-                          : 'border-black/[0.08] dark:border-white/[0.08] bg-white dark:bg-[#1F1F1F] text-gray-600 dark:text-gray-400 hover:border-black/30 dark:hover:border-white/30'
+                          ? `${item.activeClass} font-semibold text-[#1f1f1f] dark:text-[#e3e3e3]`
+                          : 'border-black/[0.08] dark:border-white/[0.08] bg-[#f0f4f9] dark:bg-[#131314] text-[#444746] dark:text-[#9aa0a6] hover:bg-[#e9eef6] dark:hover:bg-[#282a2c]'
                       }`}
                     >
                       <img
                         src={item.icon}
                         alt={item.name}
-                        className="w-6 h-6 sm:w-7 sm:h-7 object-contain rounded-md shrink-0 bg-white p-0.5 shadow-2xs"
+                        className="w-6 h-6 sm:w-7 sm:h-7 object-contain rounded-md shrink-0 bg-white p-0.5"
                       />
                       <div className="text-left leading-tight min-w-0">
-                        <span className="text-[11px] sm:text-xs font-bold block truncate">{item.name}</span>
-                        <span className="text-[9px] sm:text-[10px] font-mono text-gray-500 dark:text-gray-400 block truncate">{item.bangla}</span>
+                        <span className="text-[11px] sm:text-xs font-semibold block truncate">{item.name}</span>
+                        <span className="text-[9px] sm:text-[10px] font-mono text-[#444746] dark:text-[#9aa0a6] block truncate">{item.bangla}</span>
                       </div>
                     </button>
                   ))}
@@ -373,61 +377,61 @@ export const PaymentModal: React.FC<PaymentModalProps> = ({
               </div>
 
               {/* Payment Instructions Box with Prominent Big Number */}
-              <div className="bg-[#F8F9FA] dark:bg-[#1F1F1F] rounded-[12px] p-3.5 sm:p-4 border border-black/[0.08] dark:border-white/[0.08] text-xs text-gray-600 dark:text-gray-400 space-y-3.5">
+              <div className="bg-[#f0f4f9] dark:bg-[#131314] rounded-2xl p-3.5 sm:p-4 border border-black/[0.08] dark:border-white/[0.08] text-xs text-[#444746] dark:text-[#9aa0a6] space-y-3.5">
                 {/* Highlighted Large Merchant Number Card */}
-                <div className="bg-white dark:bg-[#2A2A2A] rounded-[10px] p-3 sm:p-3.5 border border-black/[0.08] dark:border-white/[0.1] shadow-xs space-y-2.5">
+                <div className="bg-white dark:bg-[#1e1f20] rounded-xl p-3 sm:p-3.5 border border-black/[0.08] dark:border-white/[0.08] space-y-2.5">
                   <div className="flex flex-wrap items-center justify-between gap-2">
                     <div className="flex items-center gap-2 min-w-0">
                       <img
                         src={activeGateway.icon}
                         alt={activeGateway.name}
-                        className="w-7 h-7 sm:w-8 sm:h-8 object-contain rounded-lg bg-white p-0.5 border border-black/[0.08] shrink-0 shadow-2xs"
+                        className="w-7 h-7 sm:w-8 sm:h-8 object-contain rounded-lg bg-white p-0.5 border border-black/[0.08] shrink-0"
                       />
-                      <span className="text-xs font-medium text-gray-500 dark:text-gray-400">
-                        Send <strong className="text-black dark:text-white font-mono">{formatBDT(plan.priceBDT)}</strong> to {activeGateway.name}
+                      <span className="text-xs font-medium text-[#444746] dark:text-[#9aa0a6]">
+                        Send <strong className="text-[#1f1f1f] dark:text-[#e3e3e3] font-mono">{formatBDT(plan.priceBDT)}</strong> to {activeGateway.name}
                       </span>
                     </div>
                     <button
                       type="button"
                       onClick={handleCopyMerchant}
-                      className={`shrink-0 px-3 sm:px-3.5 py-1.5 text-xs rounded-full border font-semibold flex items-center gap-1.5 transition-all cursor-pointer shadow-2xs ${
+                      className={`shrink-0 px-3 sm:px-3.5 py-1.5 text-xs rounded-full border font-semibold flex items-center gap-1.5 transition-colors cursor-pointer ${
                         copied
                           ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-600 dark:text-emerald-400'
-                          : 'bg-[#F8F9FA] dark:bg-[#1F1F1F] border-black/[0.12] dark:border-white/[0.15] text-black dark:text-white hover:border-black/30 dark:hover:border-white/30'
+                          : 'bg-[#f0f4f9] dark:bg-[#282a2c] border-black/[0.08] dark:border-white/[0.1] text-[#1f1f1f] dark:text-[#e3e3e3] hover:bg-[#e9eef6] dark:hover:bg-[#333537]'
                       }`}
                       title="Click to copy number"
                     >
-                      {copied ? <Check className="w-3.5 h-3.5 text-emerald-500" /> : <Copy className="w-3.5 h-3.5 text-gray-500 dark:text-gray-400" />}
+                      {copied ? <Check className="w-3.5 h-3.5 text-emerald-500" /> : <Copy className="w-3.5 h-3.5 text-[#444746] dark:text-[#9aa0a6]" />}
                       <span>{copied ? 'Copied' : 'Copy'}</span>
                     </button>
                   </div>
 
                   <div className="pt-2 border-t border-black/[0.06] dark:border-white/[0.08]">
-                    <p className="text-lg sm:text-2xl font-extrabold font-mono tracking-wider text-black dark:text-white select-all break-words leading-snug">
+                    <p className="text-lg sm:text-2xl font-bold font-mono tracking-wider text-[#1f1f1f] dark:text-[#e3e3e3] select-all break-words leading-snug">
                       {activeMerchantNumber}
                     </p>
                   </div>
                 </div>
 
-                <ol className="list-decimal list-inside space-y-1 text-[11px] text-gray-500 dark:text-gray-400 px-0.5">
-                  <li>Open your <strong>{activeGateway.name}</strong> app on your mobile device.</li>
-                  <li>Select <strong className="font-bold text-black dark:text-white">Send Money</strong> to: <code className="font-mono font-bold text-xs text-black dark:text-white">{activeMerchantNumber}</code></li>
-                  <li>Send exact amount: <strong className="font-mono text-black dark:text-white">{formatBDT(plan.priceBDT)}</strong></li>
-                  <li>Copy the <strong>Transaction ID (TrxID)</strong> from your SMS receipt and submit below.</li>
+                <ol className="list-decimal list-inside space-y-1 text-[11px] text-[#444746] dark:text-[#9aa0a6] px-0.5 leading-[1.7]">
+                  <li>Open your <strong className="text-[#1f1f1f] dark:text-[#e3e3e3]">{activeGateway.name}</strong> app on your mobile device.</li>
+                  <li>Select <strong className="font-semibold text-[#1f1f1f] dark:text-[#e3e3e3]">Send Money</strong> to: <code className="font-mono font-semibold text-xs text-[#1f1f1f] dark:text-[#e3e3e3]">{activeMerchantNumber}</code></li>
+                  <li>Send exact amount: <strong className="font-mono text-[#1f1f1f] dark:text-[#e3e3e3]">{formatBDT(plan.priceBDT)}</strong></li>
+                  <li>Copy the <strong className="text-[#1f1f1f] dark:text-[#e3e3e3]">Transaction ID (TrxID)</strong> from your SMS receipt and submit below.</li>
                 </ol>
               </div>
 
               {/* Verification Form */}
               <form onSubmit={handleSubmit} className="space-y-4">
                 {error && (
-                  <div className="p-3 text-xs bg-red-50 dark:bg-red-950/40 border border-red-200 dark:border-red-900 text-red-600 dark:text-red-300 rounded-[8px] flex items-center gap-2">
+                  <div className="p-3 text-xs bg-red-50 dark:bg-red-950/40 border border-red-200 dark:border-red-900 text-red-600 dark:text-red-300 rounded-xl flex items-center gap-2">
                     <AlertCircle className="w-4 h-4 shrink-0" />
                     <span>{error}</span>
                   </div>
                 )}
 
                 <div>
-                  <label className="block text-xs font-medium text-black dark:text-white mb-1">
+                  <label className="block text-xs font-medium text-[#1f1f1f] dark:text-[#e3e3e3] mb-1">
                     Your Sender Mobile Number *
                   </label>
                   <input
@@ -436,12 +440,12 @@ export const PaymentModal: React.FC<PaymentModalProps> = ({
                     value={senderNumber}
                     onChange={e => setSenderNumber(e.target.value)}
                     placeholder="e.g. 01812345678"
-                    className="w-full px-3.5 py-2.5 text-xs rounded-[12px] border border-black/[0.12] dark:border-white/[0.15] bg-white dark:bg-[#1F1F1F] text-black dark:text-white font-mono focus:outline-none focus:border-black dark:focus:border-white transition-colors"
+                    className="w-full px-3.5 py-2.5 text-xs rounded-xl border border-black/[0.08] dark:border-white/[0.08] bg-[#f0f4f9] dark:bg-[#131314] text-[#1f1f1f] dark:text-[#e3e3e3] font-mono focus:outline-none focus:border-[#1f1f1f] dark:focus:border-[#e3e3e3] transition-colors"
                   />
                 </div>
 
                 <div>
-                  <label className="block text-xs font-medium text-black dark:text-white mb-1">
+                  <label className="block text-xs font-medium text-[#1f1f1f] dark:text-[#e3e3e3] mb-1">
                     SMS Transaction ID (TrxID) *
                   </label>
                   <input
@@ -450,9 +454,9 @@ export const PaymentModal: React.FC<PaymentModalProps> = ({
                     value={trxId}
                     onChange={e => setTrxId(e.target.value)}
                     placeholder="e.g. BKB8792019X or 9G821KLA"
-                    className="w-full px-3.5 py-2.5 text-xs rounded-[12px] border border-black/[0.12] dark:border-white/[0.15] bg-white dark:bg-[#1F1F1F] text-black dark:text-white font-mono uppercase focus:outline-none focus:border-black dark:focus:border-white transition-colors"
+                    className="w-full px-3.5 py-2.5 text-xs rounded-xl border border-black/[0.08] dark:border-white/[0.08] bg-[#f0f4f9] dark:bg-[#131314] text-[#1f1f1f] dark:text-[#e3e3e3] font-mono uppercase focus:outline-none focus:border-[#1f1f1f] dark:focus:border-[#e3e3e3] transition-colors"
                   />
-                  <span className="text-[10px] text-gray-500 block mt-1">
+                  <span className="text-[10px] text-[#444746] dark:text-[#9aa0a6] block mt-1">
                     Enter the exact TrxID received from {gateway.toUpperCase()} SMS.
                   </span>
                 </div>
@@ -460,11 +464,11 @@ export const PaymentModal: React.FC<PaymentModalProps> = ({
                 <button
                   type="submit"
                   disabled={loading}
-                  className="w-full h-11 px-5 rounded-full font-semibold text-xs text-white dark:text-black bg-black hover:bg-black/90 dark:bg-white dark:hover:bg-white/90 transition-all flex items-center justify-center gap-2 disabled:opacity-75 mt-2 shadow-xs cursor-pointer"
+                  className="w-full h-11 px-5 rounded-full font-semibold text-xs text-white dark:text-[#131314] bg-[#1f1f1f] hover:bg-[#1f1f1f]/90 dark:bg-[#e3e3e3] dark:hover:bg-[#e3e3e3]/90 transition-colors flex items-center justify-center gap-2 disabled:opacity-75 mt-2 cursor-pointer"
                 >
                   {loading ? (
                     <>
-                      <span className="w-4 h-4 border-2 border-white dark:border-black border-t-transparent rounded-full animate-spin" />
+                      <span className="w-4 h-4 border-2 border-white dark:border-[#131314] border-t-transparent rounded-full animate-spin" />
                       <span>Verifying Transaction...</span>
                     </>
                   ) : (

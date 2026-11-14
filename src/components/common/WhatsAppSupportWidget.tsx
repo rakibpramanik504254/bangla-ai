@@ -65,16 +65,16 @@ export const WhatsAppSupportWidget: React.FC = () => {
         <div
           role="dialog"
           aria-label="WhatsApp Live Support"
-          className="w-[calc(100vw-2rem)] max-w-[340px] rounded-[16px] overflow-hidden bg-white dark:bg-[#262626] border border-black/[0.1] dark:border-white/[0.12] shadow-2xl animate-in fade-in slide-in-from-bottom-2 duration-200"
+          className="w-[calc(100vw-2rem)] max-w-[340px] rounded-3xl overflow-hidden bg-white dark:bg-[#1e1f20] border border-black/[0.08] dark:border-white/[0.08] shadow-xl animate-in fade-in slide-in-from-bottom-2 duration-200"
         >
           {/* Header */}
           <div className="bg-[#075E54] dark:bg-[#1B4338] text-white px-4 py-3.5 flex items-center justify-between gap-3">
             <div className="flex items-center gap-2.5 min-w-0">
-              <div className="w-9 h-9 rounded-full bg-[#25D366] text-white flex items-center justify-center shrink-0 shadow-xs">
+              <div className="w-9 h-9 rounded-full bg-[#25D366] text-white flex items-center justify-center shrink-0">
                 <WhatsAppLogo className="w-5 h-5" />
               </div>
               <div className="min-w-0">
-                <h3 className="text-sm font-bold leading-tight truncate">Bangla AI Live Chat</h3>
+                <h3 className="text-sm font-semibold leading-tight truncate">Bangla AI Live Chat</h3>
                 <p className="text-[11px] text-emerald-100/90 font-mono truncate">
                   {WHATSAPP_NUMBER_DISPLAY} • WhatsApp
                 </p>
@@ -84,28 +84,28 @@ export const WhatsAppSupportWidget: React.FC = () => {
               type="button"
               onClick={() => setIsOpen(false)}
               aria-label="Close WhatsApp support chat"
-              className="p-1.5 rounded-lg text-white/80 hover:text-white hover:bg-white/10 transition-colors cursor-pointer shrink-0"
+              className="p-1.5 rounded-full text-white/80 hover:text-white hover:bg-white/10 transition-colors cursor-pointer shrink-0"
             >
               <X className="w-4 h-4" />
             </button>
           </div>
 
           {/* Chat Body */}
-          <div className="p-3.5 bg-[#F4F6F5] dark:bg-[#1F1F1F] space-y-3">
-            <div className="bg-white dark:bg-[#2A2A2A] rounded-[12px] rounded-tl-xs p-3 border border-black/[0.06] dark:border-white/[0.08] shadow-2xs space-y-1.5">
+          <div className="p-3.5 bg-[#f0f4f9] dark:bg-[#131314] space-y-3">
+            <div className="bg-white dark:bg-[#1e1f20] rounded-2xl rounded-tl-sm p-3 border border-black/[0.06] dark:border-white/[0.08] space-y-1.5">
               <div className="flex items-center gap-1.5">
                 <span className="w-2 h-2 rounded-full bg-[#25D366]" />
-                <span className="text-[11px] font-semibold text-black dark:text-white">
+                <span className="text-[11px] font-semibold text-[#1f1f1f] dark:text-[#e3e3e3]">
                   Support Team Online
                 </span>
               </div>
-              <p className="text-xs text-gray-600 dark:text-gray-300 leading-relaxed">
+              <p className="text-xs text-[#444746] dark:text-[#9aa0a6] leading-[1.6]">
                 Assalamu Alaikum! Need help subscribing with bKash, Nagad, or Rocket? Send us a message on WhatsApp right away.
               </p>
             </div>
 
             <div className="space-y-1.5">
-              <p className="text-[10px] font-mono uppercase tracking-wider text-gray-500 dark:text-gray-400 px-0.5">
+              <p className="text-[10px] font-mono uppercase tracking-wider text-[#444746] dark:text-[#9aa0a6] px-0.5">
                 Quick Questions
               </p>
               <div className="flex flex-col gap-1.5">
@@ -114,10 +114,10 @@ export const WhatsAppSupportWidget: React.FC = () => {
                     key={topic}
                     type="button"
                     onClick={() => setMessage(topic)}
-                    className={`text-left text-[11px] px-2.5 py-2 rounded-[8px] border transition-colors cursor-pointer ${
+                    className={`text-left text-[11px] px-3 py-2 rounded-xl border transition-colors cursor-pointer ${
                       message === topic
-                        ? 'bg-[#25D366]/10 border-[#25D366]/50 text-black dark:text-white font-medium'
-                        : 'bg-white dark:bg-[#262626] border-black/[0.08] dark:border-white/[0.08] text-gray-700 dark:text-gray-300 hover:border-[#25D366]/50'
+                        ? 'bg-[#25D366]/10 border-[#25D366]/50 text-[#1f1f1f] dark:text-[#e3e3e3] font-medium'
+                        : 'bg-white dark:bg-[#1e1f20] border-black/[0.08] dark:border-white/[0.08] text-[#444746] dark:text-[#e3e3e3] hover:border-[#25D366]/50'
                     }`}
                   >
                     {topic}
@@ -128,20 +128,20 @@ export const WhatsAppSupportWidget: React.FC = () => {
           </div>
 
           {/* Message Composer & Direct WhatsApp Launch */}
-          <div className="p-3 bg-white dark:bg-[#262626] border-t border-black/[0.08] dark:border-white/[0.08] space-y-2.5">
+          <div className="p-3 bg-white dark:bg-[#1e1f20] border-t border-black/[0.08] dark:border-white/[0.08] space-y-2.5">
             <input
               type="text"
               value={message}
               onChange={(e) => setMessage(e.target.value)}
               placeholder="Write your question..."
               aria-label="WhatsApp message"
-              className="w-full px-3 py-2 text-xs rounded-[10px] border border-black/[0.12] dark:border-white/[0.15] bg-[#F8F9FA] dark:bg-[#1F1F1F] text-black dark:text-white focus:outline-none focus:border-[#25D366] transition-colors"
+              className="w-full px-3.5 py-2 text-xs rounded-xl border border-black/[0.08] dark:border-white/[0.08] bg-[#f0f4f9] dark:bg-[#131314] text-[#1f1f1f] dark:text-[#e3e3e3] placeholder:text-[#444746]/70 dark:placeholder:text-[#9aa0a6]/70 focus:outline-none focus:border-[#25D366] transition-colors"
             />
             <a
               href={whatsappHref}
               target="_blank"
               rel="noopener noreferrer"
-              className="w-full py-2.5 px-4 rounded-[10px] bg-[#25D366] hover:bg-[#20BD5A] text-white font-semibold text-xs flex items-center justify-center gap-2 shadow-sm transition-colors"
+              className="w-full py-2.5 px-4 rounded-full bg-[#25D366] hover:bg-[#20BD5A] text-white font-semibold text-xs flex items-center justify-center gap-2 transition-colors"
             >
               <WhatsAppLogo className="w-4 h-4" />
               <span>Chat on WhatsApp</span>
@@ -160,7 +160,7 @@ export const WhatsAppSupportWidget: React.FC = () => {
         className="group flex items-center justify-center sm:gap-2.5 w-12 h-12 sm:w-auto sm:h-auto sm:px-4 sm:py-3 rounded-full bg-[#25D366] hover:bg-[#20BD5A] text-white shadow-lg shadow-black/15 dark:shadow-black/40 transition-all hover:scale-[1.03] active:scale-[0.98] cursor-pointer"
       >
         <WhatsAppLogo className="w-6 h-6 shrink-0" />
-        <span className="hidden sm:inline text-xs font-bold tracking-tight whitespace-nowrap">
+        <span className="hidden sm:inline text-xs font-semibold tracking-tight whitespace-nowrap">
           {isOpen ? 'Close Chat' : 'Live Support'}
         </span>
       </button>

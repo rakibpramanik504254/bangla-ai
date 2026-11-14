@@ -3,26 +3,26 @@ import { ShieldCheck, Lock, Server, Key, RefreshCw, EyeOff, FileText, CheckCircl
 
 export const SecurityPage: React.FC = () => {
   return (
-    <div className="max-w-4xl mx-auto px-4 sm:px-6 py-12 sm:py-20 space-y-10 sm:space-y-12 text-xs sm:text-sm text-gray-700 dark:text-gray-300 leading-relaxed break-words">
+    <div className="max-w-4xl mx-auto px-4 sm:px-6 py-12 sm:py-20 space-y-10 sm:space-y-12 text-xs sm:text-sm text-[#444746] dark:text-[#9aa0a6] leading-[1.7] break-words">
       {/* Header */}
       <div className="space-y-2">
-        <span className="text-[11px] font-mono uppercase tracking-wider text-gray-500 block">
+        <span className="text-[11px] font-mono uppercase tracking-wider text-[#444746] dark:text-[#9aa0a6] block">
           Trust & Infrastructure
         </span>
-        <h1 className="text-3xl sm:text-4xl font-bold text-black dark:text-white tracking-tight">
+        <h1 className="text-3xl sm:text-4xl font-semibold text-[#1f1f1f] dark:text-[#e3e3e3] tracking-tight">
           Security Standards & Compliance
         </h1>
-        <p className="text-xs text-gray-500 font-mono">
+        <p className="text-xs text-[#444746] dark:text-[#9aa0a6] font-mono">
           Last Audited: November 2026 • Enterprise Grade Infrastructure
         </p>
       </div>
 
       {/* Summary Box */}
-      <div className="bg-[#FAFAFA] dark:bg-[#262626] border border-black/[0.1] dark:border-white/[0.1] rounded-[8px] p-5 text-xs flex items-start gap-3.5">
-        <ShieldCheck className="w-4 h-4 text-black dark:text-white shrink-0 mt-0.5" />
+      <div className="bg-[#f0f4f9] dark:bg-[#1e1f20] border border-black/[0.08] dark:border-white/[0.08] rounded-2xl p-5 text-xs flex items-start gap-3.5">
+        <ShieldCheck className="w-4 h-4 text-[#1f1f1f] dark:text-[#e3e3e3] shrink-0 mt-0.5" />
         <div className="space-y-1">
-          <p className="font-bold text-xs uppercase tracking-wide text-black dark:text-white">Security Philosophy:</p>
-          <p className="leading-relaxed text-gray-600 dark:text-gray-400">
+          <p className="font-semibold text-xs uppercase tracking-wide text-[#1f1f1f] dark:text-[#e3e3e3]">Security Philosophy:</p>
+          <p className="leading-[1.7] text-[#444746] dark:text-[#9aa0a6]">
             Bangla AI is built on principles of confidentiality, zero-data-retention model transit, and bank-grade encryption. We protect Bangladesh's developers, agencies, and enterprises with modern cryptographic protocols.
           </p>
         </div>
@@ -31,34 +31,34 @@ export const SecurityPage: React.FC = () => {
       {/* Security Pillars */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         <div className="card-minimal p-5 space-y-2">
-          <Lock className="w-4 h-4 text-black dark:text-white" />
-          <h3 className="font-bold text-black dark:text-white text-xs">TLS 1.3 Encryption</h3>
-          <p className="text-[11px] text-gray-500 leading-relaxed">
+          <Lock className="w-4 h-4 text-[#1f1f1f] dark:text-[#e3e3e3]" />
+          <h3 className="font-semibold text-[#1f1f1f] dark:text-[#e3e3e3] text-xs">TLS 1.3 Encryption</h3>
+          <p className="text-[11px] text-[#444746] dark:text-[#9aa0a6] leading-[1.7]">
             All token streams, user queries, and server communications use modern forward-secret cipher suites.
           </p>
         </div>
 
         <div className="card-minimal p-5 space-y-2">
-          <EyeOff className="w-4 h-4 text-black dark:text-white" />
-          <h3 className="font-bold text-black dark:text-white text-xs">Zero Model Training</h3>
-          <p className="text-[11px] text-gray-500 leading-relaxed">
+          <EyeOff className="w-4 h-4 text-[#1f1f1f] dark:text-[#e3e3e3]" />
+          <h3 className="font-semibold text-[#1f1f1f] dark:text-[#e3e3e3] text-xs">Zero Model Training</h3>
+          <p className="text-[11px] text-[#444746] dark:text-[#9aa0a6] leading-[1.7]">
             Your proprietary source code, legal briefs, and chat payloads are never fed into public foundation models.
           </p>
         </div>
 
         <div className="card-minimal p-5 space-y-2">
-          <Key className="w-4 h-4 text-black dark:text-white" />
-          <h3 className="font-bold text-black dark:text-white text-xs">Secure Hashing</h3>
-          <p className="text-[11px] text-gray-500 leading-relaxed">
+          <Key className="w-4 h-4 text-[#1f1f1f] dark:text-[#e3e3e3]" />
+          <h3 className="font-semibold text-[#1f1f1f] dark:text-[#e3e3e3] text-xs">Secure Hashing</h3>
+          <p className="text-[11px] text-[#444746] dark:text-[#9aa0a6] leading-[1.7]">
             User credentials use cryptographic scrypt hashing with per-user unique salts. We never store plain passwords.
           </p>
         </div>
       </div>
 
       {/* Detailed Standards */}
-      <div className="space-y-8 bg-white dark:bg-[#262626] p-6 sm:p-8 rounded-[8px] border border-black/[0.08] dark:border-white/[0.08] shadow-xs">
+      <div className="space-y-8 bg-white dark:bg-[#1e1f20] p-6 sm:p-8 rounded-2xl border border-black/[0.08] dark:border-white/[0.08]">
         <section className="space-y-2.5">
-          <h2 className="text-xs font-bold text-black dark:text-white uppercase tracking-wider font-mono">
+          <h2 className="text-xs font-semibold text-[#1f1f1f] dark:text-[#e3e3e3] uppercase tracking-wider font-mono">
             1. Data Transit & API Gateway Security
           </h2>
           <p>
@@ -67,7 +67,7 @@ export const SecurityPage: React.FC = () => {
         </section>
 
         <section className="space-y-2.5">
-          <h2 className="text-xs font-bold text-black dark:text-white uppercase tracking-wider font-mono">
+          <h2 className="text-xs font-semibold text-[#1f1f1f] dark:text-[#e3e3e3] uppercase tracking-wider font-mono">
             2. Payment Information & MFS Safety
           </h2>
           <p>
@@ -76,7 +76,7 @@ export const SecurityPage: React.FC = () => {
         </section>
 
         <section className="space-y-2.5">
-          <h2 className="text-xs font-bold text-black dark:text-white uppercase tracking-wider font-mono">
+          <h2 className="text-xs font-semibold text-[#1f1f1f] dark:text-[#e3e3e3] uppercase tracking-wider font-mono">
             3. Authentication & Session Management
           </h2>
           <p>
@@ -85,11 +85,11 @@ export const SecurityPage: React.FC = () => {
         </section>
 
         <section className="space-y-2.5">
-          <h2 className="text-xs font-bold text-black dark:text-white uppercase tracking-wider font-mono">
+          <h2 className="text-xs font-semibold text-[#1f1f1f] dark:text-[#e3e3e3] uppercase tracking-wider font-mono">
             4. Vulnerability Disclosure & Incident Response
           </h2>
           <p>
-            We take system vulnerabilities seriously. If you discover a security flaw or vulnerability within the Bangla AI infrastructure, please notify our security team at <a href="mailto:ourbangla.ai@gmail.com" className="underline font-mono text-black dark:text-white break-all">ourbangla.ai@gmail.com</a> or call our hotline <a href="tel:+8801622860128" className="underline font-mono text-black dark:text-white">+880 1622-860128</a>. We acknowledge verified reports within 24 hours and do not pursue legal action against responsible, good-faith researchers.
+            We take system vulnerabilities seriously. If you discover a security flaw or vulnerability within the Bangla AI infrastructure, please notify our security team at <a href="mailto:ourbangla.ai@gmail.com" className="underline font-mono text-[#1f1f1f] dark:text-[#e3e3e3] break-all">ourbangla.ai@gmail.com</a> or call our hotline <a href="tel:+8801622860128" className="underline font-mono text-[#1f1f1f] dark:text-[#e3e3e3]">+880 1622-860128</a>. We acknowledge verified reports within 24 hours and do not pursue legal action against responsible, good-faith researchers.
           </p>
         </section>
       </div>

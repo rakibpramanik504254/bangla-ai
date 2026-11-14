@@ -28,7 +28,7 @@ export const CodeIdeHighlight: React.FC<CodeIdeHighlightProps> = ({
   const lines = code.split('\n');
 
   return (
-    <div className="rounded-[10px] overflow-hidden border border-black/15 dark:border-white/10 bg-[#181A20] text-[#E4E7EF] shadow-sm min-w-0 max-w-full">
+    <div className="rounded-2xl overflow-hidden border border-black/[0.08] dark:border-white/[0.08] bg-[#181A20] text-[#E4E7EF] min-w-0 max-w-full">
       {/* IDE Window Top Bar */}
       <div className="flex flex-wrap items-center justify-between gap-2 px-3.5 py-2 bg-[#21242D] border-b border-white/[0.07] text-[11px] font-mono">
         <div className="flex items-center gap-2 min-w-0">

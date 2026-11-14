@@ -9,9 +9,9 @@ interface AuthContextType {
   theme: 'light' | 'dark';
   setTheme: (mode: 'light' | 'dark') => void;
   toggleTheme: () => void;
-  loginWithGoogle: () => Promise<void>;
-  login: (email: string, password: string) => Promise<void>;
-  register: (name: string, email: string, password: string, phone?: string) => Promise<void>;
+  loginWithGoogle: () => Promise<User>;
+  login: (email: string, password: string) => Promise<User>;
+  register: (name: string, email: string, password: string, phone?: string) => Promise<User>;
   logout: () => Promise<void>;
   refreshUser: () => Promise<void>;
   isAuthModalOpen: boolean;
@@ -22,6 +22,9 @@ interface AuthContextType {
   paymentPlan: 'monthly' | 'yearly';
   openPaymentModal: (plan?: 'monthly' | 'yearly') => void;
   closePaymentModal: () => void;
+  isAccountModalOpen: boolean;
+  openAccountModal: () => void;
+  closeAccountModal: () => void;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -38,6 +41,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [authModalTab, setAuthModalTab] = useState<'login' | 'register'>('login');
   const [isPaymentModalOpen, setIsPaymentModalOpen] = useState(false);
   const [paymentPlan, setPaymentPlan] = useState<'monthly' | 'yearly'>('monthly');
+  const [isAccountModalOpen, setIsAccountModalOpen] = useState(false);
 
   useEffect(() => {
     if (theme === 'dark') {
@@ -126,6 +130,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       setToken(data.token);
       setUser(data.user);
       setIsAuthModalOpen(false);
+      return data.user as User;
     } catch (err: any) {
       if (err?.code === 'auth/popup-closed-by-user' || err?.code === 'auth/cancelled-popup-request') {
         throw new Error('Sign-in cancelled. Please complete the Google prompt.');
@@ -159,6 +164,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setToken(data.token);
     setUser(data.user);
     setIsAuthModalOpen(false);
+    return data.user as User;
   };
 
   const register = async (name: string, email: string, password: string, phone?: string) => {
@@ -177,17 +183,18 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setToken(data.token);
     setUser(data.user);
     setIsAuthModalOpen(false);
+    return data.user as User;
   };
 
   const logout = async () => {
+    localStorage.removeItem('bangla_ai_token');
+    setToken(null);
+    setUser(null);
     try {
       await signOutFromFirebase();
     } catch (e) {
       console.warn('Firebase signout note:', e);
     }
-    localStorage.removeItem('bangla_ai_token');
-    setToken(null);
-    setUser(null);
   };
 
   const openAuthModal = (tab: 'login' | 'register' = 'login') => {
@@ -206,6 +213,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const closePaymentModal = () => {
     setIsPaymentModalOpen(false);
+  };
+
+  const openAccountModal = () => {
+    setIsAccountModalOpen(true);
+  };
+
+  const closeAccountModal = () => {
+    setIsAccountModalOpen(false);
   };
 
   return (
@@ -229,7 +244,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         isPaymentModalOpen,
         paymentPlan,
         openPaymentModal,
-        closePaymentModal
+        closePaymentModal,
+        isAccountModalOpen,
+        openAccountModal,
+        closeAccountModal
       }}
     >
       {children}

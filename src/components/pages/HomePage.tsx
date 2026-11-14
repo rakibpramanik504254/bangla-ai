@@ -106,23 +106,23 @@ export const HomePage: React.FC<HomePageProps> = ({ onStartChat }) => {
   const [activeModelTab, setActiveModelTab] = useState(0);
 
   return (
-    <div className="space-y-20 sm:space-y-32 py-10 sm:py-20 overflow-x-clip animate-in fade-in transition-colors bg-white dark:bg-[#1F1F1F] text-black dark:text-white">
-      {/* Hero Region (OpenAI Minimal Spacious Center) */}
+    <div className="space-y-20 sm:space-y-28 py-10 sm:py-20 overflow-x-clip animate-in fade-in transition-colors bg-white dark:bg-[#131314] text-[#1f1f1f] dark:text-[#e3e3e3]">
+      {/* Hero Region */}
       <section className="max-w-4xl mx-auto px-4 sm:px-6 text-center">
         <div className="space-y-6">
-          <div className="inline-flex flex-wrap items-center justify-center gap-2 px-3 sm:px-3.5 py-1.5 rounded-full border border-black/10 dark:border-white/15 bg-white dark:bg-neutral-900 text-[11px] sm:text-xs font-medium text-gray-700 dark:text-gray-300 max-w-full">
-            <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse shrink-0" />
+          <div className="inline-flex flex-wrap items-center justify-center gap-2 px-3.5 py-1.5 rounded-full border border-black/[0.08] dark:border-white/[0.08] bg-[#f0f4f9] dark:bg-[#1e1f20] text-[11px] sm:text-xs font-medium text-[#444746] dark:text-[#9aa0a6] max-w-full">
+            <span className="w-2 h-2 rounded-full bg-emerald-500 shrink-0" />
             <span>Bangla AI • All 10 Frontier AI Models in One Hub</span>
           </div>
 
-          <h1 className="text-4xl sm:text-5xl lg:text-6xl font-bold tracking-tight leading-[1.12] text-black dark:text-white max-w-3xl mx-auto">
+          <h1 className="text-4xl sm:text-5xl lg:text-6xl font-bold tracking-tight leading-[1.12] text-[#1f1f1f] dark:text-[#e3e3e3] max-w-3xl mx-auto">
             Every top AI model.
-            <span className="block font-medium text-gray-500 dark:text-gray-400 mt-1">
+            <span className="block font-medium text-[#444746] dark:text-[#9aa0a6] mt-1">
               One clean, simple interface.
             </span>
           </h1>
 
-          <p className="text-base sm:text-lg text-gray-600 dark:text-gray-400 max-w-2xl mx-auto leading-relaxed font-normal">
+          <p className="text-base sm:text-lg text-[#444746] dark:text-[#9aa0a6] max-w-2xl mx-auto leading-[1.7] font-normal">
             Access Claude Fable 5.2, Gemini 4 Carbon, GPT-6 Astra, Grok 4.7, and DeepSeek V4.1 with unified conversation memory. Pay easily in Bangladeshi Taka via bKash, Nagad, and Rocket without dual-currency card barriers.
           </p>
 
@@ -137,7 +137,7 @@ export const HomePage: React.FC<HomePageProps> = ({ onStartChat }) => {
                   onStartChat();
                 }
               }}
-              className="btn-pill-primary w-full sm:w-auto h-11 px-7 text-sm cursor-pointer shadow-sm"
+              className="btn-pill-primary w-full sm:w-auto h-11 px-7 text-sm cursor-pointer"
             >
               <span>{isSubscribed ? 'Open AI Workspace' : 'Get Started with Bangla AI'}</span>
               <ArrowRight className="w-4 h-4 ml-1" />
@@ -153,23 +153,23 @@ export const HomePage: React.FC<HomePageProps> = ({ onStartChat }) => {
             </button>
           </div>
 
-          {/* Key Metrics Strip (Clean Typography, No Pill Enclosures) */}
-          <div className="pt-10 sm:pt-12 mt-6 border-t border-black/[0.06] dark:border-white/[0.06] grid grid-cols-2 md:grid-cols-4 gap-4 sm:gap-6 text-center">
+          {/* Key Metrics Strip */}
+          <div className="pt-10 sm:pt-12 mt-6 border-t border-black/[0.08] dark:border-white/[0.08] grid grid-cols-2 md:grid-cols-4 gap-4 sm:gap-6 text-center">
             <div className="min-w-0">
-              <p className="text-xl sm:text-2xl font-bold tracking-tight text-black dark:text-white">10+ Models</p>
-              <p className="text-[11px] sm:text-xs text-gray-500 mt-1">Claude Fable, Gemini 4, GPT-6, Grok</p>
+              <p className="text-xl sm:text-2xl font-bold tracking-tight text-[#1f1f1f] dark:text-[#e3e3e3]">10+ Models</p>
+              <p className="text-[11px] sm:text-xs text-[#444746] dark:text-[#9aa0a6] mt-1">Claude Fable, Gemini 4, GPT-6, Grok</p>
             </div>
             <div className="min-w-0">
-              <p className="text-xl sm:text-2xl font-bold tracking-tight text-black dark:text-white">Direct MFS</p>
-              <p className="text-[11px] sm:text-xs text-gray-500 mt-1">bKash, Nagad & Rocket verification</p>
+              <p className="text-xl sm:text-2xl font-bold tracking-tight text-[#1f1f1f] dark:text-[#e3e3e3]">Direct MFS</p>
+              <p className="text-[11px] sm:text-xs text-[#444746] dark:text-[#9aa0a6] mt-1">bKash, Nagad & Rocket verification</p>
             </div>
             <div className="min-w-0">
-              <p className="text-xl sm:text-2xl font-bold tracking-tight text-black dark:text-white">Zero Cards</p>
-              <p className="text-[11px] sm:text-xs text-gray-500 mt-1">No dual currency passport hassle</p>
+              <p className="text-xl sm:text-2xl font-bold tracking-tight text-[#1f1f1f] dark:text-[#e3e3e3]">Zero Cards</p>
+              <p className="text-[11px] sm:text-xs text-[#444746] dark:text-[#9aa0a6] mt-1">No dual currency passport hassle</p>
             </div>
             <div className="min-w-0">
-              <p className="text-xl sm:text-2xl font-bold tracking-tight text-black dark:text-white">99.9%</p>
-              <p className="text-[11px] sm:text-xs text-gray-500 mt-1">High-throughput uptime</p>
+              <p className="text-xl sm:text-2xl font-bold tracking-tight text-[#1f1f1f] dark:text-[#e3e3e3]">99.9%</p>
+              <p className="text-[11px] sm:text-xs text-[#444746] dark:text-[#9aa0a6] mt-1">High-throughput uptime</p>
             </div>
           </div>
         </div>
@@ -177,476 +177,478 @@ export const HomePage: React.FC<HomePageProps> = ({ onStartChat }) => {
 
       {/* Comparison Section: "Why Bangla AI vs Individual Subscriptions" */}
       <section className="max-w-5xl mx-auto px-4 sm:px-6">
-        <div className="text-center mb-10 space-y-2">
-          <span className="text-[11px] font-mono uppercase tracking-wider text-gray-400 block">
+        <div className="text-center mb-10 space-y-2.5">
+          <span className="text-[11px] font-mono uppercase tracking-wider text-[#444746] dark:text-[#9aa0a6] block">
             Cost & Value Comparison
           </span>
-          <h2 className="text-2xl sm:text-3xl font-medium tracking-tight text-black dark:text-white">
+          <h2 className="text-2xl sm:text-3xl font-semibold tracking-tight text-[#1f1f1f] dark:text-[#e3e3e3]">
             Why Bangla AI vs Buying Individual Plans
           </h2>
-          <p className="text-sm text-gray-500 max-w-xl mx-auto">
+          <p className="text-sm text-[#444746] dark:text-[#9aa0a6] max-w-xl mx-auto leading-[1.7]">
             Purchasing ChatGPT Plus, Claude Pro, and Grok separately costs over $80/month (~৳10,000 BDT) and requires an endorsed international credit card. Bangla AI unites them into a single subscription.
           </p>
         </div>
 
-        <div className="overflow-hidden rounded-[8px] border border-black/[0.08] dark:border-white/[0.08] bg-white dark:bg-[#262626] shadow-xs">
-          {/* Mobile Stacked Comparison Cards (Zero horizontal table scroll) */}
-          <div className="sm:hidden divide-y divide-black/[0.06] dark:divide-white/[0.06] text-xs">
-            {[
-              {
-                label: 'Monthly Subscription Cost',
-                separate: '$80+ / mo (~৳10,000+ BDT)',
-                unified: '৳699 / mo (Save 93%)',
-                highlight: true
-              },
-              {
-                label: 'Payment Method in Bangladesh',
-                separate: 'Passport-endorsed Dual Currency Credit Card required',
-                unified: 'bKash, Nagad, Rocket (TrxID)'
-              },
-              {
-                label: 'Catalog of Top Foundation Models',
-                separate: '1 model per subscription tab',
-                unified: '10 Flagship Models in 1 Account'
-              },
-              {
-                label: 'Cross-Model Workflow Switcher',
-                separate: 'Manual copy-pasting across different browser tabs',
-                unified: 'Switch model in-flight with continuous context'
-              },
-              {
-                label: 'Customer Support & Verification',
-                separate: 'Overseas automated chatbot',
-                unified: 'Dedicated Bangladesh Support Team'
-              }
-            ].map((row) => (
-              <div key={row.label} className="p-4 space-y-2.5">
-                <p className="font-bold text-black dark:text-white">{row.label}</p>
-                <div className="grid grid-cols-1 gap-2">
-                  <div className="p-2.5 rounded-[6px] bg-black/[0.02] dark:bg-white/[0.03] border border-black/[0.05] dark:border-white/[0.06]">
-                    <span className="text-[10px] font-mono uppercase tracking-wider text-gray-400 block mb-0.5">
-                      Separate Plans
-                    </span>
-                    <span className="text-gray-500 dark:text-gray-400 leading-snug block">{row.separate}</span>
-                  </div>
-                  <div className="p-2.5 rounded-[6px] bg-emerald-500/[0.06] dark:bg-emerald-500/[0.08] border border-emerald-500/20">
-                    <span className="text-[10px] font-mono uppercase tracking-wider text-emerald-600 dark:text-emerald-400 block mb-0.5">
-                      Bangla AI (Unified)
-                    </span>
-                    <span className={`leading-snug block ${row.highlight ? 'font-bold font-mono text-emerald-600 dark:text-emerald-400' : 'font-semibold text-black dark:text-white'}`}>
-                      {row.unified}
-                    </span>
+        <div className="overflow-hidden rounded-3xl border border-black/[0.08] dark:border-white/[0.08] bg-[#f0f4f9] dark:bg-[#1e1f20] p-2 sm:p-3">
+          <div className="overflow-hidden rounded-2xl border border-black/[0.08] dark:border-white/[0.08] bg-white dark:bg-[#131314]">
+            {/* Mobile Stacked Comparison Cards */}
+            <div className="sm:hidden divide-y divide-black/[0.06] dark:divide-white/[0.06] text-xs">
+              {[
+                {
+                  label: 'Monthly Subscription Cost',
+                  separate: '$80+ / mo (~৳10,000+ BDT)',
+                  unified: '৳699 / mo (Save 93%)',
+                  highlight: true
+                },
+                {
+                  label: 'Payment Method in Bangladesh',
+                  separate: 'Passport-endorsed Dual Currency Credit Card required',
+                  unified: 'bKash, Nagad, Rocket (TrxID)'
+                },
+                {
+                  label: 'Catalog of Top Foundation Models',
+                  separate: '1 model per subscription tab',
+                  unified: '10 Flagship Models in 1 Account'
+                },
+                {
+                  label: 'Cross-Model Workflow Switcher',
+                  separate: 'Manual copy-pasting across different browser tabs',
+                  unified: 'Switch model in-flight with continuous context'
+                },
+                {
+                  label: 'Customer Support & Verification',
+                  separate: 'Overseas automated chatbot',
+                  unified: 'Dedicated Bangladesh Support Team'
+                }
+              ].map((row) => (
+                <div key={row.label} className="p-4 space-y-2.5">
+                  <p className="font-bold text-[#1f1f1f] dark:text-[#e3e3e3]">{row.label}</p>
+                  <div className="grid grid-cols-1 gap-2">
+                    <div className="p-3 rounded-xl bg-[#f0f4f9] dark:bg-[#1e1f20] border border-black/[0.06] dark:border-white/[0.06]">
+                      <span className="text-[10px] font-mono uppercase tracking-wider text-[#444746] dark:text-[#9aa0a6] block mb-0.5">
+                        Separate Plans
+                      </span>
+                      <span className="text-[#444746] dark:text-[#9aa0a6] leading-snug block">{row.separate}</span>
+                    </div>
+                    <div className="p-3 rounded-xl bg-emerald-500/[0.06] dark:bg-emerald-500/[0.08] border border-emerald-500/20">
+                      <span className="text-[10px] font-mono uppercase tracking-wider text-emerald-700 dark:text-emerald-400 block mb-0.5">
+                        Bangla AI (Unified)
+                      </span>
+                      <span className={`leading-snug block ${row.highlight ? 'font-bold font-mono text-emerald-700 dark:text-emerald-400' : 'font-semibold text-[#1f1f1f] dark:text-[#e3e3e3]'}`}>
+                        {row.unified}
+                      </span>
+                    </div>
                   </div>
                 </div>
-              </div>
-            ))}
-          </div>
+              ))}
+            </div>
 
-          {/* Desktop Comparison Table */}
-          <div className="hidden sm:block overflow-x-auto">
-            <table className="w-full text-left text-xs">
-              <thead className="bg-[#F9F9F9] dark:bg-[#2D2D2D] border-b border-black/[0.08] dark:border-white/[0.08] font-mono text-[11px] text-gray-500">
-                <tr>
-                  <th className="py-4 px-5 font-semibold">Features & Capabilities</th>
-                  <th className="py-4 px-5 font-semibold text-gray-400">Separate AI Subscriptions</th>
-                  <th className="py-4 px-5 font-bold text-black dark:text-white bg-black/[0.02] dark:bg-white/[0.03]">
-                    Bangla AI (Unified)
-                  </th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-black/[0.04] dark:divide-white/[0.04]">
-                <tr className="hover:bg-black/[0.01] dark:hover:bg-white/[0.01]">
-                  <td className="py-3.5 px-5 font-medium text-black dark:text-white">Monthly Subscription Cost</td>
-                  <td className="py-3.5 px-5 text-gray-500 font-mono">$80+ / mo (~৳10,000+ BDT)</td>
-                  <td className="py-3.5 px-5 font-bold text-emerald-600 dark:text-emerald-400 font-mono bg-black/[0.02] dark:bg-white/[0.03]">
-                    ৳699 / mo (Save 93%)
-                  </td>
-                </tr>
-                <tr className="hover:bg-black/[0.01] dark:hover:bg-white/[0.01]">
-                  <td className="py-3.5 px-5 font-medium text-black dark:text-white">Payment Method in Bangladesh</td>
-                  <td className="py-3.5 px-5 text-gray-500">Passport-endorsed Dual Currency Credit Card required</td>
-                  <td className="py-3.5 px-5 font-semibold text-black dark:text-white bg-black/[0.02] dark:bg-white/[0.03]">
-                    bKash, Nagad, Rocket (TrxID)
-                  </td>
-                </tr>
-                <tr className="hover:bg-black/[0.01] dark:hover:bg-white/[0.01]">
-                  <td className="py-3.5 px-5 font-medium text-black dark:text-white">Catalog of Top Foundation Models</td>
-                  <td className="py-3.5 px-5 text-gray-500">1 model per subscription tab</td>
-                  <td className="py-3.5 px-5 font-semibold text-black dark:text-white bg-black/[0.02] dark:bg-white/[0.03]">
-                    10 Flagship Models in 1 Account
-                  </td>
-                </tr>
-                <tr className="hover:bg-black/[0.01] dark:hover:bg-white/[0.01]">
-                  <td className="py-3.5 px-5 font-medium text-black dark:text-white">Cross-Model Workflow Switcher</td>
-                  <td className="py-3.5 px-5 text-gray-500">Manual copy-pasting across different browser tabs</td>
-                  <td className="py-3.5 px-5 font-semibold text-black dark:text-white bg-black/[0.02] dark:bg-white/[0.03]">
-                    Switch model in-flight with continuous context
-                  </td>
-                </tr>
-                <tr className="hover:bg-black/[0.01] dark:hover:bg-white/[0.01]">
-                  <td className="py-3.5 px-5 font-medium text-black dark:text-white">Customer Support & Verification</td>
-                  <td className="py-3.5 px-5 text-gray-500">Overseas automated chatbot</td>
-                  <td className="py-3.5 px-5 font-semibold text-black dark:text-white bg-black/[0.02] dark:bg-white/[0.03]">
-                    Dedicated Bangladesh Support Team
-                  </td>
-                </tr>
-              </tbody>
-            </table>
+            {/* Desktop Comparison Table */}
+            <div className="hidden sm:block overflow-x-auto">
+              <table className="w-full text-left text-xs">
+                <thead className="bg-[#f0f4f9] dark:bg-[#1e1f20] border-b border-black/[0.08] dark:border-white/[0.08] font-mono text-[11px] text-[#444746] dark:text-[#9aa0a6]">
+                  <tr>
+                    <th className="py-4 px-5 font-semibold">Features & Capabilities</th>
+                    <th className="py-4 px-5 font-semibold text-[#444746] dark:text-[#9aa0a6]">Separate AI Subscriptions</th>
+                    <th className="py-4 px-5 font-bold text-[#1f1f1f] dark:text-[#e3e3e3] bg-[#e9eef6]/70 dark:bg-[#282a2c]/70">
+                      Bangla AI (Unified)
+                    </th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-black/[0.06] dark:divide-white/[0.06]">
+                  <tr className="hover:bg-[#f0f4f9]/40 dark:hover:bg-[#1e1f20]/40 transition-colors">
+                    <td className="py-3.5 px-5 font-medium text-[#1f1f1f] dark:text-[#e3e3e3]">Monthly Subscription Cost</td>
+                    <td className="py-3.5 px-5 text-[#444746] dark:text-[#9aa0a6] font-mono">$80+ / mo (~৳10,000+ BDT)</td>
+                    <td className="py-3.5 px-5 font-bold text-emerald-700 dark:text-emerald-400 font-mono bg-[#e9eef6]/35 dark:bg-[#282a2c]/35">
+                      ৳699 / mo (Save 93%)
+                    </td>
+                  </tr>
+                  <tr className="hover:bg-[#f0f4f9]/40 dark:hover:bg-[#1e1f20]/40 transition-colors">
+                    <td className="py-3.5 px-5 font-medium text-[#1f1f1f] dark:text-[#e3e3e3]">Payment Method in Bangladesh</td>
+                    <td className="py-3.5 px-5 text-[#444746] dark:text-[#9aa0a6]">Passport-endorsed Dual Currency Credit Card required</td>
+                    <td className="py-3.5 px-5 font-semibold text-[#1f1f1f] dark:text-[#e3e3e3] bg-[#e9eef6]/35 dark:bg-[#282a2c]/35">
+                      bKash, Nagad, Rocket (TrxID)
+                    </td>
+                  </tr>
+                  <tr className="hover:bg-[#f0f4f9]/40 dark:hover:bg-[#1e1f20]/40 transition-colors">
+                    <td className="py-3.5 px-5 font-medium text-[#1f1f1f] dark:text-[#e3e3e3]">Catalog of Top Foundation Models</td>
+                    <td className="py-3.5 px-5 text-[#444746] dark:text-[#9aa0a6]">1 model per subscription tab</td>
+                    <td className="py-3.5 px-5 font-semibold text-[#1f1f1f] dark:text-[#e3e3e3] bg-[#e9eef6]/35 dark:bg-[#282a2c]/35">
+                      10 Flagship Models in 1 Account
+                    </td>
+                  </tr>
+                  <tr className="hover:bg-[#f0f4f9]/40 dark:hover:bg-[#1e1f20]/40 transition-colors">
+                    <td className="py-3.5 px-5 font-medium text-[#1f1f1f] dark:text-[#e3e3e3]">Cross-Model Workflow Switcher</td>
+                    <td className="py-3.5 px-5 text-[#444746] dark:text-[#9aa0a6]">Manual copy-pasting across different browser tabs</td>
+                    <td className="py-3.5 px-5 font-semibold text-[#1f1f1f] dark:text-[#e3e3e3] bg-[#e9eef6]/35 dark:bg-[#282a2c]/35">
+                      Switch model in-flight with continuous context
+                    </td>
+                  </tr>
+                  <tr className="hover:bg-[#f0f4f9]/40 dark:hover:bg-[#1e1f20]/40 transition-colors">
+                    <td className="py-3.5 px-5 font-medium text-[#1f1f1f] dark:text-[#e3e3e3]">Customer Support & Verification</td>
+                    <td className="py-3.5 px-5 text-[#444746] dark:text-[#9aa0a6]">Overseas automated chatbot</td>
+                    <td className="py-3.5 px-5 font-semibold text-[#1f1f1f] dark:text-[#e3e3e3] bg-[#e9eef6]/35 dark:bg-[#282a2c]/35">
+                      Dedicated Bangladesh Support Team
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
           </div>
         </div>
       </section>
 
       {/* Curated Foundation Models (All 10 Models Displayed Cleanly) */}
       <section className="max-w-5xl mx-auto px-4 sm:px-6">
-        <div className="text-center mb-10 space-y-2">
-          <span className="text-[11px] font-mono uppercase tracking-wider text-gray-400 block">
+        <div className="text-center mb-10 space-y-2.5">
+          <span className="text-[11px] font-mono uppercase tracking-wider text-[#444746] dark:text-[#9aa0a6] block">
             Engine Fleet
           </span>
-          <h2 className="text-2xl sm:text-3xl font-medium tracking-tight text-black dark:text-white">
+          <h2 className="text-2xl sm:text-3xl font-semibold tracking-tight text-[#1f1f1f] dark:text-[#e3e3e3]">
             10 Curated Foundation Models
           </h2>
-          <p className="text-sm text-gray-500 max-w-lg mx-auto">
+          <p className="text-sm text-[#444746] dark:text-[#9aa0a6] max-w-lg mx-auto leading-[1.7]">
             State-of-the-art weights from Anthropic, Google, OpenAI, xAI, DeepSeek, and Moonshot ready for production tasks.
           </p>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           {/* 1. Claude Fable 5.2 */}
-          <div className="card-minimal flex flex-col justify-between p-5 hover:border-black/30 dark:hover:border-white/30 transition-colors group">
+          <div className="card-minimal flex flex-col justify-between p-5 group">
             <div className="space-y-3">
-              <div className="flex items-center justify-between text-xs text-gray-500">
+              <div className="flex items-center justify-between text-xs text-[#444746] dark:text-[#9aa0a6]">
                 <div className="flex items-center gap-1.5 font-medium">
                   <span>Anthropic</span>
                   <span>·</span>
                   <span>500k Context</span>
                 </div>
-                <span className="font-mono text-[10px] uppercase font-bold text-amber-700 dark:text-amber-400 px-1.5 py-0.5 rounded bg-amber-500/10 border border-amber-500/20">
+                <span className="font-mono text-[10px] uppercase font-semibold text-[#444746] dark:text-[#9aa0a6] px-2 py-0.5 rounded-full bg-[#f0f4f9] dark:bg-[#282a2c] border border-black/[0.06] dark:border-white/[0.08]">
                   MAX
                 </span>
               </div>
               <div className="flex items-center gap-2.5">
-                <div className="w-8 h-8 rounded-lg bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20 flex items-center justify-center shrink-0 shadow-2xs group-hover:scale-105 transition-transform">
+                <div className="w-9 h-9 rounded-xl bg-[#f0f4f9] dark:bg-[#282a2c] border border-black/[0.06] dark:border-white/[0.08] flex items-center justify-center shrink-0">
                   <img
                     src={CURATED_MODEL_MAP['claude-fable-5-2'].iconSrc}
                     alt={CURATED_MODEL_MAP['claude-fable-5-2'].iconAlt}
                     className="w-[18px] h-[18px] object-contain"
                   />
                 </div>
-                <h3 className="text-base font-semibold text-black dark:text-white leading-snug">
+                <h3 className="text-base font-semibold text-[#1f1f1f] dark:text-[#e3e3e3] leading-snug">
                   Claude Fable 5.2 (max)
                 </h3>
               </div>
-              <p className="text-xs text-gray-600 dark:text-gray-400 leading-relaxed">
+              <p className="text-xs text-[#444746] dark:text-[#9aa0a6] leading-[1.7]">
                 Anthropic's pinnacle intelligence. Exceptional software engineering, complex system architecture design, and nuanced prose refinement.
               </p>
             </div>
-            <div className="mt-4 pt-3 border-t border-black/[0.06] dark:border-white/[0.06] text-[11px] text-gray-400 font-mono">
+            <div className="mt-4 pt-3 border-t border-black/[0.06] dark:border-white/[0.06] text-[11px] text-[#444746] dark:text-[#9aa0a6] font-mono">
               Coding Specialist • Literary Precision
             </div>
           </div>
 
           {/* 2. Gemini 4 Carbon */}
-          <div className="card-minimal flex flex-col justify-between p-5 hover:border-black/30 dark:hover:border-white/30 transition-colors group">
+          <div className="card-minimal flex flex-col justify-between p-5 group">
             <div className="space-y-3">
-              <div className="flex items-center justify-between text-xs text-gray-500">
+              <div className="flex items-center justify-between text-xs text-[#444746] dark:text-[#9aa0a6]">
                 <div className="flex items-center gap-1.5 font-medium">
                   <span>Google</span>
                   <span>·</span>
                   <span>2M Context</span>
                 </div>
-                <span className="font-mono text-[10px] uppercase font-bold text-blue-700 dark:text-blue-400 px-1.5 py-0.5 rounded bg-blue-500/10 border border-blue-500/20">
+                <span className="font-mono text-[10px] uppercase font-semibold text-[#444746] dark:text-[#9aa0a6] px-2 py-0.5 rounded-full bg-[#f0f4f9] dark:bg-[#282a2c] border border-black/[0.06] dark:border-white/[0.08]">
                   HIGH
                 </span>
               </div>
               <div className="flex items-center gap-2.5">
-                <div className="w-8 h-8 rounded-lg bg-blue-500/10 text-blue-600 dark:text-blue-400 border border-blue-500/20 flex items-center justify-center shrink-0 shadow-2xs group-hover:scale-105 transition-transform">
+                <div className="w-9 h-9 rounded-xl bg-[#f0f4f9] dark:bg-[#282a2c] border border-black/[0.06] dark:border-white/[0.08] flex items-center justify-center shrink-0">
                   <img
                     src={CURATED_MODEL_MAP['gemini-4-carbon'].iconSrc}
                     alt={CURATED_MODEL_MAP['gemini-4-carbon'].iconAlt}
                     className="w-[18px] h-[18px] object-contain"
                   />
                 </div>
-                <h3 className="text-base font-semibold text-black dark:text-white leading-snug">
+                <h3 className="text-base font-semibold text-[#1f1f1f] dark:text-[#e3e3e3] leading-snug">
                   Gemini 4 Carbon (high)
                 </h3>
               </div>
-              <p className="text-xs text-gray-600 dark:text-gray-400 leading-relaxed">
+              <p className="text-xs text-[#444746] dark:text-[#9aa0a6] leading-[1.7]">
                 Next-generation Google Carbon architecture with massive 2M token context, high-throughput multimodal intelligence, and instantaneous response streaming.
               </p>
             </div>
-            <div className="mt-4 pt-3 border-t border-black/[0.06] dark:border-white/[0.06] text-[11px] text-gray-400 font-mono">
+            <div className="mt-4 pt-3 border-t border-black/[0.06] dark:border-white/[0.06] text-[11px] text-[#444746] dark:text-[#9aa0a6] font-mono">
               2M Context • Low Latency Multimodal
             </div>
           </div>
 
           {/* 3. GPT-6 Astra */}
-          <div className="card-minimal flex flex-col justify-between p-5 hover:border-black/30 dark:hover:border-white/30 transition-colors group">
+          <div className="card-minimal flex flex-col justify-between p-5 group">
             <div className="space-y-3">
-              <div className="flex items-center justify-between text-xs text-gray-500">
+              <div className="flex items-center justify-between text-xs text-[#444746] dark:text-[#9aa0a6]">
                 <div className="flex items-center gap-1.5 font-medium">
                   <span>OpenAI</span>
                   <span>·</span>
                   <span>1M Context</span>
                 </div>
-                <span className="font-mono text-[10px] uppercase font-bold text-emerald-700 dark:text-emerald-400 px-1.5 py-0.5 rounded bg-emerald-500/10 border border-emerald-500/20">
+                <span className="font-mono text-[10px] uppercase font-semibold text-[#444746] dark:text-[#9aa0a6] px-2 py-0.5 rounded-full bg-[#f0f4f9] dark:bg-[#282a2c] border border-black/[0.06] dark:border-white/[0.08]">
                   MAX
                 </span>
               </div>
               <div className="flex items-center gap-2.5">
-                <div className="w-8 h-8 rounded-lg bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20 flex items-center justify-center shrink-0 shadow-2xs group-hover:scale-105 transition-transform">
+                <div className="w-9 h-9 rounded-xl bg-[#f0f4f9] dark:bg-[#282a2c] border border-black/[0.06] dark:border-white/[0.08] flex items-center justify-center shrink-0">
                   <img
                     src={CURATED_MODEL_MAP['gpt-6-astra'].iconSrc}
                     alt={CURATED_MODEL_MAP['gpt-6-astra'].iconAlt}
                     className="w-[18px] h-[18px] object-contain dark:invert"
                   />
                 </div>
-                <h3 className="text-base font-semibold text-black dark:text-white leading-snug">
+                <h3 className="text-base font-semibold text-[#1f1f1f] dark:text-[#e3e3e3] leading-snug">
                   GPT-6 Astra (max)
                 </h3>
               </div>
-              <p className="text-xs text-gray-600 dark:text-gray-400 leading-relaxed">
+              <p className="text-xs text-[#444746] dark:text-[#9aa0a6] leading-[1.7]">
                 OpenAI frontier flagship. Maximum general intelligence, autonomous systems design, and multi-step cross-domain problem solving.
               </p>
             </div>
-            <div className="mt-4 pt-3 border-t border-black/[0.06] dark:border-white/[0.06] text-[11px] text-gray-400 font-mono">
+            <div className="mt-4 pt-3 border-t border-black/[0.06] dark:border-white/[0.06] text-[11px] text-[#444746] dark:text-[#9aa0a6] font-mono">
               Frontier Reasoning • Generalist
             </div>
           </div>
 
           {/* 4. Grok 4.7 */}
-          <div className="card-minimal flex flex-col justify-between p-5 hover:border-black/30 dark:hover:border-white/30 transition-colors group">
+          <div className="card-minimal flex flex-col justify-between p-5 group">
             <div className="space-y-3">
-              <div className="flex items-center justify-between text-xs text-gray-500">
+              <div className="flex items-center justify-between text-xs text-[#444746] dark:text-[#9aa0a6]">
                 <div className="flex items-center gap-1.5 font-medium">
                   <span>xAI</span>
                   <span>·</span>
                   <span>256k Context</span>
                 </div>
-                <span className="font-mono text-[10px] uppercase font-bold text-black dark:text-white px-1.5 py-0.5 rounded bg-black/10 dark:bg-white/10 border border-black/15 dark:border-white/20">
+                <span className="font-mono text-[10px] uppercase font-semibold text-[#444746] dark:text-[#9aa0a6] px-2 py-0.5 rounded-full bg-[#f0f4f9] dark:bg-[#282a2c] border border-black/[0.06] dark:border-white/[0.08]">
                   XHIGH
                 </span>
               </div>
               <div className="flex items-center gap-2.5">
-                <div className="w-8 h-8 rounded-lg bg-black/5 dark:bg-white/10 text-black dark:text-white border border-black/10 dark:border-white/20 flex items-center justify-center shrink-0 shadow-2xs group-hover:scale-105 transition-transform">
+                <div className="w-9 h-9 rounded-xl bg-[#f0f4f9] dark:bg-[#282a2c] border border-black/[0.06] dark:border-white/[0.08] flex items-center justify-center shrink-0">
                   <img
                     src={CURATED_MODEL_MAP['grok-4-7'].iconSrc}
                     alt={CURATED_MODEL_MAP['grok-4-7'].iconAlt}
                     className="w-[18px] h-[18px] object-contain dark:invert"
                   />
                 </div>
-                <h3 className="text-base font-semibold text-black dark:text-white leading-snug">
+                <h3 className="text-base font-semibold text-[#1f1f1f] dark:text-[#e3e3e3] leading-snug">
                   Grok 4.7 (xhigh)
                 </h3>
               </div>
-              <p className="text-xs text-gray-600 dark:text-gray-400 leading-relaxed">
+              <p className="text-xs text-[#444746] dark:text-[#9aa0a6] leading-[1.7]">
                 xAI's extreme inference engine. Direct real-time insight synthesis, high-throughput multi-agent orchestration, and uncompromising technical clarity.
               </p>
             </div>
-            <div className="mt-4 pt-3 border-t border-black/[0.06] dark:border-white/[0.06] text-[11px] text-gray-400 font-mono">
+            <div className="mt-4 pt-3 border-t border-black/[0.06] dark:border-white/[0.06] text-[11px] text-[#444746] dark:text-[#9aa0a6] font-mono">
               Extreme Inference • Real-time
             </div>
           </div>
 
           {/* 5. DeepSeek V4.1 Flash 1017 */}
-          <div className="card-minimal flex flex-col justify-between p-5 hover:border-black/30 dark:hover:border-white/30 transition-colors group">
+          <div className="card-minimal flex flex-col justify-between p-5 group">
             <div className="space-y-3">
-              <div className="flex items-center justify-between text-xs text-gray-500">
+              <div className="flex items-center justify-between text-xs text-[#444746] dark:text-[#9aa0a6]">
                 <div className="flex items-center gap-1.5 font-medium">
                   <span>DeepSeek</span>
                   <span>·</span>
                   <span>128k Context</span>
                 </div>
-                <span className="font-mono text-[10px] uppercase font-bold text-indigo-700 dark:text-indigo-400 px-1.5 py-0.5 rounded bg-indigo-500/10 border border-indigo-500/20">
+                <span className="font-mono text-[10px] uppercase font-semibold text-[#444746] dark:text-[#9aa0a6] px-2 py-0.5 rounded-full bg-[#f0f4f9] dark:bg-[#282a2c] border border-black/[0.06] dark:border-white/[0.08]">
                   MAX
                 </span>
               </div>
               <div className="flex items-center gap-2.5">
-                <div className="w-8 h-8 rounded-lg bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 border border-indigo-500/20 flex items-center justify-center shrink-0 shadow-2xs group-hover:scale-105 transition-transform">
+                <div className="w-9 h-9 rounded-xl bg-[#f0f4f9] dark:bg-[#282a2c] border border-black/[0.06] dark:border-white/[0.08] flex items-center justify-center shrink-0">
                   <img
                     src={CURATED_MODEL_MAP['deepseek-v4-1-flash'].iconSrc}
                     alt={CURATED_MODEL_MAP['deepseek-v4-1-flash'].iconAlt}
                     className="w-[18px] h-[18px] object-contain"
                   />
                 </div>
-                <h3 className="text-base font-semibold text-black dark:text-white leading-snug">
+                <h3 className="text-base font-semibold text-[#1f1f1f] dark:text-[#e3e3e3] leading-snug">
                   DeepSeek V4.1 Flash
                 </h3>
               </div>
-              <p className="text-xs text-gray-600 dark:text-gray-400 leading-relaxed">
+              <p className="text-xs text-[#444746] dark:text-[#9aa0a6] leading-[1.7]">
                 Next-gen MoE architecture offering instantaneous response velocity combined with rigorous chain-of-thought mathematical proof verification.
               </p>
             </div>
-            <div className="mt-4 pt-3 border-t border-black/[0.06] dark:border-white/[0.06] text-[11px] text-gray-400 font-mono">
+            <div className="mt-4 pt-3 border-t border-black/[0.06] dark:border-white/[0.06] text-[11px] text-[#444746] dark:text-[#9aa0a6] font-mono">
               Ultra Dense MoE • Math & Logic
             </div>
           </div>
 
           {/* 6. Kimi K3.1 Pro */}
-          <div className="card-minimal flex flex-col justify-between p-5 hover:border-black/30 dark:hover:border-white/30 transition-colors group">
+          <div className="card-minimal flex flex-col justify-between p-5 group">
             <div className="space-y-3">
-              <div className="flex items-center justify-between text-xs text-gray-500">
+              <div className="flex items-center justify-between text-xs text-[#444746] dark:text-[#9aa0a6]">
                 <div className="flex items-center gap-1.5 font-medium">
                   <span>Moonshot AI</span>
                   <span>·</span>
                   <span>2M Context</span>
                 </div>
-                <span className="font-mono text-[10px] uppercase font-bold text-purple-700 dark:text-purple-400 px-1.5 py-0.5 rounded bg-purple-500/10 border border-purple-500/20">
+                <span className="font-mono text-[10px] uppercase font-semibold text-[#444746] dark:text-[#9aa0a6] px-2 py-0.5 rounded-full bg-[#f0f4f9] dark:bg-[#282a2c] border border-black/[0.06] dark:border-white/[0.08]">
                   REASONING
                 </span>
               </div>
               <div className="flex items-center gap-2.5">
-                <div className="w-8 h-8 rounded-lg bg-purple-500/10 text-purple-600 dark:text-purple-400 border border-purple-500/20 flex items-center justify-center shrink-0 shadow-2xs group-hover:scale-105 transition-transform">
+                <div className="w-9 h-9 rounded-xl bg-[#f0f4f9] dark:bg-[#282a2c] border border-black/[0.06] dark:border-white/[0.08] flex items-center justify-center shrink-0">
                   <img
                     src={CURATED_MODEL_MAP['kimi-k3-1-pro'].iconSrc}
                     alt={CURATED_MODEL_MAP['kimi-k3-1-pro'].iconAlt}
                     className="w-[18px] h-[18px] object-contain dark:invert"
                   />
                 </div>
-                <h3 className="text-base font-semibold text-black dark:text-white leading-snug">
+                <h3 className="text-base font-semibold text-[#1f1f1f] dark:text-[#e3e3e3] leading-snug">
                   Kimi K3.1 Pro
                 </h3>
               </div>
-              <p className="text-xs text-gray-600 dark:text-gray-400 leading-relaxed">
+              <p className="text-xs text-[#444746] dark:text-[#9aa0a6] leading-[1.7]">
                 Moonshot flagship with native 2M context handling. Specialized in massive document digests, legal contracts, and academic synthesis.
               </p>
             </div>
-            <div className="mt-4 pt-3 border-t border-black/[0.06] dark:border-white/[0.06] text-[11px] text-gray-400 font-mono">
+            <div className="mt-4 pt-3 border-t border-black/[0.06] dark:border-white/[0.06] text-[11px] text-[#444746] dark:text-[#9aa0a6] font-mono">
               Document Synthesis • Long Context
             </div>
           </div>
 
           {/* 7. Gemini 2.5 Flash */}
-          <div className="card-minimal flex flex-col justify-between p-5 hover:border-black/30 dark:hover:border-white/30 transition-colors group">
+          <div className="card-minimal flex flex-col justify-between p-5 group">
             <div className="space-y-3">
-              <div className="flex items-center justify-between text-xs text-gray-500">
+              <div className="flex items-center justify-between text-xs text-[#444746] dark:text-[#9aa0a6]">
                 <div className="flex items-center gap-1.5 font-medium">
                   <span>Google</span>
                   <span>·</span>
                   <span>1M Context</span>
                 </div>
-                <span className="font-mono text-[10px] uppercase font-bold text-emerald-600 dark:text-emerald-400 px-1.5 py-0.5 rounded bg-emerald-500/10 border border-emerald-500/20">
+                <span className="font-mono text-[10px] uppercase font-semibold text-[#444746] dark:text-[#9aa0a6] px-2 py-0.5 rounded-full bg-[#f0f4f9] dark:bg-[#282a2c] border border-black/[0.06] dark:border-white/[0.08]">
                   BALANCED
                 </span>
               </div>
               <div className="flex items-center gap-2.5">
-                <div className="w-8 h-8 rounded-lg bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20 flex items-center justify-center shrink-0 shadow-2xs group-hover:scale-105 transition-transform">
+                <div className="w-9 h-9 rounded-xl bg-[#f0f4f9] dark:bg-[#282a2c] border border-black/[0.06] dark:border-white/[0.08] flex items-center justify-center shrink-0">
                   <img
                     src={CURATED_MODEL_MAP['gemini-2-5-flash'].iconSrc}
                     alt={CURATED_MODEL_MAP['gemini-2-5-flash'].iconAlt}
                     className="w-[18px] h-[18px] object-contain"
                   />
                 </div>
-                <h3 className="text-base font-semibold text-black dark:text-white leading-snug">
+                <h3 className="text-base font-semibold text-[#1f1f1f] dark:text-[#e3e3e3] leading-snug">
                   Gemini 2.5 Flash
                 </h3>
               </div>
-              <p className="text-xs text-gray-600 dark:text-gray-400 leading-relaxed">
+              <p className="text-xs text-[#444746] dark:text-[#9aa0a6] leading-[1.7]">
                 Ultra-fast versatile workhorse designed for high-frequency queries, instant summarization, and rapid draft iterations.
               </p>
             </div>
-            <div className="mt-4 pt-3 border-t border-black/[0.06] dark:border-white/[0.06] text-[11px] text-gray-400 font-mono">
+            <div className="mt-4 pt-3 border-t border-black/[0.06] dark:border-white/[0.06] text-[11px] text-[#444746] dark:text-[#9aa0a6] font-mono">
               Sub-second Latency • Efficient
             </div>
           </div>
 
           {/* 8. Gemini 2.5 Pro */}
-          <div className="card-minimal flex flex-col justify-between p-5 hover:border-black/30 dark:hover:border-white/30 transition-colors group">
+          <div className="card-minimal flex flex-col justify-between p-5 group">
             <div className="space-y-3">
-              <div className="flex items-center justify-between text-xs text-gray-500">
+              <div className="flex items-center justify-between text-xs text-[#444746] dark:text-[#9aa0a6]">
                 <div className="flex items-center gap-1.5 font-medium">
                   <span>Google</span>
                   <span>·</span>
                   <span>2M Context</span>
                 </div>
-                <span className="font-mono text-[10px] uppercase font-bold text-blue-700 dark:text-blue-400 px-1.5 py-0.5 rounded bg-blue-500/10 border border-blue-500/20">
+                <span className="font-mono text-[10px] uppercase font-semibold text-[#444746] dark:text-[#9aa0a6] px-2 py-0.5 rounded-full bg-[#f0f4f9] dark:bg-[#282a2c] border border-black/[0.06] dark:border-white/[0.08]">
                   PRO
                 </span>
               </div>
               <div className="flex items-center gap-2.5">
-                <div className="w-8 h-8 rounded-lg bg-blue-500/10 text-blue-600 dark:text-blue-400 border border-blue-500/20 flex items-center justify-center shrink-0 shadow-2xs group-hover:scale-105 transition-transform">
+                <div className="w-9 h-9 rounded-xl bg-[#f0f4f9] dark:bg-[#282a2c] border border-black/[0.06] dark:border-white/[0.08] flex items-center justify-center shrink-0">
                   <img
                     src={CURATED_MODEL_MAP['gemini-2-5-pro'].iconSrc}
                     alt={CURATED_MODEL_MAP['gemini-2-5-pro'].iconAlt}
                     className="w-[18px] h-[18px] object-contain"
                   />
                 </div>
-                <h3 className="text-base font-semibold text-black dark:text-white leading-snug">
+                <h3 className="text-base font-semibold text-[#1f1f1f] dark:text-[#e3e3e3] leading-snug">
                   Gemini 2.5 Pro
                 </h3>
               </div>
-              <p className="text-xs text-gray-600 dark:text-gray-400 leading-relaxed">
+              <p className="text-xs text-[#444746] dark:text-[#9aa0a6] leading-[1.7]">
                 Deep analytical reasoning model optimized for cross-modal datasets, video timestamps, and multi-file codebases.
               </p>
             </div>
-            <div className="mt-4 pt-3 border-t border-black/[0.06] dark:border-white/[0.06] text-[11px] text-gray-400 font-mono">
+            <div className="mt-4 pt-3 border-t border-black/[0.06] dark:border-white/[0.06] text-[11px] text-[#444746] dark:text-[#9aa0a6] font-mono">
               Complex Analysis • Deep Reasoning
             </div>
           </div>
 
           {/* 9. OpenAI GPT-4o */}
-          <div className="card-minimal flex flex-col justify-between p-5 hover:border-black/30 dark:hover:border-white/30 transition-colors group">
+          <div className="card-minimal flex flex-col justify-between p-5 group">
             <div className="space-y-3">
-              <div className="flex items-center justify-between text-xs text-gray-500">
+              <div className="flex items-center justify-between text-xs text-[#444746] dark:text-[#9aa0a6]">
                 <div className="flex items-center gap-1.5 font-medium">
                   <span>OpenAI</span>
                   <span>·</span>
                   <span>128k Context</span>
                 </div>
-                <span className="font-mono text-[10px] uppercase font-bold text-emerald-700 dark:text-emerald-400 px-1.5 py-0.5 rounded bg-emerald-500/10 border border-emerald-500/20">
+                <span className="font-mono text-[10px] uppercase font-semibold text-[#444746] dark:text-[#9aa0a6] px-2 py-0.5 rounded-full bg-[#f0f4f9] dark:bg-[#282a2c] border border-black/[0.06] dark:border-white/[0.08]">
                   OMNI
                 </span>
               </div>
               <div className="flex items-center gap-2.5">
-                <div className="w-8 h-8 rounded-lg bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20 flex items-center justify-center shrink-0 shadow-2xs group-hover:scale-105 transition-transform">
+                <div className="w-9 h-9 rounded-xl bg-[#f0f4f9] dark:bg-[#282a2c] border border-black/[0.06] dark:border-white/[0.08] flex items-center justify-center shrink-0">
                   <img
                     src={CURATED_MODEL_MAP['openai-gpt-4o'].iconSrc}
                     alt={CURATED_MODEL_MAP['openai-gpt-4o'].iconAlt}
                     className="w-[18px] h-[18px] object-contain dark:invert"
                   />
                 </div>
-                <h3 className="text-base font-semibold text-black dark:text-white leading-snug">
+                <h3 className="text-base font-semibold text-[#1f1f1f] dark:text-[#e3e3e3] leading-snug">
                   OpenAI GPT-4o
                 </h3>
               </div>
-              <p className="text-xs text-gray-600 dark:text-gray-400 leading-relaxed">
+              <p className="text-xs text-[#444746] dark:text-[#9aa0a6] leading-[1.7]">
                 Flagship multimodal intelligence. Excels at nuanced reasoning, creative writing, vision synthesis, and production conversational logic.
               </p>
             </div>
-            <div className="mt-4 pt-3 border-t border-black/[0.06] dark:border-white/[0.06] text-[11px] text-gray-400 font-mono">
+            <div className="mt-4 pt-3 border-t border-black/[0.06] dark:border-white/[0.06] text-[11px] text-[#444746] dark:text-[#9aa0a6] font-mono">
               Industry Standard • Multimodal
             </div>
           </div>
 
           {/* 10. Claude 3.5 Sonnet */}
-          <div className="card-minimal flex flex-col justify-between p-5 hover:border-black/30 dark:hover:border-white/30 transition-colors group">
+          <div className="card-minimal flex flex-col justify-between p-5 group">
             <div className="space-y-3">
-              <div className="flex items-center justify-between text-xs text-gray-500">
+              <div className="flex items-center justify-between text-xs text-[#444746] dark:text-[#9aa0a6]">
                 <div className="flex items-center gap-1.5 font-medium">
                   <span>Anthropic</span>
                   <span>·</span>
                   <span>200k Context</span>
                 </div>
-                <span className="font-mono text-[10px] uppercase font-bold text-amber-700 dark:text-amber-400 px-1.5 py-0.5 rounded bg-amber-500/10 border border-amber-500/20">
+                <span className="font-mono text-[10px] uppercase font-semibold text-[#444746] dark:text-[#9aa0a6] px-2 py-0.5 rounded-full bg-[#f0f4f9] dark:bg-[#282a2c] border border-black/[0.06] dark:border-white/[0.08]">
                   CODING
                 </span>
               </div>
               <div className="flex items-center gap-2.5">
-                <div className="w-8 h-8 rounded-lg bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20 flex items-center justify-center shrink-0 shadow-2xs group-hover:scale-105 transition-transform">
+                <div className="w-9 h-9 rounded-xl bg-[#f0f4f9] dark:bg-[#282a2c] border border-black/[0.06] dark:border-white/[0.08] flex items-center justify-center shrink-0">
                   <img
                     src={CURATED_MODEL_MAP['claude-3-5-sonnet'].iconSrc}
                     alt={CURATED_MODEL_MAP['claude-3-5-sonnet'].iconAlt}
                     className="w-[18px] h-[18px] object-contain"
                   />
                 </div>
-                <h3 className="text-base font-semibold text-black dark:text-white leading-snug">
+                <h3 className="text-base font-semibold text-[#1f1f1f] dark:text-[#e3e3e3] leading-snug">
                   Claude 3.5 Sonnet
                 </h3>
               </div>
-              <p className="text-xs text-gray-600 dark:text-gray-400 leading-relaxed">
+              <p className="text-xs text-[#444746] dark:text-[#9aa0a6] leading-[1.7]">
                 Industry-leading software engineering and prose refinement. Unmatched code generation, debugging, and architecture review.
               </p>
             </div>
-            <div className="mt-4 pt-3 border-t border-black/[0.06] dark:border-white/[0.06] text-[11px] text-gray-400 font-mono">
+            <div className="mt-4 pt-3 border-t border-black/[0.06] dark:border-white/[0.06] text-[11px] text-[#444746] dark:text-[#9aa0a6] font-mono">
               Engineering Benchmark • Nuance
             </div>
           </div>
@@ -667,14 +669,14 @@ export const HomePage: React.FC<HomePageProps> = ({ onStartChat }) => {
 
       {/* Interactive Multi-Model Output Showcase */}
       <section className="max-w-5xl mx-auto px-4 sm:px-6">
-        <div className="text-center mb-8 space-y-2">
-          <span className="text-[11px] font-mono uppercase tracking-wider text-gray-400 block">
+        <div className="text-center mb-8 space-y-2.5">
+          <span className="text-[11px] font-mono uppercase tracking-wider text-[#444746] dark:text-[#9aa0a6] block">
             Live Comparison
           </span>
-          <h2 className="text-2xl sm:text-3xl font-medium tracking-tight text-black dark:text-white">
+          <h2 className="text-2xl sm:text-3xl font-semibold tracking-tight text-[#1f1f1f] dark:text-[#e3e3e3]">
             Inspect Side-by-Side Model Outputs
           </h2>
-          <p className="text-sm text-gray-500 max-w-lg mx-auto">
+          <p className="text-sm text-[#444746] dark:text-[#9aa0a6] max-w-lg mx-auto leading-[1.7]">
             Test how different foundation models tackle real coding, Bangla copywriting, and mathematical tasks.
           </p>
         </div>
@@ -688,10 +690,10 @@ export const HomePage: React.FC<HomePageProps> = ({ onStartChat }) => {
                 setActiveBenchmarkTab(idx);
                 setActiveModelTab(0);
               }}
-              className={`min-h-9 h-auto py-2 px-3.5 sm:px-4 rounded-full text-xs font-semibold transition-all cursor-pointer text-center ${
+              className={`min-h-9 h-auto py-2 px-4 rounded-full text-xs font-semibold transition-colors cursor-pointer text-center ${
                 activeBenchmarkTab === idx
-                  ? 'bg-black text-white dark:bg-white dark:text-black shadow-xs'
-                  : 'bg-black/[0.04] dark:bg-white/[0.06] text-gray-600 dark:text-gray-400 hover:text-black dark:hover:text-white'
+                  ? 'bg-[#1f1f1f] text-white dark:bg-[#e3e3e3] dark:text-[#131314]'
+                  : 'bg-[#f0f4f9] dark:bg-[#1e1f20] text-[#444746] dark:text-[#9aa0a6] hover:bg-[#e9eef6] dark:hover:bg-[#282a2c] hover:text-[#1f1f1f] dark:hover:text-[#e3e3e3]'
               }`}
             >
               {sample.category}
@@ -700,13 +702,13 @@ export const HomePage: React.FC<HomePageProps> = ({ onStartChat }) => {
         </div>
 
         {/* Interactive Prompt & Model Output Card */}
-        <div className="rounded-[8px] border border-black/[0.08] dark:border-white/[0.08] bg-white dark:bg-[#262626] p-4 sm:p-6 shadow-xs space-y-5 min-w-0">
+        <div className="rounded-3xl border border-black/[0.08] dark:border-white/[0.08] bg-[#f0f4f9] dark:bg-[#1e1f20] p-4 sm:p-6 space-y-5 min-w-0">
           {/* Prompt Header */}
-          <div className="space-y-1.5 pb-4 border-b border-black/[0.06] dark:border-white/[0.06]">
-            <span className="text-[10px] font-mono uppercase tracking-wider text-gray-400 block">
+          <div className="space-y-1.5 pb-4 border-b border-black/[0.08] dark:border-white/[0.08]">
+            <span className="text-[10px] font-mono uppercase tracking-wider text-[#444746] dark:text-[#9aa0a6] block">
               Prompt Input
             </span>
-            <p className="text-sm font-medium text-black dark:text-white break-words">
+            <p className="text-sm font-medium text-[#1f1f1f] dark:text-[#e3e3e3] leading-[1.7] break-words">
               "{SAMPLE_BENCHMARKS[activeBenchmarkTab].prompt}"
             </p>
           </div>
@@ -717,10 +719,10 @@ export const HomePage: React.FC<HomePageProps> = ({ onStartChat }) => {
               <button
                 key={mIdx}
                 onClick={() => setActiveModelTab(mIdx)}
-                className={`text-xs px-3 sm:px-3.5 py-1.5 rounded-full border transition-all cursor-pointer font-mono text-left ${
+                className={`text-xs px-3.5 py-1.5 rounded-full border transition-colors cursor-pointer font-mono text-left ${
                   activeModelTab === mIdx
-                    ? 'border-black dark:border-white bg-black dark:bg-white text-white dark:text-black font-bold'
-                    : 'border-black/10 dark:border-white/10 text-gray-500 hover:border-black/30'
+                    ? 'border-[#1f1f1f] dark:border-[#e3e3e3] bg-[#1f1f1f] dark:bg-[#e3e3e3] text-white dark:text-[#131314] font-bold'
+                    : 'border-black/[0.08] dark:border-white/[0.08] bg-white dark:bg-[#131314] text-[#444746] dark:text-[#9aa0a6] hover:border-black/20 dark:hover:border-white/20'
                 }`}
               >
                 {m.modelName}
@@ -729,12 +731,12 @@ export const HomePage: React.FC<HomePageProps> = ({ onStartChat }) => {
           </div>
 
           {/* Rendered Output Box */}
-          <div className="bg-[#F8F9FA] dark:bg-[#1F1F1F] rounded-[8px] p-3.5 sm:p-4 border border-black/[0.05] dark:border-white/[0.05] min-w-0">
-            <div className="flex flex-wrap items-center justify-between gap-2 mb-3 text-[11px] text-gray-500">
-              <span className="font-mono text-black dark:text-white font-semibold break-words">
+          <div className="bg-white dark:bg-[#131314] rounded-2xl p-4 sm:p-5 border border-black/[0.08] dark:border-white/[0.08] min-w-0">
+            <div className="flex flex-wrap items-center justify-between gap-2 mb-3 text-[11px] text-[#444746] dark:text-[#9aa0a6]">
+              <span className="font-mono text-[#1f1f1f] dark:text-[#e3e3e3] font-semibold break-words">
                 {SAMPLE_BENCHMARKS[activeBenchmarkTab].models[activeModelTab]?.modelName}
               </span>
-              <span className="px-2 py-0.5 rounded-full bg-black/[0.05] dark:bg-white/[0.08] text-[10px] font-mono shrink-0">
+              <span className="px-2.5 py-0.5 rounded-full bg-[#f0f4f9] dark:bg-[#1e1f20] border border-black/[0.06] dark:border-white/[0.08] text-[10px] font-mono shrink-0">
                 {SAMPLE_BENCHMARKS[activeBenchmarkTab].models[activeModelTab]?.badge}
               </span>
             </div>
@@ -745,7 +747,7 @@ export const HomePage: React.FC<HomePageProps> = ({ onStartChat }) => {
                 languageLabel="TypeScript"
               />
             ) : (
-              <pre className="text-xs font-mono text-gray-800 dark:text-gray-200 whitespace-pre-wrap break-words leading-relaxed overflow-x-auto max-w-full">
+              <pre className="text-xs font-sans text-[#1f1f1f] dark:text-[#e3e3e3] whitespace-pre-wrap break-words leading-[1.7] overflow-x-auto max-w-full">
                 {SAMPLE_BENCHMARKS[activeBenchmarkTab].models[activeModelTab]?.output}
               </pre>
             )}
@@ -755,69 +757,69 @@ export const HomePage: React.FC<HomePageProps> = ({ onStartChat }) => {
 
       {/* Tailored for Bangladesh Use Cases */}
       <section className="max-w-5xl mx-auto px-4 sm:px-6">
-        <div className="text-center mb-10 space-y-2">
-          <span className="text-[11px] font-mono uppercase tracking-wider text-gray-400 block">
+        <div className="text-center mb-10 space-y-2.5">
+          <span className="text-[11px] font-mono uppercase tracking-wider text-[#444746] dark:text-[#9aa0a6] block">
             Built for Bangladesh
           </span>
-          <h2 className="text-2xl sm:text-3xl font-medium tracking-tight text-black dark:text-white">
+          <h2 className="text-2xl sm:text-3xl font-semibold tracking-tight text-[#1f1f1f] dark:text-[#e3e3e3]">
             Engineered for High-Output Professionals
           </h2>
-          <p className="text-sm text-gray-500 max-w-lg mx-auto">
+          <p className="text-sm text-[#444746] dark:text-[#9aa0a6] max-w-lg mx-auto leading-[1.7]">
             From local startups to top-rated marketplace freelancers, see how Bangla AI transforms everyday productivity.
           </p>
         </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
           <div className="card-minimal p-5 space-y-3">
-            <div className="w-9 h-9 rounded-full bg-black/[0.04] dark:bg-white/[0.06] flex items-center justify-center text-black dark:text-white">
+            <div className="w-9 h-9 rounded-full bg-[#f0f4f9] dark:bg-[#282a2c] flex items-center justify-center text-[#1f1f1f] dark:text-[#e3e3e3]">
               <Laptop className="w-4 h-4" />
             </div>
-            <h3 className="font-bold text-sm text-black dark:text-white">Software Engineers</h3>
-            <p className="text-xs text-gray-600 dark:text-gray-400 leading-relaxed">
+            <h3 className="font-bold text-sm text-[#1f1f1f] dark:text-[#e3e3e3]">Software Engineers</h3>
+            <p className="text-xs text-[#444746] dark:text-[#9aa0a6] leading-[1.7]">
               Debug complex TypeScript code, architect distributed databases, and generate unit test suites with Claude Fable 5.2 and GPT-6 Astra.
             </p>
           </div>
 
           <div className="card-minimal p-5 space-y-3">
-            <div className="w-9 h-9 rounded-full bg-black/[0.04] dark:bg-white/[0.06] flex items-center justify-center text-black dark:text-white">
+            <div className="w-9 h-9 rounded-full bg-[#f0f4f9] dark:bg-[#282a2c] flex items-center justify-center text-[#1f1f1f] dark:text-[#e3e3e3]">
               <Megaphone className="w-4 h-4" />
             </div>
-            <h3 className="font-bold text-sm text-black dark:text-white">Digital Marketers</h3>
-            <p className="text-xs text-gray-600 dark:text-gray-400 leading-relaxed">
+            <h3 className="font-bold text-sm text-[#1f1f1f] dark:text-[#e3e3e3]">Digital Marketers</h3>
+            <p className="text-xs text-[#444746] dark:text-[#9aa0a6] leading-[1.7]">
               Produce high-converting Facebook & TikTok ad copy in fluent conversational Bengali and English, hook scripts, and SEO blogs.
             </p>
           </div>
 
           <div className="card-minimal p-5 space-y-3">
-            <div className="w-9 h-9 rounded-full bg-black/[0.04] dark:bg-white/[0.06] flex items-center justify-center text-black dark:text-white">
+            <div className="w-9 h-9 rounded-full bg-[#f0f4f9] dark:bg-[#282a2c] flex items-center justify-center text-[#1f1f1f] dark:text-[#e3e3e3]">
               <Briefcase className="w-4 h-4" />
             </div>
-            <h3 className="font-bold text-sm text-black dark:text-white">Freelancers & Agencies</h3>
-            <p className="text-xs text-gray-600 dark:text-gray-400 leading-relaxed">
+            <h3 className="font-bold text-sm text-[#1f1f1f] dark:text-[#e3e3e3]">Freelancers & Agencies</h3>
+            <p className="text-xs text-[#444746] dark:text-[#9aa0a6] leading-[1.7]">
               Deliver client deliverables on Upwork and Fiverr 5x faster. Create proposals, analyze RFPs, and draft technical documentation.
             </p>
           </div>
 
           <div className="card-minimal p-5 space-y-3">
-            <div className="w-9 h-9 rounded-full bg-black/[0.04] dark:bg-white/[0.06] flex items-center justify-center text-black dark:text-white">
+            <div className="w-9 h-9 rounded-full bg-[#f0f4f9] dark:bg-[#282a2c] flex items-center justify-center text-[#1f1f1f] dark:text-[#e3e3e3]">
               <GraduationCap className="w-4 h-4" />
             </div>
-            <h3 className="font-bold text-sm text-black dark:text-white">Students & Researchers</h3>
-            <p className="text-xs text-gray-600 dark:text-gray-400 leading-relaxed">
+            <h3 className="font-bold text-sm text-[#1f1f1f] dark:text-[#e3e3e3]">Students & Researchers</h3>
+            <p className="text-xs text-[#444746] dark:text-[#9aa0a6] leading-[1.7]">
               Summarize extensive academic papers, format LaTeX equations, and verify mathematical theorems with Kimi K3.1 and DeepSeek.
             </p>
           </div>
         </div>
       </section>
 
-      {/* MFS Trust Section (Clean Monochrome Separator) */}
+      {/* MFS Trust Section */}
       <section className="max-w-3xl mx-auto px-4 sm:px-6">
-        <div className="card-minimal p-4 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs">
-          <div className="flex items-center gap-2 text-gray-600 dark:text-gray-400">
-            <ShieldCheck className="w-4 h-4 text-black dark:text-white" />
+        <div className="rounded-2xl bg-[#f0f4f9] dark:bg-[#1e1f20] border border-black/[0.08] dark:border-white/[0.08] p-4 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs">
+          <div className="flex items-center gap-2 text-[#444746] dark:text-[#9aa0a6]">
+            <ShieldCheck className="w-4 h-4 text-[#1f1f1f] dark:text-[#e3e3e3]" />
             <span>Supported payment channels:</span>
           </div>
-          <div className="flex items-center gap-4 text-xs font-medium text-black dark:text-white">
+          <div className="flex items-center gap-4 text-xs font-medium text-[#1f1f1f] dark:text-[#e3e3e3]">
             <span>bKash</span>
             <span>·</span>
             <span>Nagad</span>
