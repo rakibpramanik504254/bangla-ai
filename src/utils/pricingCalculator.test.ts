@@ -58,8 +58,10 @@ test('toggleToolSelection updates count, total, and singular/empty states cleanl
 test('getComparisonPlanInfo and getPlanFeatures return exact Monthly vs Yearly specs without banned promo copy', () => {
   const plan = getComparisonPlanInfo();
   assert.equal(plan.monthlyPriceBDT, 699);
+  assert.equal(plan.monthlyRegularPriceBDT, 1499);
   assert.equal(plan.monthlyAnnualizedBDT, 8388);
   assert.equal(plan.yearlyPriceBDT, 5999);
+  assert.equal(plan.yearlyRegularPriceBDT, 14999);
   assert.equal(plan.yearlyEquivalentMonthlyBDT, 500);
   assert.equal(plan.yearlySavingsBDT, 2389);
 

@@ -44,7 +44,20 @@ export const PricingComparisonSection: React.FC = () => {
     >
       <div className="rounded-3xl bg-[#f0f4f9] dark:bg-[#1e1f20] border border-black/[0.08] dark:border-white/[0.08] p-5 sm:p-8 lg:p-11">
         {/* Centered Header */}
-        <div className="text-center max-w-2xl mx-auto mb-8 sm:mb-10 space-y-2.5">
+        <div className="text-center max-w-2xl mx-auto mb-8 sm:mb-10 space-y-3">
+          <div className="flex justify-center">
+            <span
+              data-testid="pricing-urgency-pill"
+              className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-white dark:bg-[#282a2c] border border-black/[0.08] dark:border-white/[0.1] text-[11px] sm:text-xs font-medium text-[#1f1f1f] dark:text-[#e3e3e3] shadow-2xs"
+            >
+              <span className="relative flex h-2 w-2 shrink-0" aria-hidden="true">
+                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-500 opacity-75" />
+                <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-600 dark:bg-emerald-400" />
+              </span>
+              <span>Limited-Time Offer · Lock in your rate before standard pricing applies</span>
+            </span>
+          </div>
+
           <h2 className="text-3xl sm:text-4xl lg:text-[40px] font-bold tracking-tight leading-[1.15] text-[#1f1f1f] dark:text-[#e3e3e3] text-balance">
             The best value in AI
           </h2>
@@ -182,18 +195,24 @@ export const PricingComparisonSection: React.FC = () => {
           <div className="rounded-2xl bg-white dark:bg-[#131314] border border-black/[0.08] dark:border-white/[0.08] p-5 sm:p-6 flex flex-col justify-between">
             <div>
               {/* Side-by-Side Interactive Monthly vs Yearly Boxes */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-y-5 sm:gap-3.5 pt-2.5">
                 {/* Option 1: Pay monthly */}
                 <button
                   type="button"
                   onClick={() => setSelectedPlan('monthly')}
                   aria-pressed={selectedPlan === 'monthly'}
+                  data-testid="plan-option-monthly"
                   className={`relative text-left rounded-xl p-4 transition-all duration-150 cursor-pointer focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#1f1f1f] dark:focus-visible:outline-[#e3e3e3] ${
                     selectedPlan === 'monthly'
                       ? 'border-2 border-[#1f1f1f] dark:border-[#e3e3e3] bg-[#e9eef6] dark:bg-[#282a2c]'
                       : 'border border-black/[0.08] dark:border-white/[0.08] bg-[#f0f4f9]/70 dark:bg-[#1e1f20] hover:border-black/20 dark:hover:border-white/20'
                   }`}
                 >
+                  {/* Subtle top-right offer tag */}
+                  <span className="absolute -top-2.5 right-3 px-2.5 py-0.5 rounded-full bg-white dark:bg-[#131314] border border-black/[0.1] dark:border-white/[0.14] text-[#444746] dark:text-[#c4c7c5] text-[10px] font-semibold tracking-tight whitespace-nowrap">
+                    Limited time Offer
+                  </span>
+
                   <div className="flex items-center justify-between gap-2">
                     <span className="text-xs font-semibold text-[#1f1f1f] dark:text-[#e3e3e3]">
                       Pay monthly
@@ -212,15 +231,20 @@ export const PricingComparisonSection: React.FC = () => {
                     </span>
                   </div>
 
-                  <div className="mt-2.5 flex items-baseline gap-1 whitespace-nowrap">
-                    <span className="text-xl sm:text-[22px] xl:text-2xl font-bold font-mono text-[#1f1f1f] dark:text-[#e3e3e3] tabular-nums">
+                  <div className="mt-2.5 flex items-baseline gap-x-1.5 gap-y-0.5 flex-wrap">
+                    <span className="text-xl xl:text-[22px] font-bold font-mono text-[#1f1f1f] dark:text-[#e3e3e3] tabular-nums whitespace-nowrap">
                       {formatBDT(planInfo.monthlyPriceBDT)}
                     </span>
-                    <span className="text-xs text-[#444746] dark:text-[#9aa0a6]">/month</span>
+                    <span className="text-[11px] text-[#444746] dark:text-[#9aa0a6] whitespace-nowrap">
+                      /month
+                    </span>
+                    <span className="text-[11px] font-mono text-[#444746]/75 dark:text-[#9aa0a6]/75 line-through tabular-nums whitespace-nowrap">
+                      {formatBDT(planInfo.monthlyRegularPriceBDT)}
+                    </span>
                   </div>
 
                   <p className="mt-1 text-[11px] text-[#444746] dark:text-[#9aa0a6]">
-                    That&apos;s {formatBDT(planInfo.monthlyAnnualizedBDT)} a year
+                    Lock in 53% off · Regular price {formatBDT(planInfo.monthlyRegularPriceBDT)}/mo
                   </p>
                 </button>
 
@@ -229,15 +253,16 @@ export const PricingComparisonSection: React.FC = () => {
                   type="button"
                   onClick={() => setSelectedPlan('yearly')}
                   aria-pressed={selectedPlan === 'yearly'}
+                  data-testid="plan-option-yearly"
                   className={`relative text-left rounded-xl p-4 transition-all duration-150 cursor-pointer focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#1f1f1f] dark:focus-visible:outline-[#e3e3e3] ${
                     selectedPlan === 'yearly'
                       ? 'border-2 border-[#1f1f1f] dark:border-[#e3e3e3] bg-[#e9eef6] dark:bg-[#282a2c]'
                       : 'border border-black/[0.08] dark:border-white/[0.08] bg-[#f0f4f9]/70 dark:bg-[#1e1f20] hover:border-black/20 dark:hover:border-white/20'
                   }`}
                 >
-                  {/* Floating dark pill badge at top-right */}
+                  {/* Prominent dark pill badge at top-right */}
                   <span className="absolute -top-2.5 right-3 px-2.5 py-0.5 rounded-full bg-[#1f1f1f] text-white dark:bg-[#e3e3e3] dark:text-[#131314] text-[10px] font-bold tracking-tight whitespace-nowrap">
-                    Save {formatBDT(planInfo.yearlySavingsBDT)}
+                    Best Value · Save 60%
                   </span>
 
                   <div className="flex items-center justify-between gap-2">
@@ -258,20 +283,20 @@ export const PricingComparisonSection: React.FC = () => {
                     </span>
                   </div>
 
-                  <div className="mt-2.5 flex items-baseline gap-1.5 flex-wrap">
-                    <span className="text-xl sm:text-[22px] xl:text-2xl font-bold font-mono text-[#1f1f1f] dark:text-[#e3e3e3] tabular-nums whitespace-nowrap">
+                  <div className="mt-2.5 flex items-baseline gap-x-1.5 gap-y-0.5 flex-wrap">
+                    <span className="text-xl xl:text-[22px] font-bold font-mono text-[#1f1f1f] dark:text-[#e3e3e3] tabular-nums whitespace-nowrap">
                       {formatBDT(planInfo.yearlyPriceBDT)}
                     </span>
-                    <span className="text-xs text-[#444746] dark:text-[#9aa0a6] whitespace-nowrap">
+                    <span className="text-[11px] text-[#444746] dark:text-[#9aa0a6] whitespace-nowrap">
                       /year
                     </span>
-                    <span className="text-xs font-mono text-[#444746]/70 dark:text-[#9aa0a6]/70 line-through tabular-nums whitespace-nowrap">
-                      {formatBDT(planInfo.monthlyAnnualizedBDT)}
+                    <span className="text-[11px] font-mono text-[#444746]/75 dark:text-[#9aa0a6]/75 line-through tabular-nums whitespace-nowrap">
+                      {formatBDT(planInfo.yearlyRegularPriceBDT)}
                     </span>
                   </div>
 
                   <p className="mt-1 text-[11px] text-[#444746] dark:text-[#9aa0a6]">
-                    Just {formatBDT(planInfo.yearlyEquivalentMonthlyBDT)}/month, billed yearly
+                    Just {formatBDT(planInfo.yearlyEquivalentMonthlyBDT)}/month · Price increases soon
                   </p>
                 </button>
               </div>
@@ -299,14 +324,15 @@ export const PricingComparisonSection: React.FC = () => {
             </div>
 
             {/* Primary Call-to-Action Button */}
-            <div className="mt-5 pt-1">
+            <div className="mt-6">
               <button
                 type="button"
                 onClick={handleBuyNow}
                 data-selected-plan={selectedPlan}
+                data-testid="pricing-cta-btn"
                 className="btn-pill-primary w-full h-11 text-sm font-semibold justify-center cursor-pointer"
               >
-                Buy Now
+                Get Instant Access →
               </button>
             </div>
           </div>

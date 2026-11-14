@@ -118,23 +118,29 @@ export function calculateTodayCostSummary(
 
 export interface ComparisonPlanInfo {
   monthlyPriceBDT: number;
+  monthlyRegularPriceBDT: number;
   monthlyAnnualizedBDT: number;
   yearlyPriceBDT: number;
+  yearlyRegularPriceBDT: number;
   yearlyEquivalentMonthlyBDT: number;
   yearlySavingsBDT: number;
 }
 
 export function getComparisonPlanInfo(): ComparisonPlanInfo {
   const monthlyPriceBDT = PLANS.monthly.priceBDT; // 699
+  const monthlyRegularPriceBDT = 1499;
   const monthlyAnnualizedBDT = monthlyPriceBDT * 12; // 8388
   const yearlyPriceBDT = PLANS.yearly.priceBDT; // 5999
+  const yearlyRegularPriceBDT = 14999;
   const yearlyEquivalentMonthlyBDT = PLANS.yearly.monthlyEquivalentBDT ?? 500;
   const yearlySavingsBDT = monthlyAnnualizedBDT - yearlyPriceBDT; // 2389
 
   return {
     monthlyPriceBDT,
+    monthlyRegularPriceBDT,
     monthlyAnnualizedBDT,
     yearlyPriceBDT,
+    yearlyRegularPriceBDT,
     yearlyEquivalentMonthlyBDT,
     yearlySavingsBDT,
   };

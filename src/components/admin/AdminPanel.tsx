@@ -22,12 +22,14 @@ import {
   Copy,
   Smartphone,
   ExternalLink,
-  Activity
+  Activity,
+  Wallet
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext.tsx';
 import { formatBDT } from '../../utils/billing.ts';
 import { AdminStats, AiProvider, AiModel, Payment } from '../../types/index.ts';
 import { trackMetaPurchase } from '../../utils/metaPixel.ts';
+import { MoneyManagementTab } from './MoneyManagementTab.tsx';
 
 interface AdminUser {
   id: string;
@@ -49,7 +51,7 @@ interface AdminUser {
 
 export const AdminPanel: React.FC = () => {
   const { user, token } = useAuth();
-  const [activeTab, setActiveTab] = useState<'overview' | 'users' | 'payments' | 'providers' | 'models' | 'settings'>('overview');
+  const [activeTab, setActiveTab] = useState<'overview' | 'users' | 'payments' | 'providers' | 'models' | 'finance' | 'settings'>('overview');
 
   const [stats, setStats] = useState<AdminStats | null>(null);
   const [loadingStats, setLoadingStats] = useState(false);
@@ -712,6 +714,19 @@ export const AdminPanel: React.FC = () => {
         >
           <Cpu className="w-3.5 h-3.5 shrink-0" />
           <span>Models Catalog</span>
+        </button>
+
+        <button
+          onClick={() => setActiveTab('finance')}
+          data-testid="admin-tab-finance"
+          className={`min-h-8 sm:min-h-9 h-auto py-1.5 px-3 sm:px-4 rounded-full transition-colors flex items-center gap-1.5 cursor-pointer whitespace-nowrap shrink-0 ${
+            activeTab === 'finance'
+              ? 'bg-[#e9eef6] text-[#1f1f1f] dark:bg-[#282a2c] dark:text-[#e3e3e3] font-semibold'
+              : 'text-[#444746] dark:text-[#9aa0a6] hover:bg-[#f0f4f9] dark:hover:bg-[#1e1f20] hover:text-[#1f1f1f] dark:hover:text-[#e3e3e3]'
+          }`}
+        >
+          <Wallet className="w-3.5 h-3.5 shrink-0" />
+          <span>Money Management</span>
         </button>
 
         <button
@@ -1806,6 +1821,9 @@ export const AdminPanel: React.FC = () => {
           </div>
         );
       })()}
+
+      {/* Tab: Money Management (Standalone Isolated Finance & Ad Spend Tracker) */}
+      {activeTab === 'finance' && <MoneyManagementTab />}
 
       {/* Tab 5: Settings & Facebook Pixel (The requested Meta Pixel setting!) */}
       {activeTab === 'settings' && (
