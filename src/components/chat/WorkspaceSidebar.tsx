@@ -11,9 +11,11 @@ import {
   Trash2,
   Settings,
   MessageSquare,
+  Download,
 } from 'lucide-react';
 import { Chat, User } from '../../types/index.ts';
 import { partitionWorkspaceChats } from '../../utils/workspaceSidebar.ts';
+import { useAppInstall } from '../../context/AppInstallContext.tsx';
 import { BrandLogo } from '../common/BrandLogo.tsx';
 import { UserAvatar } from '../common/UserAvatar.tsx';
 
@@ -48,6 +50,7 @@ export const WorkspaceSidebar: React.FC<WorkspaceSidebarProps> = ({
   onOpenSettings,
   onNavigateHome,
 }) => {
+  const { isInstalled, triggerInstall } = useAppInstall();
   const [searchOpen, setSearchOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [openMenuChatId, setOpenMenuChatId] = useState<string | null>(null);
@@ -365,8 +368,8 @@ export const WorkspaceSidebar: React.FC<WorkspaceSidebarProps> = ({
           )}
         </div>
 
-        {/* Fixed User Profile Footer */}
-        <div className="p-2.5 border-t border-black/[0.08] dark:border-white/[0.08] shrink-0">
+        {/* Fixed User Profile Footer + Download App Pill */}
+        <div className="p-2.5 border-t border-black/[0.08] dark:border-white/[0.08] shrink-0 space-y-2">
           <button
             type="button"
             onClick={onOpenSettings}
@@ -403,6 +406,23 @@ export const WorkspaceSidebar: React.FC<WorkspaceSidebarProps> = ({
 
             <Settings className="w-4 h-4 text-[#444746] dark:text-[#9aa0a6] shrink-0" />
           </button>
+
+          {!isInstalled && (
+            <button
+              type="button"
+              onClick={() => {
+                if (typeof window !== 'undefined' && window.innerWidth < 768) {
+                  onCloseSidebar();
+                }
+                triggerInstall();
+              }}
+              data-testid="workspace-sidebar-download-app-btn"
+              className="w-full h-9 px-3.5 rounded-full bg-white/85 hover:bg-white dark:bg-[#282a2c]/80 dark:hover:bg-[#282a2c] border border-black/[0.08] dark:border-white/[0.08] text-[#1f1f1f] dark:text-[#e3e3e3] text-xs font-medium flex items-center justify-center gap-2 transition-colors cursor-pointer whitespace-nowrap"
+            >
+              <Download className="w-3.5 h-3.5 shrink-0" aria-hidden="true" />
+              <span>Download App</span>
+            </button>
+          )}
         </div>
       </aside>
     </>

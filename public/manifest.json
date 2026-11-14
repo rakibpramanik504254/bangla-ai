@@ -1,0 +1,31 @@
+{
+  "id": "/",
+  "name": "Bangla AI",
+  "short_name": "Bangla AI",
+  "description": "Access top AI models through one minimal interface with local BDT subscriptions via bKash, Nagad, and Rocket.",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "background_color": "#131314",
+  "theme_color": "#131314",
+  "icons": [
+    {
+      "src": "/pwa-192x192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/pwa-512x512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/pwa-maskable-512x512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
+  ]
+}

@@ -1,7 +1,8 @@
 import React from 'react';
-import { ShieldCheck, Facebook, Mail, Phone, Globe } from 'lucide-react';
+import { ShieldCheck, Download, Mail, Phone, Globe } from 'lucide-react';
 import { BrandLogo } from './common/BrandLogo.tsx';
 import { useAuth } from '../context/AuthContext.tsx';
+import { useAppInstall } from '../context/AppInstallContext.tsx';
 import { AppView } from '../utils/navigation.ts';
 
 interface FooterProps {
@@ -10,6 +11,7 @@ interface FooterProps {
 
 export const Footer: React.FC<FooterProps> = ({ setCurrentView }) => {
   const { user, openAuthModal, openAccountModal } = useAuth();
+  const { isInstalled, triggerInstall } = useAppInstall();
   const handleNav = (view: AppView) => {
     setCurrentView(view);
     window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -175,17 +177,18 @@ export const Footer: React.FC<FooterProps> = ({ setCurrentView }) => {
 
         <div className="mt-12 pt-6 border-t border-black/[0.08] dark:border-white/[0.08] flex flex-col sm:flex-row items-center justify-between gap-4 text-[11px] text-[#444746] dark:text-[#9aa0a6] text-center sm:text-left">
           <p>© 2026 Bangla AI (<a href="https://bangla-ai.pro" className="hover:underline">bangla-ai.pro</a>). All rights reserved.</p>
-          <div className="flex flex-wrap items-center justify-center gap-4">
-            <a
-              href="https://www.facebook.com/profile.php?id=61596472081766"
-              target="_blank"
-              rel="noopener noreferrer"
-              aria-label="Facebook"
-              className="hover:text-[#1f1f1f] dark:hover:text-[#e3e3e3] transition-colors inline-flex items-center gap-1"
-            >
-              <Facebook className="w-3.5 h-3.5" />
-              <span>Facebook</span>
-            </a>
+          <div className="flex flex-wrap items-center justify-center gap-3.5">
+            {!isInstalled && (
+              <button
+                type="button"
+                onClick={triggerInstall}
+                data-testid="footer-download-app-btn"
+                className="h-8 px-3.5 rounded-full border border-black/[0.08] dark:border-white/[0.1] bg-white dark:bg-[#1e1f20] hover:bg-[#e9eef6] dark:hover:bg-[#282a2c] text-[#1f1f1f] dark:text-[#e3e3e3] text-xs font-medium inline-flex items-center gap-1.5 transition-colors cursor-pointer whitespace-nowrap shrink-0"
+              >
+                <Download className="w-3.5 h-3.5 shrink-0" aria-hidden="true" />
+                <span>Download App</span>
+              </button>
+            )}
             <span className="font-mono text-[10px]">
               Unified AI Workspace
             </span>

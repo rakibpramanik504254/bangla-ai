@@ -1,6 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import {
   ChevronDown,
+  Download,
   LogOut,
   Menu,
   MessageSquare,
@@ -11,6 +12,7 @@ import {
   X,
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext.tsx';
+import { useAppInstall } from '../context/AppInstallContext.tsx';
 import { BrandLogo } from './common/BrandLogo.tsx';
 import { UserAvatar } from './common/UserAvatar.tsx';
 import {
@@ -30,6 +32,7 @@ interface NavbarProps {
 
 export const Navbar: React.FC<NavbarProps> = ({ currentView, setCurrentView }) => {
   const { user, theme, setTheme, logout, openAuthModal, openAccountModal } = useAuth();
+  const { isInstalled, triggerInstall } = useAppInstall();
   const [mobileDrawerOpen, setMobileDrawerOpen] = useState(false);
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
@@ -462,6 +465,21 @@ export const Navbar: React.FC<NavbarProps> = ({ currentView, setCurrentView }) =
               >
                 Get Started
               </button>
+
+              {!isInstalled && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setMobileDrawerOpen(false);
+                    triggerInstall();
+                  }}
+                  data-testid="mobile-guest-download-app-btn"
+                  className="btn-pill-secondary w-full h-10 text-xs font-medium justify-center"
+                >
+                  <Download className="w-3.5 h-3.5 shrink-0" aria-hidden="true" />
+                  <span>Download App</span>
+                </button>
+              )}
             </div>
           </div>
         </div>

@@ -1,6 +1,7 @@
 import React, { useEffect } from 'react';
 import {
   ChevronDown,
+  Download,
   HelpCircle,
   Home,
   LogOut,
@@ -13,6 +14,7 @@ import {
 } from 'lucide-react';
 import { User } from '../../types/index.ts';
 import { AppView, getAccountRoleLabel } from '../../utils/navigation.ts';
+import { useAppInstall } from '../../context/AppInstallContext.tsx';
 import { UserAvatar } from './UserAvatar.tsx';
 
 interface MobileProfileTriggerButtonProps {
@@ -83,6 +85,8 @@ export const MobileProfileDrawer: React.FC<MobileProfileDrawerProps> = ({
   onSignOut,
   onScrollToSection,
 }) => {
+  const { isInstalled, triggerInstall } = useAppInstall();
+
   useEffect(() => {
     if (!isOpen) return;
     const handleEsc = (e: KeyboardEvent) => {
@@ -254,8 +258,8 @@ export const MobileProfileDrawer: React.FC<MobileProfileDrawerProps> = ({
           </button>
         </div>
 
-        {/* 4. Footer Action */}
-        <div className="p-3 border-t border-black/[0.08] dark:border-white/[0.08]">
+        {/* 4. Footer Actions */}
+        <div className="p-3 border-t border-black/[0.08] dark:border-white/[0.08] space-y-2">
           <button
             type="button"
             onClick={() => {
@@ -267,6 +271,21 @@ export const MobileProfileDrawer: React.FC<MobileProfileDrawerProps> = ({
             <LogOut className="w-4 h-4" />
             <span>Sign Out</span>
           </button>
+
+          {!isInstalled && (
+            <button
+              type="button"
+              onClick={() => {
+                onClose();
+                triggerInstall();
+              }}
+              data-testid="mobile-profile-download-app-btn"
+              className="btn-pill-secondary w-full h-10 text-xs font-medium justify-center"
+            >
+              <Download className="w-3.5 h-3.5 shrink-0" aria-hidden="true" />
+              <span>Download App</span>
+            </button>
+          )}
         </div>
       </div>
     </div>

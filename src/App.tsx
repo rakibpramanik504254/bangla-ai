@@ -14,6 +14,8 @@ import { AuthModal } from './components/auth/AuthModal.tsx';
 import { PaymentModal } from './components/billing/PaymentModal.tsx';
 import { AccountBillingModal } from './components/account/AccountBillingModal.tsx';
 import { WhatsAppSupportWidget } from './components/common/WhatsAppSupportWidget.tsx';
+import { AppInstallProvider } from './context/AppInstallContext.tsx';
+import { InstallGuideModal } from './components/common/InstallGuideModal.tsx';
 import { initMetaPixel, trackMetaPageView } from './utils/metaPixel.ts';
 import { AppView, getPostLoginDestination } from './utils/navigation.ts';
 
@@ -114,14 +116,17 @@ function MainApp() {
         defaultPlan={paymentPlan}
         onSuccessRedirectToChat={() => setCurrentView('chat')}
       />
+      <InstallGuideModal />
     </div>
   );
 }
 
 export default function App() {
   return (
-    <AuthProvider>
-      <MainApp />
-    </AuthProvider>
+    <AppInstallProvider>
+      <AuthProvider>
+        <MainApp />
+      </AuthProvider>
+    </AppInstallProvider>
   );
 }
