@@ -95,9 +95,13 @@ export const OPENROUTER_MODEL_MAP: Record<string, OpenRouterModelCandidate> = {
   }
 };
 
+export function normalizeApiKey(key?: string | null): string {
+  if (!key) return '';
+  return key.trim().replace(/^bearer\s+/i, '').trim();
+}
+
 export function isValidApiKey(key?: string | null): boolean {
-  if (!key) return false;
-  const trimmed = key.trim();
+  const trimmed = normalizeApiKey(key);
   if (trimmed.length < 10) return false;
   const upper = trimmed.toUpperCase();
   if (
@@ -111,6 +115,74 @@ export function isValidApiKey(key?: string | null): boolean {
     return false;
   }
   return true;
+}
+
+export interface ProviderUpdateInput {
+  name?: unknown;
+  base_url?: unknown;
+  is_active?: unknown;
+  api_key?: unknown;
+  clear_api_key?: unknown;
+}
+
+export function buildProviderUpdatePayload(input: ProviderUpdateInput): {
+  name?: string;
+  base_url?: string;
+  api_key?: string;
+  is_active?: boolean;
+} {
+  const updates: {
+    name?: string;
+    base_url?: string;
+    api_key?: string;
+    is_active?: boolean;
+  } = {};
+
+  if (typeof input.name === 'string' && input.name.trim() !== '') {
+    updates.name = input.name.trim();
+  }
+  if (typeof input.base_url === 'string' && input.base_url.trim() !== '') {
+    updates.base_url = input.base_url.trim();
+  }
+  if (typeof input.is_active === 'boolean') {
+    updates.is_active = input.is_active;
+  }
+
+  if (input.clear_api_key === true) {
+    updates.api_key = '';
+  } else if (typeof input.api_key === 'string') {
+    const cleanedKey = normalizeApiKey(input.api_key);
+    if (cleanedKey !== '') {
+      updates.api_key = cleanedKey;
+      // Saving a new API key must activate the provider unless an explicit toggle-only pause is intended
+      updates.is_active = true;
+    }
+  }
+
+  return updates;
+}
+
+export function buildGeminiCandidateModels(modelName?: string): string[] {
+  const normalized = (modelName || '').toLowerCase();
+  if (normalized.includes('lite')) {
+    return ['gemini-3.1-flash-lite', 'gemini-4-hydrogen'];
+  }
+  return ['gemini-4-hydrogen', 'gemini-3.1-flash-lite'];
+}
+
+export function isRetryableGeminiError(errorMessage?: string): boolean {
+  const msg = (errorMessage || '').toLowerCase();
+  return (
+    msg.includes('not_found') ||
+    msg.includes('404') ||
+    msg.includes('no longer available') ||
+    msg.includes('429') ||
+    msg.includes('resource_exhausted') ||
+    msg.includes('quota') ||
+    msg.includes('rate limit') ||
+    msg.includes('503') ||
+    msg.includes('unavailable')
+  );
 }
 
 export function resolveOpenRouterModels(model: {

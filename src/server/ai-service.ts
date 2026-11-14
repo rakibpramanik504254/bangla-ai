@@ -4,7 +4,10 @@ import { isSubscriptionActive, estimateTokens } from '../utils/billing.ts';
 import { createSseLineParser } from '../utils/sse.ts';
 import {
   OPENROUTER_DEFAULT_BASE_URL,
+  normalizeApiKey,
   isValidApiKey,
+  buildGeminiCandidateModels,
+  isRetryableGeminiError,
   resolveOpenRouterModels,
   buildOpenRouterRequestBody,
   parseOpenRouterStreamPayload
@@ -124,8 +127,13 @@ export class AiService {
 
     let response = await attemptRequest(params.modelSlug);
 
-    // Retry once with mapped fallback slug if primary slug is unavailable on user's OpenRouter tier
-    if (!response.ok && (response.status === 400 || response.status === 404) && params.fallbackSlug && params.fallbackSlug !== params.modelSlug) {
+    // Retry once with mapped fallback slug if primary slug is unavailable or rate-limited
+    if (
+      !response.ok &&
+      [400, 404, 429, 502, 503].includes(response.status) &&
+      params.fallbackSlug &&
+      params.fallbackSlug !== params.modelSlug
+    ) {
       console.warn(`[OpenRouter] Primary model "${params.modelSlug}" returned ${response.status}, retrying with fallback "${params.fallbackSlug}"`);
       response = await attemptRequest(params.fallbackSlug);
     }
@@ -211,7 +219,7 @@ export class AiService {
 
     // 1. Check OpenRouter Unified Gateway (1 API key accesses all workspace models)
     const openRouterProvider = db.getProviderBySlug('openrouter');
-    const openRouterKey = (openRouterProvider?.api_key || process.env.OPENROUTER_API_KEY || '').trim();
+    const openRouterKey = normalizeApiKey(openRouterProvider?.api_key || process.env.OPENROUTER_API_KEY);
     const isOpenRouterEnabled = openRouterProvider ? openRouterProvider.is_active : true;
 
     if (isOpenRouterEnabled && isValidApiKey(openRouterKey)) {
@@ -243,11 +251,18 @@ export class AiService {
     }
 
     // 2. Direct Provider Keys (Gemini SDK or OpenAI-compatible direct endpoints)
-    const directKey = (provider.api_key || this.getEnvKeyForProvider(provider.slug)).trim();
+    const directKey = normalizeApiKey(provider.api_key || this.getEnvKeyForProvider(provider.slug));
 
-    if (provider.slug === 'gemini' && isValidApiKey(directKey)) {
+    if (provider.slug === 'gemini' && provider.is_active !== false && isValidApiKey(directKey)) {
       try {
-        const ai = new GoogleGenAI({ apiKey: directKey });
+        const ai = new GoogleGenAI({
+          apiKey: directKey,
+          httpOptions: {
+            headers: {
+              'User-Agent': 'aistudio-build'
+            }
+          }
+        });
         const formattedContents = messages.map(m => {
           const textBlock = m.role === 'user' ? buildTextAttachmentPromptBlock(m.attachments || []) : '';
           const combinedText = [m.content.trim(), textBlock].filter(Boolean).join('\n\n');
@@ -279,9 +294,7 @@ export class AiService {
           };
         });
 
-        const candidateModels = model.model_name.includes('flash')
-          ? ['gemini-3.8-flash', 'gemini-2.5-flash']
-          : ['gemini-3.1-pro-preview', 'gemini-3.8-flash', 'gemini-2.5-flash'];
+        const candidateModels = buildGeminiCandidateModels(model.model_name);
 
         let responseStream: any = null;
         let lastModelErr: any = null;
@@ -299,8 +312,8 @@ export class AiService {
           } catch (modelErr: any) {
             lastModelErr = modelErr;
             const msg = String(modelErr?.message || '');
-            console.warn(`[Google GenAI] Model ${candidateModel} unavailable, trying next fallback:`, msg);
-            if (!msg.includes('NOT_FOUND') && !msg.includes('404') && !msg.includes('no longer available')) {
+            console.info(`[Google GenAI] Model ${candidateModel} fallback:`, msg.slice(0, 160));
+            if (!isRetryableGeminiError(msg)) {
               break;
             }
           }
@@ -324,6 +337,7 @@ export class AiService {
         callbacks.onDone(accumulatedText, tokenStats.promptTokens, tokenStats.completionTokens);
         return;
       } catch (err: any) {
+        if (signal?.aborted || err?.name === 'AbortError') return;
         let readableMsg = err?.message || 'Gemini API call failed.';
         try {
           const outer = JSON.parse(readableMsg);
@@ -337,12 +351,9 @@ export class AiService {
         } catch {
           // Keep original readable message
         }
-        console.warn('Google GenAI API call failed:', readableMsg);
-        const isUnmodifiedEnvKey = Boolean(process.env.GEMINI_API_KEY && directKey === process.env.GEMINI_API_KEY.trim());
-        if (!isUnmodifiedEnvKey) {
-          callbacks.onError(new Error(readableMsg));
-          return;
-        }
+        console.warn('[Google GenAI] API call failed:', readableMsg);
+        callbacks.onError(new Error(readableMsg));
+        return;
       }
     }
 
@@ -372,6 +383,16 @@ export class AiService {
           return;
         }
       }
+    }
+
+    // Surface a clear error if OpenRouter has a saved key but is currently Paused
+    if (!isOpenRouterEnabled && isValidApiKey(openRouterKey)) {
+      callbacks.onError(
+        new Error(
+          'OpenRouter API key is saved, but the OpenRouter gateway is currently Paused in Admin Panel → Providers & Keys. Activate it to enable live AI responses.'
+        )
+      );
+      return;
     }
 
     // 3. Offline / Unconfigured Demo Synthesizer (used only when no API key is configured)

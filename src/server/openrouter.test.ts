@@ -1,11 +1,21 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {
+  normalizeApiKey,
   isValidApiKey,
+  buildProviderUpdatePayload,
+  buildGeminiCandidateModels,
+  isRetryableGeminiError,
   resolveOpenRouterModels,
   buildOpenRouterRequestBody,
   parseOpenRouterStreamPayload
 } from './openrouter.ts';
+
+test('normalizeApiKey strips Bearer prefix and whitespace', () => {
+  assert.equal(normalizeApiKey('  Bearer sk-or-v1-abc123  '), 'sk-or-v1-abc123');
+  assert.equal(normalizeApiKey('bearer  sk-or-v1-xyz '), 'sk-or-v1-xyz');
+  assert.equal(normalizeApiKey(null), '');
+});
 
 test('isValidApiKey rejects placeholders and short strings, accepts real keys', () => {
   assert.equal(isValidApiKey(''), false);
@@ -13,6 +23,46 @@ test('isValidApiKey rejects placeholders and short strings, accepts real keys', 
   assert.equal(isValidApiKey('sk-or-v1-YOUR_OPENROUTER_API_KEY'), false);
   assert.equal(isValidApiKey('AIzaSy_YOUR_GEMINI_API_KEY_HERE'), false);
   assert.equal(isValidApiKey('sk-or-v1-abcdef1234567890abcdef'), true);
+  assert.equal(isValidApiKey('Bearer sk-or-v1-abcdef1234567890abcdef'), true);
+});
+
+test('buildProviderUpdatePayload activates provider when saving a new API key and supports toggling when no key is passed', () => {
+  assert.deepEqual(
+    buildProviderUpdatePayload({
+      api_key: ' Bearer sk-or-v1-abcdef1234567890 ',
+      base_url: 'https://openrouter.ai/api/v1/',
+      is_active: false
+    }),
+    {
+      api_key: 'sk-or-v1-abcdef1234567890',
+      base_url: 'https://openrouter.ai/api/v1/',
+      is_active: true
+    }
+  );
+  assert.deepEqual(
+    buildProviderUpdatePayload({ is_active: false }),
+    { is_active: false }
+  );
+  assert.deepEqual(
+    buildProviderUpdatePayload({ clear_api_key: true }),
+    { api_key: '' }
+  );
+});
+
+test('buildGeminiCandidateModels uses valid Gemini SDK models and avoids deprecated/broken model IDs', () => {
+  const proList = buildGeminiCandidateModels('gemini-4-carbon');
+  assert.deepEqual(proList, ['gemini-4-hydrogen', 'gemini-3.1-flash-lite']);
+  assert.equal(proList.includes('gemini-3.8-flash'), false);
+  assert.equal(proList.includes('gemini-3.1-pro-preview'), false);
+
+  const liteList = buildGeminiCandidateModels('gemini-3.1-flash-lite');
+  assert.deepEqual(liteList, ['gemini-3.1-flash-lite', 'gemini-4-hydrogen']);
+});
+
+test('isRetryableGeminiError retries on 429 quota/RESOURCE_EXHAUSTED as well as 404/NOT_FOUND', () => {
+  assert.equal(isRetryableGeminiError('429 RESOURCE_EXHAUSTED quota exceeded'), true);
+  assert.equal(isRetryableGeminiError('404 NOT_FOUND model no longer available'), true);
+  assert.equal(isRetryableGeminiError('API_KEY_INVALID'), false);
 });
 
 test('resolveOpenRouterModels maps all Bangla AI workspace models and respects overrides', () => {

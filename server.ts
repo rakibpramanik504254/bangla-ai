@@ -8,6 +8,7 @@ import { authenticate, requireAdmin, generateToken, AuthenticatedRequest } from 
 import { AiService } from './src/server/ai-service.ts';
 import { buildNewFreeModelsFromOpenRouterApi } from './src/server/openrouter-free-models.ts';
 import { sanitizeModelForWorkspace } from './src/server/model-sanitizer.ts';
+import { normalizeApiKey, buildProviderUpdatePayload } from './src/server/openrouter.ts';
 import { isSubscriptionActive, calculateUsageStats, PLANS } from './src/utils/billing.ts';
 import { sanitizeIncomingAttachments } from './src/utils/chatAttachments.ts';
 
@@ -581,17 +582,7 @@ app.get('/api/admin/providers', requireAdmin, (_req: AuthenticatedRequest, res: 
 });
 
 app.put('/api/admin/providers/:id', requireAdmin, (req: AuthenticatedRequest, res: Response) => {
-  const { name, api_key, base_url, is_active, clear_api_key } = req.body;
-  const updates: any = {};
-  if (name !== undefined) updates.name = name;
-  if (base_url !== undefined) updates.base_url = base_url;
-  if (is_active !== undefined) updates.is_active = is_active;
-  if (clear_api_key === true) {
-    updates.api_key = '';
-  } else if (api_key !== undefined && String(api_key).trim() !== '') {
-    updates.api_key = String(api_key).trim();
-  }
-
+  const updates = buildProviderUpdatePayload(req.body || {});
   const updated = db.updateProvider(req.params.id, updates);
   if (!updated) {
     res.status(404).json({ error: 'Provider not found.' });
@@ -607,7 +598,7 @@ app.post('/api/admin/providers/:id/test', requireAdmin, async (req: Authenticate
     return;
   }
 
-  const candidateKey = (req.body?.api_key || provider.api_key || '').trim();
+  const candidateKey = normalizeApiKey(req.body?.api_key || provider.api_key);
   if (!candidateKey) {
     res.status(400).json({ error: 'Please enter and save an API key first.' });
     return;
@@ -731,16 +722,11 @@ app.put('/api/admin/settings', requireAdmin, (req: AuthenticatedRequest, res: Re
     openrouter_base_url !== undefined ||
     openrouter_enabled !== undefined
   ) {
-    const providerUpdates: any = {};
-    if (typeof openrouter_api_key === 'string' && openrouter_api_key.trim() !== '') {
-      providerUpdates.api_key = openrouter_api_key.trim();
-    }
-    if (typeof openrouter_base_url === 'string' && openrouter_base_url.trim() !== '') {
-      providerUpdates.base_url = openrouter_base_url.trim();
-    }
-    if (typeof openrouter_enabled === 'boolean') {
-      providerUpdates.is_active = openrouter_enabled;
-    }
+    const providerUpdates = buildProviderUpdatePayload({
+      api_key: openrouter_api_key,
+      base_url: openrouter_base_url,
+      is_active: openrouter_enabled
+    });
     if (Object.keys(providerUpdates).length > 0) {
       db.updateProvider('prov_openrouter', providerUpdates);
     }

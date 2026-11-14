@@ -340,6 +340,7 @@ export const AdminPanel: React.FC = () => {
 
   const handleSaveProvider = async (providerId: string) => {
     try {
+      const trimmedKey = newApiKey.trim();
       const res = await fetch(`/api/admin/providers/${providerId}`, {
         method: 'PUT',
         headers: {
@@ -347,8 +348,9 @@ export const AdminPanel: React.FC = () => {
           Authorization: `Bearer ${token}`
         },
         body: JSON.stringify({
-          api_key: newApiKey.trim() || undefined,
-          base_url: newBaseUrl.trim() || undefined
+          api_key: trimmedKey || undefined,
+          base_url: newBaseUrl.trim() || undefined,
+          ...(trimmedKey ? { is_active: true } : {})
         })
       });
       if (res.ok) {
@@ -356,7 +358,11 @@ export const AdminPanel: React.FC = () => {
         setEditingProviderId(null);
         setNewApiKey('');
         setNewBaseUrl('');
-        setFeedback('Provider API configuration updated successfully.');
+        setFeedback(
+          trimmedKey
+            ? 'Provider API key saved & Activated. Workspace models are now live.'
+            : 'Provider configuration updated successfully.'
+        );
       } else {
         const err = await res.json().catch(() => ({}));
         setFeedback(`Error: ${err.error || 'Failed to save provider configuration.'}`);
@@ -551,9 +557,12 @@ export const AdminPanel: React.FC = () => {
     e.preventDefault();
     setSavingSettings(true);
     try {
+      const trimmedQuickKey = openrouterQuickKey.trim();
       const payload = {
         ...globalSettings,
-        ...(openrouterQuickKey.trim() ? { openrouter_api_key: openrouterQuickKey.trim() } : {})
+        ...(trimmedQuickKey
+          ? { openrouter_api_key: trimmedQuickKey, openrouter_enabled: true }
+          : {})
       };
       const res = await fetch('/api/admin/settings', {
         method: 'PUT',
@@ -1344,16 +1353,31 @@ export const AdminPanel: React.FC = () => {
                         <button
                           type="button"
                           onClick={() => handleToggleProviderActive(p)}
-                          className={`text-[10px] font-mono uppercase px-2 py-0.5 rounded-full font-semibold cursor-pointer ${
+                          className={`text-[10px] font-mono uppercase px-2.5 py-0.5 rounded-full font-semibold cursor-pointer ${
                             p.is_active
                               ? 'bg-black text-white dark:bg-white dark:text-black'
                               : 'bg-red-50 text-red-700 dark:bg-red-950/40 dark:text-red-400 border border-red-200'
                           }`}
                         >
-                          {p.is_active ? 'Active' : 'Paused'}
+                          {p.is_active ? 'Active · Pause' : 'Paused · Activate'}
                         </button>
                       </div>
                     </div>
+
+                    {p.has_api_key && !p.is_active && (
+                      <div className="p-2.5 rounded-[6px] bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800 text-[11px] text-amber-900 dark:text-amber-200 flex flex-wrap items-center justify-between gap-2">
+                        <span>
+                          API key is saved, but this gateway is currently <strong>Paused</strong> and skipped in Workspace.
+                        </span>
+                        <button
+                          type="button"
+                          onClick={() => handleToggleProviderActive(p)}
+                          className="h-7 px-3 rounded-full bg-black text-white dark:bg-white dark:text-black font-semibold text-[11px] cursor-pointer shrink-0"
+                        >
+                          Activate Now
+                        </button>
+                      </div>
+                    )}
 
                     <div className="text-xs space-y-1.5 text-gray-500 font-mono text-[11px]">
                       <div className="flex items-center justify-between gap-2">
@@ -1832,10 +1856,21 @@ export const AdminPanel: React.FC = () => {
               <input
                 type="password"
                 value={openrouterQuickKey}
-                onChange={e => setOpenrouterQuickKey(e.target.value)}
+                onChange={e => {
+                  const val = e.target.value;
+                  setOpenrouterQuickKey(val);
+                  if (val.trim()) {
+                    setGlobalSettings((prev: any) => ({ ...prev, openrouter_enabled: true }));
+                  }
+                }}
                 placeholder={globalSettings.openrouter_configured ? 'Enter new key to replace saved key...' : 'sk-or-v1-...'}
                 className="w-full px-3.5 py-2.5 rounded-[12px] border border-black/[0.12] dark:border-white/[0.15] bg-white dark:bg-[#262626] font-mono text-xs focus:outline-none focus:border-black dark:focus:border-white"
               />
+              {globalSettings.openrouter_configured && globalSettings.openrouter_enabled === false && (
+                <p className="mt-1.5 text-[11px] text-amber-700 dark:text-amber-300 font-medium">
+                  OpenRouter key is saved, but "Active" is currently unchecked. Check "Active" above and save to enable live AI responses.
+                </p>
+              )}
             </div>
           </div>
 
