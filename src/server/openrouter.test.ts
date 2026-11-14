@@ -74,6 +74,50 @@ test('buildOpenRouterRequestBody sets stream true and prepends system message', 
   ]);
 });
 
+test('buildOpenRouterRequestBody formats image_url parts and text file context for user attachments', () => {
+  const body = buildOpenRouterRequestBody(
+    'openai/gpt-4o',
+    [
+      {
+        role: 'user',
+        content: 'Inspect these files',
+        attachments: [
+          {
+            id: 'img1',
+            name: 'screen.png',
+            mimeType: 'image/png',
+            size: 512,
+            kind: 'image',
+            dataUrl: 'data:image/png;base64,AAAA'
+          },
+          {
+            id: 'txt1',
+            name: 'config.json',
+            mimeType: 'application/json',
+            size: 20,
+            kind: 'text',
+            textContent: '{"ok":true}'
+          }
+        ]
+      }
+    ],
+    'System',
+    2048
+  );
+
+  assert.equal(body.messages.length, 2);
+  const userMsg = body.messages[1];
+  assert.equal(userMsg.role, 'user');
+  assert.ok(Array.isArray(userMsg.content));
+  assert.equal(userMsg.content[0].type, 'text');
+  assert.match((userMsg.content[0] as { type: 'text'; text: string }).text, /Inspect these files/);
+  assert.match((userMsg.content[0] as { type: 'text'; text: string }).text, /\[Attached File: config\.json\]/);
+  assert.deepEqual(userMsg.content[1], {
+    type: 'image_url',
+    image_url: { url: 'data:image/png;base64,AAAA' }
+  });
+});
+
 test('parseOpenRouterStreamPayload extracts deltas, usage, errors, and DONE', () => {
   assert.deepEqual(
     parseOpenRouterStreamPayload('{"choices":[{"delta":{"content":"Hi there"}}]}'),

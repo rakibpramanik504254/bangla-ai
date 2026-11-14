@@ -3,6 +3,7 @@ import path from 'node:path';
 import crypto from 'node:crypto';
 import { PLANS, calculateExpiryDate } from '../utils/billing.ts';
 import { createSeededFreeModels } from '../server/openrouter-free-models.ts';
+import type { ChatAttachment } from '../types/index.ts';
 
 export interface User {
   id: string;
@@ -77,6 +78,7 @@ export interface Message {
   content: string;
   model_id: string;
   tokens_used: number;
+  attachments?: ChatAttachment[];
   created_at: string;
 }
 
@@ -1109,7 +1111,14 @@ class Database {
       .sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime());
   }
 
-  public addMessage(chatId: string, role: 'user' | 'assistant' | 'system', content: string, modelId: string, tokensUsed: number = 0): Message {
+  public addMessage(
+    chatId: string,
+    role: 'user' | 'assistant' | 'system',
+    content: string,
+    modelId: string,
+    tokensUsed: number = 0,
+    attachments?: ChatAttachment[]
+  ): Message {
     const now = new Date().toISOString();
     const msg: Message = {
       id: `msg_${crypto.randomUUID().slice(0, 8)}`,
@@ -1118,6 +1127,7 @@ class Database {
       content,
       model_id: modelId,
       tokens_used: tokensUsed,
+      ...(attachments && attachments.length > 0 ? { attachments } : {}),
       created_at: now
     };
     this.data.messages.push(msg);
@@ -1125,8 +1135,9 @@ class Database {
     const chat = this.data.chats.find(c => c.id === chatId);
     if (chat) {
       chat.updated_at = now;
-      if ((chat.title === 'New Chat' || chat.title === 'নতুন চ্যাট') && role === 'user') {
-        chat.title = content.slice(0, 36) + (content.length > 36 ? '...' : '');
+      if ((chat.title === 'New Chat' || chat.title === 'New Conversation' || chat.title === 'নতুন চ্যাট') && role === 'user') {
+        const titleSource = content.trim() || attachments?.[0]?.name || 'New Chat';
+        chat.title = titleSource.slice(0, 36) + (titleSource.length > 36 ? '...' : '');
       }
     }
 

@@ -9,13 +9,14 @@ import { AiService } from './src/server/ai-service.ts';
 import { buildNewFreeModelsFromOpenRouterApi } from './src/server/openrouter-free-models.ts';
 import { sanitizeModelForWorkspace } from './src/server/model-sanitizer.ts';
 import { isSubscriptionActive, calculateUsageStats, PLANS } from './src/utils/billing.ts';
+import { sanitizeIncomingAttachments } from './src/utils/chatAttachments.ts';
 
 dotenv.config();
 
 const app = express();
-const PORT = process.env.PORT || 3000;
+const PORT = Number(process.env.PORT) || 3000;
 
-app.use(express.json());
+app.use(express.json({ limit: '25mb' }));
 
 // Request logger for API calls
 app.use((req, res, next) => {
@@ -378,16 +379,19 @@ app.delete('/api/chats/:id', authenticate, (req: AuthenticatedRequest, res: Resp
 // Streaming Chat Completion Endpoint (SSE)
 app.post('/api/chat/stream', authenticate, async (req: AuthenticatedRequest, res: Response) => {
   const user = req.user!;
-  const { chatId, message, modelId } = req.body;
+  const { chatId, message, modelId, attachments: rawAttachments } = req.body;
+  const cleanMessage = typeof message === 'string' ? message.trim() : '';
+  const attachments = sanitizeIncomingAttachments(rawAttachments);
 
-  if (!message || !message.trim()) {
-    res.status(400).json({ error: 'Message content cannot be empty.' });
+  if (!cleanMessage && attachments.length === 0) {
+    res.status(400).json({ error: 'Message content or at least one attachment is required.' });
     return;
   }
 
   let targetChat = chatId ? db.getChat(chatId, user.id) : null;
   if (!targetChat) {
-    targetChat = db.createChat(user.id, message.slice(0, 32), modelId || 'mod_gemini_2_5_flash');
+    const initialTitle = (cleanMessage || attachments[0]?.name || 'New Chat').slice(0, 32);
+    targetChat = db.createChat(user.id, initialTitle, modelId || 'mod_gemini_2_5_flash');
   }
 
   // 1. Subscription & usage verification gating
@@ -403,13 +407,20 @@ app.post('/api/chat/stream', authenticate, async (req: AuthenticatedRequest, res
   const provider = db.getProviderById(model.provider_id) || db.listProviders()[0];
 
   // Save user message to database
-  const userMsg = db.addMessage(targetChat.id, 'user', message.trim(), model.id);
+  const userMsg = db.addMessage(targetChat.id, 'user', cleanMessage, model.id, 0, attachments);
 
   // Set SSE Headers
   res.setHeader('Content-Type', 'text/event-stream');
   res.setHeader('Cache-Control', 'no-cache');
   res.setHeader('Connection', 'keep-alive');
   res.flushHeaders?.();
+
+  const streamAbortController = new AbortController();
+  res.on('close', () => {
+    if (!res.writableFinished) {
+      streamAbortController.abort();
+    }
+  });
 
   // Send initial metadata
   res.write(`data: ${JSON.stringify({ type: 'start', chatId: targetChat.id, userMessage: userMsg })}\n\n`);
@@ -418,39 +429,51 @@ app.post('/api/chat/stream', authenticate, async (req: AuthenticatedRequest, res
   const previousMessages = db.getMessages(targetChat.id);
   const formattedHistory = previousMessages.map(m => ({
     role: m.role,
-    content: m.content
+    content: m.content,
+    attachments: m.attachments
   }));
 
   try {
-    await AiService.streamCompletion(user, model, provider, formattedHistory, {
-      onChunk: (chunk: string) => {
-        res.write(`data: ${JSON.stringify({ type: 'chunk', text: chunk })}\n\n`);
-      },
-      onDone: (fullText: string, promptTokens: number, completionTokens: number) => {
-        const assistantMsg = db.addMessage(targetChat!.id, 'assistant', fullText, model.id, completionTokens);
-        const usageRecord = db.recordUsage(user.id, targetChat!.id, model.id, promptTokens, completionTokens);
+    await AiService.streamCompletion(
+      user,
+      model,
+      provider,
+      formattedHistory,
+      {
+        onChunk: (chunk: string) => {
+          if (!streamAbortController.signal.aborted && !res.writableEnded) {
+            res.write(`data: ${JSON.stringify({ type: 'chunk', text: chunk })}\n\n`);
+          }
+        },
+        onDone: (fullText: string, promptTokens: number, completionTokens: number) => {
+          if (streamAbortController.signal.aborted || res.writableEnded) return;
+          const assistantMsg = db.addMessage(targetChat!.id, 'assistant', fullText, model.id, completionTokens);
+          const usageRecord = db.recordUsage(user.id, targetChat!.id, model.id, promptTokens, completionTokens);
 
-        const updatedUser = db.getUserById(user.id);
-        const usageLimit = updatedUser?.usage_limit !== undefined ? updatedUser.usage_limit : 0;
-        const usageStats = calculateUsageStats(usageLimit, updatedUser?.current_usage || 0);
+          const updatedUser = db.getUserById(user.id);
+          const usageLimit = updatedUser?.usage_limit !== undefined ? updatedUser.usage_limit : 0;
+          const usageStats = calculateUsageStats(usageLimit, updatedUser?.current_usage || 0);
 
-        res.write(`data: ${JSON.stringify({
-          type: 'done',
-          assistantMessage: assistantMsg,
-          usageRecord,
-          usageStats
-        })}\n\n`);
-        res.end();
-      },
-      onError: (err: Error) => {
-        console.error('Streaming error:', err);
-        if (!res.writableEnded) {
-          res.write(`data: ${JSON.stringify({ type: 'error', error: err.message })}\n\n`);
+          res.write(`data: ${JSON.stringify({
+            type: 'done',
+            assistantMessage: assistantMsg,
+            usageRecord,
+            usageStats
+          })}\n\n`);
           res.end();
+        },
+        onError: (err: Error) => {
+          console.error('Streaming error:', err);
+          if (!streamAbortController.signal.aborted && !res.writableEnded) {
+            res.write(`data: ${JSON.stringify({ type: 'error', error: err.message })}\n\n`);
+            res.end();
+          }
         }
-      }
-    });
+      },
+      streamAbortController.signal
+    );
   } catch (err: any) {
+    if (streamAbortController.signal.aborted || err?.name === 'AbortError') return;
     console.error('Stream completion failed:', err);
     if (!res.writableEnded) {
       res.write(`data: ${JSON.stringify({ type: 'error', error: err.message })}\n\n`);
@@ -886,8 +909,8 @@ async function startServer() {
     app.use(vite.middlewares);
   }
 
-  app.listen(PORT, () => {
-    console.log(`[Bangla AI Server] Running on http://localhost:${PORT}`);
+  app.listen(PORT, '0.0.0.0', () => {
+    console.log(`[Bangla AI Server] Running on http://0.0.0.0:${PORT}`);
   });
 }
 

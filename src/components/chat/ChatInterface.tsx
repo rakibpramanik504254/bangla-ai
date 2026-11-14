@@ -2,7 +2,6 @@ import React, { useState, useEffect, useRef } from 'react';
 import {
   MessageSquare,
   Plus,
-  Send,
   Trash2,
   Edit2,
   Check,
@@ -27,10 +26,13 @@ import {
   Sun,
   Moon,
   User as UserIcon,
-  Shield
+  Shield,
+  FileText,
+  FileCode2,
+  UploadCloud
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext.tsx';
-import { Chat, Message, AiModel } from '../../types/index.ts';
+import { Chat, Message, AiModel, ChatAttachment } from '../../types/index.ts';
 import { createSseLineParser, parseChatStreamPayload } from '../../utils/sse.ts';
 import {
   parseMarkdownBlocks,
@@ -38,6 +40,8 @@ import {
   estimateReadingStats
 } from '../../utils/markdownBlocks.ts';
 import { WorkspaceCodeBlock } from './WorkspaceCodeBlock.tsx';
+import { ChatComposer } from './ChatComposer.tsx';
+import { formatFileSize } from '../../utils/chatAttachments.ts';
 import { copyTextSafely } from '../../utils/clipboard.ts';
 import { BrandLogo } from '../common/BrandLogo.tsx';
 
@@ -221,6 +225,9 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({
   const [selectedModelId, setSelectedModelId] = useState<string>('mod_gemini_2_5_flash');
 
   const [inputMessage, setInputMessage] = useState('');
+  const [pendingAttachments, setPendingAttachments] = useState<ChatAttachment[]>([]);
+  const [droppedFiles, setDroppedFiles] = useState<File[] | null>(null);
+  const [isDraggingWorkspace, setIsDraggingWorkspace] = useState(false);
   const [isStreaming, setIsStreaming] = useState(false);
   const [streamedText, setStreamedText] = useState('');
   const [searchQuery, setSearchQuery] = useState('');
@@ -237,6 +244,8 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
+  const abortControllerRef = useRef<AbortController | null>(null);
+  const workspaceDragCounterRef = useRef(0);
 
   const isSubscribed = user?.isSubscribed || user?.role === 'admin';
 
@@ -313,6 +322,7 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({
 
   useEffect(() => {
     return () => {
+      abortControllerRef.current?.abort();
       if (typeof window !== 'undefined' && 'speechSynthesis' in window) {
         window.speechSynthesis.cancel();
       }
@@ -390,9 +400,16 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({
     }
   };
 
+  const handleStopGeneration = () => {
+    if (abortControllerRef.current) {
+      abortControllerRef.current.abort();
+    }
+  };
+
   const handleSendMessage = async (customPrompt?: string) => {
-    const textToSend = (customPrompt || inputMessage).trim();
-    if (!textToSend || isStreaming) return;
+    const textToSend = (customPrompt !== undefined ? customPrompt : inputMessage).trim();
+    const attachmentsToSend = customPrompt !== undefined ? [] : pendingAttachments;
+    if ((!textToSend && attachmentsToSend.length === 0) || isStreaming) return;
 
     if (!isSubscribed) {
       openPaymentModal('monthly');
@@ -403,6 +420,7 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({
     if (!targetChatId) {
       if (!token) return;
       try {
+        const titleSeed = textToSend || attachmentsToSend[0]?.name || 'New Conversation';
         const res = await fetch('/api/chats', {
           method: 'POST',
           headers: {
@@ -410,7 +428,7 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({
             Authorization: `Bearer ${token}`
           },
           body: JSON.stringify({
-            title: textToSend.slice(0, 30) + '...',
+            title: titleSeed.slice(0, 30) + (titleSeed.length > 30 ? '...' : ''),
             modelId: selectedModelId
           })
         });
@@ -433,17 +451,28 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({
       content: textToSend,
       model_id: selectedModelId,
       tokens_used: 0,
+      ...(attachmentsToSend.length > 0 ? { attachments: attachmentsToSend } : {}),
       created_at: new Date().toISOString()
     };
 
     setMessages(prev => [...prev, tempUserMsg]);
-    setInputMessage('');
+    if (customPrompt === undefined) {
+      setInputMessage('');
+      setPendingAttachments([]);
+    }
     setIsStreaming(true);
     setStreamedText('');
+
+    const controller = new AbortController();
+    abortControllerRef.current = controller;
+    let fullAssistantReply = '';
+    let finalizedMessage: Message | null = null;
+    let wasAborted = false;
 
     try {
       const response = await fetch('/api/chat/stream', {
         method: 'POST',
+        signal: controller.signal,
         headers: {
           'Content-Type': 'application/json',
           Authorization: `Bearer ${token}`
@@ -451,7 +480,8 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({
         body: JSON.stringify({
           chatId: targetChatId,
           modelId: selectedModelId,
-          message: textToSend
+          message: textToSend,
+          attachments: attachmentsToSend
         })
       });
 
@@ -463,8 +493,6 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({
       const reader = response.body?.getReader();
       const decoder = new TextDecoder('utf-8');
       const lineParser = createSseLineParser();
-      let fullAssistantReply = '';
-      let finalizedMessage: Message | null = null;
 
       const processSsePayloads = (payloads: string[]) => {
         for (const payload of payloads) {
@@ -509,21 +537,44 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({
       setStreamedText('');
       refreshUser();
     } catch (err: any) {
-      setMessages(prev => [
-        ...prev,
-        {
-          id: 'err-' + Date.now(),
-          chat_id: targetChatId!,
-          role: 'assistant',
-          content: `⚠️ Error: ${err.message}`,
-          model_id: selectedModelId,
-          tokens_used: 0,
-          created_at: new Date().toISOString()
+      if (controller.signal.aborted || err?.name === 'AbortError') {
+        wasAborted = true;
+        if (fullAssistantReply.trim().length > 0) {
+          const partialMsg: Message = {
+            id: 'asst-stopped-' + Date.now(),
+            chat_id: targetChatId!,
+            role: 'assistant',
+            content: fullAssistantReply,
+            model_id: selectedModelId,
+            tokens_used: Math.round(fullAssistantReply.length / 4),
+            created_at: new Date().toISOString()
+          };
+          setMessages(prev => [...prev, partialMsg]);
         }
-      ]);
-      setStreamedText('');
+        setStreamedText('');
+      } else {
+        setMessages(prev => [
+          ...prev,
+          {
+            id: 'err-' + Date.now(),
+            chat_id: targetChatId!,
+            role: 'assistant',
+            content: `⚠️ Error: ${err.message}`,
+            model_id: selectedModelId,
+            tokens_used: 0,
+            created_at: new Date().toISOString()
+          }
+        ]);
+        setStreamedText('');
+      }
     } finally {
+      if (abortControllerRef.current === controller) {
+        abortControllerRef.current = null;
+      }
       setIsStreaming(false);
+      if (wasAborted) {
+        requestAnimationFrame(() => inputRef.current?.focus());
+      }
     }
   };
 
@@ -797,8 +848,52 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({
         </div>
       </aside>
 
-      {/* Main Chat Canvas */}
-      <main className="flex-1 min-w-0 w-full max-w-full flex flex-col h-full overflow-hidden relative bg-white dark:bg-[#1F1F1F]">
+      {/* Main Chat Canvas (supports drag-and-drop file upload anywhere in workspace) */}
+      <main
+        onDragEnter={e => {
+          e.preventDefault();
+          workspaceDragCounterRef.current += 1;
+          if (e.dataTransfer?.types?.includes('Files')) {
+            setIsDraggingWorkspace(true);
+          }
+        }}
+        onDragOver={e => {
+          e.preventDefault();
+        }}
+        onDragLeave={e => {
+          e.preventDefault();
+          workspaceDragCounterRef.current = Math.max(0, workspaceDragCounterRef.current - 1);
+          if (workspaceDragCounterRef.current === 0) {
+            setIsDraggingWorkspace(false);
+          }
+        }}
+        onDrop={e => {
+          e.preventDefault();
+          workspaceDragCounterRef.current = 0;
+          setIsDraggingWorkspace(false);
+          const files = Array.from(e.dataTransfer?.files || []);
+          if (files.length > 0) {
+            setDroppedFiles(files);
+          }
+        }}
+        className="flex-1 min-w-0 w-full max-w-full flex flex-col h-full overflow-hidden relative bg-white dark:bg-[#1F1F1F]"
+      >
+        {isDraggingWorkspace && (
+          <div
+            data-testid="workspace-drop-overlay"
+            className="absolute inset-3 z-40 rounded-[16px] border-2 border-dashed border-black/50 dark:border-white/50 bg-white/90 dark:bg-[#1F1F1F]/90 backdrop-blur-xs flex flex-col items-center justify-center gap-2 pointer-events-none"
+          >
+            <div className="w-12 h-12 rounded-full bg-black text-white dark:bg-white dark:text-black flex items-center justify-center shadow-sm">
+              <UploadCloud className="w-5 h-5" />
+            </div>
+            <p className="text-sm font-semibold text-black dark:text-white">
+              Drop photos or files to attach
+            </p>
+            <p className="text-xs text-gray-500">
+              PNG, JPG, WEBP, TXT, MD, CSV, JSON, JS, TS, PY, HTML, CSS
+            </p>
+          </div>
+        )}
         {/* Compact Workspace Top Bar (Website Header hidden to maximize chat space) */}
         <div className="h-12 shrink-0 border-b border-black/[0.08] dark:border-white/[0.08] px-2 sm:px-4 flex items-center justify-between gap-1.5 sm:gap-3 bg-white/95 dark:bg-[#1F1F1F]/95 backdrop-blur-sm z-10 w-full max-w-full">
           <div className="flex items-center gap-1 sm:gap-2 min-w-0 flex-1">
@@ -1003,7 +1098,47 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({
                         }`}
                       >
                         {m.role === 'user' ? (
-                          <p className="whitespace-pre-wrap break-words">{m.content}</p>
+                          <div className="space-y-2">
+                            {m.attachments && m.attachments.length > 0 && (
+                              <div
+                                data-testid="user-message-attachments"
+                                className="flex flex-wrap gap-2"
+                              >
+                                {m.attachments.map(att =>
+                                  att.kind === 'image' && att.dataUrl ? (
+                                    <div
+                                      key={att.id}
+                                      className="rounded-[10px] overflow-hidden border border-white/20 dark:border-black/15 bg-white/10 dark:bg-black/5 max-w-[210px]"
+                                    >
+                                      <img
+                                        src={att.dataUrl}
+                                        alt={att.name}
+                                        className="min-w-[56px] min-h-[56px] max-h-44 w-auto object-cover block"
+                                      />
+                                    </div>
+                                  ) : (
+                                    <div
+                                      key={att.id}
+                                      className="inline-flex items-center gap-2 px-2.5 py-1.5 rounded-[8px] border border-white/20 dark:border-black/15 bg-white/10 dark:bg-black/5 text-xs max-w-[230px]"
+                                    >
+                                      {/\.(js|ts|py|html|css|json)$/i.test(att.name) ? (
+                                        <FileCode2 className="w-3.5 h-3.5 shrink-0 opacity-85" />
+                                      ) : (
+                                        <FileText className="w-3.5 h-3.5 shrink-0 opacity-85" />
+                                      )}
+                                      <span className="truncate font-medium">{att.name}</span>
+                                      <span className="text-[10px] opacity-70 font-mono shrink-0">
+                                        {formatFileSize(att.size)}
+                                      </span>
+                                    </div>
+                                  )
+                                )}
+                              </div>
+                            )}
+                            {m.content && (
+                              <p className="whitespace-pre-wrap break-words">{m.content}</p>
+                            )}
+                          </div>
                         ) : (
                           <FormattedMessage content={m.content} />
                         )}
@@ -1173,52 +1308,25 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({
           )}
         </div>
 
-        {/* Input Box Bar */}
-        <div className="p-2 sm:p-3.5 border-t border-black/[0.08] dark:border-white/[0.08] bg-white dark:bg-[#1F1F1F] shrink-0 w-full max-w-full">
-          <div className="max-w-4xl mx-auto w-full min-w-0">
-            <form
-              onSubmit={e => {
-                e.preventDefault();
-                handleSendMessage();
-              }}
-              className="relative flex items-end rounded-[12px] border border-black/[0.12] dark:border-white/[0.15] bg-white dark:bg-[#262626] focus-within:border-black dark:focus-within:border-white transition-all p-1.5 sm:p-2 shadow-xs"
-            >
-              <textarea
-                ref={inputRef}
-                rows={2}
-                value={inputMessage}
-                onChange={e => setInputMessage(e.target.value)}
-                onKeyDown={e => {
-                  if (e.key === 'Enter' && !e.shiftKey) {
-                    e.preventDefault();
-                    handleSendMessage();
-                  }
-                }}
-                placeholder={
-                  isSubscribed
-                    ? `Message ${selectedModel?.display_name}...`
-                    : 'Activate a subscription plan to chat...'
-                }
-                disabled={!isSubscribed}
-                className="w-full min-w-0 resize-none bg-transparent px-2.5 sm:px-3 py-1.5 sm:py-2 text-[15px] sm:text-sm text-black dark:text-white placeholder-gray-400 focus:outline-none max-h-40 disabled:opacity-50"
-              />
-
-              <button
-                type="submit"
-                disabled={!inputMessage.trim() || isStreaming || !isSubscribed}
-                className="w-9 h-9 rounded-full bg-black hover:bg-black/90 dark:bg-white dark:hover:bg-white/90 text-white dark:text-black flex items-center justify-center disabled:opacity-20 transition-all shrink-0 cursor-pointer"
-                aria-label="Send message"
-              >
-                <Send className="w-3.5 h-3.5" />
-              </button>
-            </form>
-
-            <div className="hidden sm:flex items-center justify-between gap-2 text-[11px] text-gray-500 px-2 mt-1.5 font-mono">
-              <span>Enter to send • Shift+Enter for new line</span>
-              <span className="truncate max-w-xs">{selectedModel?.display_name}</span>
-            </div>
-          </div>
-        </div>
+        {/* Expand-on-Focus Chat Composer */}
+        <ChatComposer
+          inputRef={inputRef}
+          inputMessage={inputMessage}
+          onInputChange={setInputMessage}
+          attachments={pendingAttachments}
+          onAddAttachments={newAtts => setPendingAttachments(prev => [...prev, ...newAtts])}
+          onRemoveAttachment={id => setPendingAttachments(prev => prev.filter(a => a.id !== id))}
+          onSubmit={() => handleSendMessage()}
+          onStopGeneration={handleStopGeneration}
+          isStreaming={isStreaming}
+          isSubscribed={Boolean(isSubscribed)}
+          models={models}
+          selectedModelId={selectedModelId}
+          onSelectModel={setSelectedModelId}
+          onOpenPaymentModal={() => openPaymentModal('monthly')}
+          externalDroppedFiles={droppedFiles}
+          onClearExternalDroppedFiles={() => setDroppedFiles(null)}
+        />
       </main>
     </div>
   );

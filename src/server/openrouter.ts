@@ -1,3 +1,6 @@
+import type { ChatAttachment } from '../types/index.ts';
+import { buildTextAttachmentPromptBlock } from '../utils/chatAttachments.ts';
+
 export interface OpenRouterModelCandidate {
   primary: string;
   fallback: string;
@@ -148,9 +151,40 @@ export function resolveOpenRouterModels(model: {
   };
 }
 
+export type OpenRouterContentPart =
+  | { type: 'text'; text: string }
+  | { type: 'image_url'; image_url: { url: string } };
+
+export function formatMessageContentForOpenRouter(
+  content: string,
+  attachments?: ChatAttachment[]
+): string | OpenRouterContentPart[] {
+  const safeAttachments = attachments || [];
+  const textBlock = buildTextAttachmentPromptBlock(safeAttachments);
+  const combinedText = [content.trim(), textBlock].filter(Boolean).join('\n\n');
+  const imageAttachments = safeAttachments.filter(a => a.kind === 'image' && Boolean(a.dataUrl));
+
+  if (imageAttachments.length === 0) {
+    return combinedText;
+  }
+
+  const parts: OpenRouterContentPart[] = [
+    {
+      type: 'text',
+      text: combinedText || 'Please analyze the attached image(s).'
+    },
+    ...imageAttachments.map(img => ({
+      type: 'image_url' as const,
+      image_url: { url: img.dataUrl! }
+    }))
+  ];
+
+  return parts;
+}
+
 export function buildOpenRouterRequestBody(
   openRouterModelId: string,
-  messages: { role: string; content: string }[],
+  messages: { role: string; content: string; attachments?: ChatAttachment[] }[],
   systemPrompt: string,
   maxTokens?: number
 ) {
@@ -162,7 +196,7 @@ export function buildOpenRouterRequestBody(
       { role: 'system', content: systemPrompt },
       ...messages.map(m => ({
         role: m.role === 'assistant' || m.role === 'system' ? m.role : 'user',
-        content: m.content
+        content: m.role === 'user' ? formatMessageContentForOpenRouter(m.content, m.attachments) : m.content
       }))
     ]
   };

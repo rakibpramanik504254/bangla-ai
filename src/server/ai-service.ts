@@ -10,10 +10,13 @@ import {
   parseOpenRouterStreamPayload
 } from './openrouter.ts';
 import { sanitizeModelForWorkspace } from './model-sanitizer.ts';
+import type { ChatAttachment } from '../types/index.ts';
+import { buildTextAttachmentPromptBlock, formatFileSize } from '../utils/chatAttachments.ts';
 
 export interface ChatMessageParam {
   role: 'user' | 'assistant' | 'system';
   content: string;
+  attachments?: ChatAttachment[];
 }
 
 export interface StreamCallbacks {
@@ -97,10 +100,12 @@ export class AiService {
     extraHeaders?: Record<string, string>;
     callbacks: StreamCallbacks;
     lastUserMsg: string;
+    signal?: AbortSignal;
   }): Promise<void> {
     const attemptRequest = async (targetModel: string) => {
       return fetch(params.endpointUrl, {
         method: 'POST',
+        signal: params.signal,
         headers: {
           Authorization: `Bearer ${params.apiKey}`,
           'Content-Type': 'application/json',
@@ -193,9 +198,15 @@ export class AiService {
     model: AiModel,
     provider: AiProvider,
     messages: ChatMessageParam[],
-    callbacks: StreamCallbacks
+    callbacks: StreamCallbacks,
+    signal?: AbortSignal
   ): Promise<void> {
-    const lastUserMsg = messages[messages.length - 1]?.content || '';
+    const lastUserMessage = messages[messages.length - 1];
+    const lastUserMsg = lastUserMessage?.content || '';
+    const lastUserAttachments = lastUserMessage?.attachments || [];
+    const lastUserTokenSource = [lastUserMsg, buildTextAttachmentPromptBlock(lastUserAttachments)]
+      .filter(Boolean)
+      .join('\n\n');
     let accumulatedText = '';
 
     // 1. Check OpenRouter Unified Gateway (1 API key accesses all workspace models)
@@ -219,10 +230,12 @@ export class AiService {
             'X-Title': 'Bangla AI'
           },
           callbacks,
-          lastUserMsg
+          lastUserMsg: lastUserTokenSource || lastUserMsg,
+          signal
         });
         return;
       } catch (err: any) {
+        if (signal?.aborted || err?.name === 'AbortError') return;
         console.error('[OpenRouter Stream Error]:', err?.message || err);
         callbacks.onError(err instanceof Error ? err : new Error(String(err)));
         return;
@@ -235,10 +248,36 @@ export class AiService {
     if (provider.slug === 'gemini' && isValidApiKey(directKey)) {
       try {
         const ai = new GoogleGenAI({ apiKey: directKey });
-        const formattedContents = messages.map(m => ({
-          role: m.role === 'assistant' ? 'model' : 'user',
-          parts: [{ text: m.content }]
-        }));
+        const formattedContents = messages.map(m => {
+          const textBlock = m.role === 'user' ? buildTextAttachmentPromptBlock(m.attachments || []) : '';
+          const combinedText = [m.content.trim(), textBlock].filter(Boolean).join('\n\n');
+          const parts: any[] = [];
+          if (combinedText) {
+            parts.push({ text: combinedText });
+          }
+          if (m.role === 'user' && m.attachments) {
+            for (const att of m.attachments) {
+              if (att.kind === 'image' && att.dataUrl) {
+                const match = att.dataUrl.match(/^data:([^;]+);base64,(.+)$/);
+                if (match) {
+                  parts.push({
+                    inlineData: {
+                      mimeType: match[1],
+                      data: match[2]
+                    }
+                  });
+                }
+              }
+            }
+          }
+          if (parts.length === 0) {
+            parts.push({ text: 'Please analyze the attached content.' });
+          }
+          return {
+            role: m.role === 'assistant' ? 'model' : 'user',
+            parts
+          };
+        });
 
         const candidateModels = model.model_name.includes('flash')
           ? ['gemini-3.8-flash', 'gemini-2.5-flash']
@@ -251,7 +290,10 @@ export class AiService {
             responseStream = await ai.models.generateContentStream({
               model: candidateModel,
               contents: formattedContents,
-              config: { systemInstruction: DEFAULT_SYSTEM_PROMPT }
+              config: {
+                systemInstruction: DEFAULT_SYSTEM_PROMPT,
+                ...(signal ? { abortSignal: signal } : {})
+              }
             });
             break;
           } catch (modelErr: any) {
@@ -269,6 +311,7 @@ export class AiService {
         }
 
         for await (const chunk of responseStream) {
+          if (signal?.aborted) return;
           const text = chunk.text;
           if (text) {
             accumulatedText += text;
@@ -276,7 +319,8 @@ export class AiService {
           }
         }
 
-        const tokenStats = estimateTokens(lastUserMsg, accumulatedText);
+        if (signal?.aborted) return;
+        const tokenStats = estimateTokens(lastUserTokenSource || lastUserMsg, accumulatedText);
         callbacks.onDone(accumulatedText, tokenStats.promptTokens, tokenStats.completionTokens);
         return;
       } catch (err: any) {
@@ -317,10 +361,12 @@ export class AiService {
             messages,
             maxTokens: model.max_output_tokens,
             callbacks,
-            lastUserMsg
+            lastUserMsg: lastUserTokenSource || lastUserMsg,
+            signal
           });
           return;
         } catch (err: any) {
+          if (signal?.aborted || err?.name === 'AbortError') return;
           console.error(`[${provider.name} Direct Error]:`, err?.message || err);
           callbacks.onError(err instanceof Error ? err : new Error(String(err)));
           return;
@@ -329,17 +375,19 @@ export class AiService {
     }
 
     // 3. Offline / Unconfigured Demo Synthesizer (used only when no API key is configured)
-    const generatedResponse = this.generateContextualResponse(model, lastUserMsg);
+    const generatedResponse = this.generateContextualResponse(model, lastUserMsg, lastUserAttachments);
     const chunks = this.splitIntoNaturalChunks(generatedResponse);
 
     for (let i = 0; i < chunks.length; i++) {
+      if (signal?.aborted) return;
       const chunk = chunks[i];
       accumulatedText += chunk;
       callbacks.onChunk(chunk);
       await new Promise(r => setTimeout(r, 20));
     }
 
-    const tokenStats = estimateTokens(lastUserMsg, accumulatedText);
+    if (signal?.aborted) return;
+    const tokenStats = estimateTokens(lastUserTokenSource || lastUserMsg, accumulatedText);
     callbacks.onDone(accumulatedText, tokenStats.promptTokens, tokenStats.completionTokens);
   }
 
@@ -359,7 +407,11 @@ export class AiService {
     return chunks;
   }
 
-  private static generateContextualResponse(model: AiModel, prompt: string): string {
+  private static generateContextualResponse(
+    model: AiModel,
+    prompt: string,
+    attachments: ChatAttachment[] = []
+  ): string {
     const safeModel = sanitizeModelForWorkspace(model);
     const p = prompt.toLowerCase();
     const badgeLabel =
@@ -370,6 +422,38 @@ export class AiService {
       safeModel.badge === 'coding' ? 'Advanced Code Specialist' :
       safeModel.badge === 'super_fast' ? 'Ultra Fast Low-Latency' : 'Balanced Multimodal';
     const modelBadge = `*Model: ${safeModel.display_name}* (${badgeLabel})\n\n`;
+
+    if (attachments.length > 0) {
+      const images = attachments.filter(a => a.kind === 'image');
+      const docs = attachments.filter(a => a.kind === 'text');
+      const lines: string[] = [`${modelBadge}I received your ${attachments.length} attachment${attachments.length > 1 ? 's' : ''}${prompt.trim() ? ' along with your prompt' : ''}:`];
+
+      if (images.length > 0) {
+        lines.push('\n### Attached Images');
+        for (const img of images) {
+          lines.push(`* **${img.name}** (\`${img.mimeType}\`, ${formatFileSize(img.size)}) — Ready for multimodal vision inspection.`);
+        }
+      }
+
+      if (docs.length > 0) {
+        lines.push('\n### Attached Files & Code');
+        for (const doc of docs) {
+          const previewLines = (doc.textContent || '').split('\n').slice(0, 6).join('\n');
+          lines.push(`* **${doc.name}** (${formatFileSize(doc.size)}, ${(doc.textContent || '').length.toLocaleString()} chars)`);
+          if (previewLines.trim()) {
+            const ext = doc.name.split('.').pop()?.toLowerCase() || 'txt';
+            lines.push(`\n\`\`\`${ext}\n${previewLines}\n\`\`\``);
+          }
+        }
+      }
+
+      if (prompt.trim()) {
+        lines.push(`\n### Summary\nYour request ("${prompt.trim().slice(0, 140)}") and the attached context above are ready. Configure a live OpenRouter or Gemini API key in the Admin Console to run full upstream vision and code inference.`);
+      } else {
+        lines.push('\nLet me know what specific edits, explanation, or analysis you would like on these attachments.');
+      }
+      return lines.join('\n');
+    }
 
     if (p.includes('email') || p.includes('letter') || p.includes('proposal') || p.includes('partnership')) {
       return `${modelBadge}Here is a polished, high-converting business partnership proposal email tailored for executive correspondence:

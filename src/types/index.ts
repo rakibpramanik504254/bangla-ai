@@ -60,6 +60,16 @@ export interface Chat {
   updated_at: string;
 }
 
+export interface ChatAttachment {
+  id: string;
+  name: string;
+  mimeType: string;
+  size: number;
+  kind: 'image' | 'text';
+  dataUrl?: string;
+  textContent?: string;
+}
+
 export interface Message {
   id: string;
   chat_id: string;
@@ -67,6 +77,7 @@ export interface Message {
   content: string;
   model_id: string;
   tokens_used: number;
+  attachments?: ChatAttachment[];
   created_at: string;
 }
 
