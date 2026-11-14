@@ -28,19 +28,6 @@ export const Footer: React.FC<FooterProps> = ({ setCurrentView }) => {
               <ShieldCheck className="w-3.5 h-3.5 text-black dark:text-white" />
               <span>TLS 1.3 Encrypted • Verified Gateways</span>
             </div>
-            {/* Facebook Social Link */}
-            <div className="pt-2">
-              <a
-                href="https://www.facebook.com/profile.php?id=61596472081766"
-                target="_blank"
-                rel="noopener noreferrer"
-                aria-label="Bangla AI Facebook Page"
-                className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full border border-black/10 dark:border-white/15 hover:border-black/30 dark:hover:border-white/40 text-black dark:text-white text-xs font-medium transition-all group"
-              >
-                <Facebook className="w-3.5 h-3.5 text-[#1877F2]" />
-                <span>Follow on Facebook</span>
-              </a>
-            </div>
           </div>
 
           {/* Platform */}
@@ -62,7 +49,7 @@ export const Footer: React.FC<FooterProps> = ({ setCurrentView }) => {
                   onClick={() => {
                     handleNav('home');
                     setTimeout(() => {
-                      document.getElementById('pricing-section')?.scrollIntoView({ behavior: 'smooth' });
+                      document.getElementById('pricing')?.scrollIntoView({ behavior: 'smooth' });
                     }, 100);
                   }}
                   className="hover:text-black dark:hover:text-white transition-colors cursor-pointer"

@@ -1,7 +1,6 @@
 import React, { useState } from 'react';
 import {
   ArrowRight,
-  Check,
   ShieldCheck,
   Sparkles,
   Code2,
@@ -11,27 +10,19 @@ import {
   FileCheck2,
   Layers,
   TrendingUp,
-  Lock,
-  ChevronDown,
-  ChevronUp,
   Laptop,
   Briefcase,
   GraduationCap,
   Megaphone
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext.tsx';
-import { PLANS, formatBDT } from '../../utils/billing.ts';
 import { VideoDemoSection } from '../home/VideoDemoSection.tsx';
 import { SmarterWorkflowsSection } from '../home/SmarterWorkflowsSection.tsx';
 import { CodeIdeHighlight } from '../home/CodeIdeHighlight.tsx';
-import {
-  AnthropicClaudeIcon,
-  GoogleGeminiIcon,
-  OpenAIIcon,
-  XAIGrokIcon,
-  DeepSeekIcon,
-  MoonshotKimiIcon
-} from '../common/ModelIcons.tsx';
+import { ModelsMarqueeSection } from '../home/ModelsMarqueeSection.tsx';
+import { PricingComparisonSection } from '../home/PricingComparisonSection.tsx';
+import { FaqSection } from '../home/FaqSection.tsx';
+import { CURATED_MODEL_MAP } from '../../utils/foundationModels.ts';
 
 interface HomePageProps {
   onStartChat: () => void;
@@ -113,11 +104,6 @@ export const HomePage: React.FC<HomePageProps> = ({ onStartChat }) => {
 
   const [activeBenchmarkTab, setActiveBenchmarkTab] = useState(0);
   const [activeModelTab, setActiveModelTab] = useState(0);
-  const [openFaqIndex, setOpenFaqIndex] = useState<number | null>(null);
-
-  const toggleFaq = (index: number) => {
-    setOpenFaqIndex(openFaqIndex === index ? null : index);
-  };
 
   return (
     <div className="space-y-20 sm:space-y-32 py-10 sm:py-20 overflow-x-clip animate-in fade-in transition-colors bg-white dark:bg-[#1F1F1F] text-black dark:text-white">
@@ -159,7 +145,7 @@ export const HomePage: React.FC<HomePageProps> = ({ onStartChat }) => {
 
             <button
               onClick={() => {
-                document.getElementById('pricing-section')?.scrollIntoView({ behavior: 'smooth' });
+                document.getElementById('pricing')?.scrollIntoView({ behavior: 'smooth' });
               }}
               className="btn-pill-secondary w-full sm:w-auto h-11 px-7 text-sm cursor-pointer"
             >
@@ -340,7 +326,11 @@ export const HomePage: React.FC<HomePageProps> = ({ onStartChat }) => {
               </div>
               <div className="flex items-center gap-2.5">
                 <div className="w-8 h-8 rounded-lg bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20 flex items-center justify-center shrink-0 shadow-2xs group-hover:scale-105 transition-transform">
-                  <AnthropicClaudeIcon size={18} />
+                  <img
+                    src={CURATED_MODEL_MAP['claude-fable-5-2'].iconSrc}
+                    alt={CURATED_MODEL_MAP['claude-fable-5-2'].iconAlt}
+                    className="w-[18px] h-[18px] object-contain"
+                  />
                 </div>
                 <h3 className="text-base font-semibold text-black dark:text-white leading-snug">
                   Claude Fable 5.2 (max)
@@ -370,7 +360,11 @@ export const HomePage: React.FC<HomePageProps> = ({ onStartChat }) => {
               </div>
               <div className="flex items-center gap-2.5">
                 <div className="w-8 h-8 rounded-lg bg-blue-500/10 text-blue-600 dark:text-blue-400 border border-blue-500/20 flex items-center justify-center shrink-0 shadow-2xs group-hover:scale-105 transition-transform">
-                  <GoogleGeminiIcon size={18} />
+                  <img
+                    src={CURATED_MODEL_MAP['gemini-4-carbon'].iconSrc}
+                    alt={CURATED_MODEL_MAP['gemini-4-carbon'].iconAlt}
+                    className="w-[18px] h-[18px] object-contain"
+                  />
                 </div>
                 <h3 className="text-base font-semibold text-black dark:text-white leading-snug">
                   Gemini 4 Carbon (high)
@@ -400,7 +394,11 @@ export const HomePage: React.FC<HomePageProps> = ({ onStartChat }) => {
               </div>
               <div className="flex items-center gap-2.5">
                 <div className="w-8 h-8 rounded-lg bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20 flex items-center justify-center shrink-0 shadow-2xs group-hover:scale-105 transition-transform">
-                  <OpenAIIcon size={18} />
+                  <img
+                    src={CURATED_MODEL_MAP['gpt-6-astra'].iconSrc}
+                    alt={CURATED_MODEL_MAP['gpt-6-astra'].iconAlt}
+                    className="w-[18px] h-[18px] object-contain dark:invert"
+                  />
                 </div>
                 <h3 className="text-base font-semibold text-black dark:text-white leading-snug">
                   GPT-6 Astra (max)
@@ -430,7 +428,11 @@ export const HomePage: React.FC<HomePageProps> = ({ onStartChat }) => {
               </div>
               <div className="flex items-center gap-2.5">
                 <div className="w-8 h-8 rounded-lg bg-black/5 dark:bg-white/10 text-black dark:text-white border border-black/10 dark:border-white/20 flex items-center justify-center shrink-0 shadow-2xs group-hover:scale-105 transition-transform">
-                  <XAIGrokIcon size={17} />
+                  <img
+                    src={CURATED_MODEL_MAP['grok-4-7'].iconSrc}
+                    alt={CURATED_MODEL_MAP['grok-4-7'].iconAlt}
+                    className="w-[18px] h-[18px] object-contain dark:invert"
+                  />
                 </div>
                 <h3 className="text-base font-semibold text-black dark:text-white leading-snug">
                   Grok 4.7 (xhigh)
@@ -460,7 +462,11 @@ export const HomePage: React.FC<HomePageProps> = ({ onStartChat }) => {
               </div>
               <div className="flex items-center gap-2.5">
                 <div className="w-8 h-8 rounded-lg bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 border border-indigo-500/20 flex items-center justify-center shrink-0 shadow-2xs group-hover:scale-105 transition-transform">
-                  <DeepSeekIcon size={18} />
+                  <img
+                    src={CURATED_MODEL_MAP['deepseek-v4-1-flash'].iconSrc}
+                    alt={CURATED_MODEL_MAP['deepseek-v4-1-flash'].iconAlt}
+                    className="w-[18px] h-[18px] object-contain"
+                  />
                 </div>
                 <h3 className="text-base font-semibold text-black dark:text-white leading-snug">
                   DeepSeek V4.1 Flash
@@ -490,7 +496,11 @@ export const HomePage: React.FC<HomePageProps> = ({ onStartChat }) => {
               </div>
               <div className="flex items-center gap-2.5">
                 <div className="w-8 h-8 rounded-lg bg-purple-500/10 text-purple-600 dark:text-purple-400 border border-purple-500/20 flex items-center justify-center shrink-0 shadow-2xs group-hover:scale-105 transition-transform">
-                  <MoonshotKimiIcon size={18} />
+                  <img
+                    src={CURATED_MODEL_MAP['kimi-k3-1-pro'].iconSrc}
+                    alt={CURATED_MODEL_MAP['kimi-k3-1-pro'].iconAlt}
+                    className="w-[18px] h-[18px] object-contain dark:invert"
+                  />
                 </div>
                 <h3 className="text-base font-semibold text-black dark:text-white leading-snug">
                   Kimi K3.1 Pro
@@ -520,7 +530,11 @@ export const HomePage: React.FC<HomePageProps> = ({ onStartChat }) => {
               </div>
               <div className="flex items-center gap-2.5">
                 <div className="w-8 h-8 rounded-lg bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20 flex items-center justify-center shrink-0 shadow-2xs group-hover:scale-105 transition-transform">
-                  <GoogleGeminiIcon size={18} />
+                  <img
+                    src={CURATED_MODEL_MAP['gemini-2-5-flash'].iconSrc}
+                    alt={CURATED_MODEL_MAP['gemini-2-5-flash'].iconAlt}
+                    className="w-[18px] h-[18px] object-contain"
+                  />
                 </div>
                 <h3 className="text-base font-semibold text-black dark:text-white leading-snug">
                   Gemini 2.5 Flash
@@ -550,7 +564,11 @@ export const HomePage: React.FC<HomePageProps> = ({ onStartChat }) => {
               </div>
               <div className="flex items-center gap-2.5">
                 <div className="w-8 h-8 rounded-lg bg-blue-500/10 text-blue-600 dark:text-blue-400 border border-blue-500/20 flex items-center justify-center shrink-0 shadow-2xs group-hover:scale-105 transition-transform">
-                  <GoogleGeminiIcon size={18} />
+                  <img
+                    src={CURATED_MODEL_MAP['gemini-2-5-pro'].iconSrc}
+                    alt={CURATED_MODEL_MAP['gemini-2-5-pro'].iconAlt}
+                    className="w-[18px] h-[18px] object-contain"
+                  />
                 </div>
                 <h3 className="text-base font-semibold text-black dark:text-white leading-snug">
                   Gemini 2.5 Pro
@@ -580,7 +598,11 @@ export const HomePage: React.FC<HomePageProps> = ({ onStartChat }) => {
               </div>
               <div className="flex items-center gap-2.5">
                 <div className="w-8 h-8 rounded-lg bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20 flex items-center justify-center shrink-0 shadow-2xs group-hover:scale-105 transition-transform">
-                  <OpenAIIcon size={18} />
+                  <img
+                    src={CURATED_MODEL_MAP['openai-gpt-4o'].iconSrc}
+                    alt={CURATED_MODEL_MAP['openai-gpt-4o'].iconAlt}
+                    className="w-[18px] h-[18px] object-contain dark:invert"
+                  />
                 </div>
                 <h3 className="text-base font-semibold text-black dark:text-white leading-snug">
                   OpenAI GPT-4o
@@ -610,7 +632,11 @@ export const HomePage: React.FC<HomePageProps> = ({ onStartChat }) => {
               </div>
               <div className="flex items-center gap-2.5">
                 <div className="w-8 h-8 rounded-lg bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20 flex items-center justify-center shrink-0 shadow-2xs group-hover:scale-105 transition-transform">
-                  <AnthropicClaudeIcon size={18} />
+                  <img
+                    src={CURATED_MODEL_MAP['claude-3-5-sonnet'].iconSrc}
+                    alt={CURATED_MODEL_MAP['claude-3-5-sonnet'].iconAlt}
+                    className="w-[18px] h-[18px] object-contain"
+                  />
                 </div>
                 <h3 className="text-base font-semibold text-black dark:text-white leading-snug">
                   Claude 3.5 Sonnet
@@ -627,133 +653,11 @@ export const HomePage: React.FC<HomePageProps> = ({ onStartChat }) => {
         </div>
       </section>
 
-      {/* Pricing Section (OpenAI Minimal Restrained Contrast) */}
-      <section id="pricing-section" className="max-w-4xl mx-auto px-4 sm:px-6">
-        <div className="text-center mb-10 space-y-2">
-          <span className="text-xs font-mono uppercase tracking-wider text-gray-400 block">
-            Pricing
-          </span>
-          <h2 className="text-2xl sm:text-3xl font-medium tracking-tight text-black dark:text-white">
-            Simple, Transparent Subscription
-          </h2>
-          <p className="text-sm text-gray-500 max-w-md mx-auto">
-            Limited-time special launch discount on all plans. Activate instantly with bKash, Nagad, or Rocket.
-          </p>
-        </div>
+      {/* Interactive Value & Plan Comparison Calculator */}
+      <PricingComparisonSection />
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 items-stretch">
-          {/* Monthly Plan */}
-          <div className="card-minimal p-5 sm:p-7 flex flex-col justify-between min-w-0">
-            <div>
-              <div className="flex flex-wrap justify-between items-center gap-2">
-                <h3 className="text-lg font-bold text-black dark:text-white">Monthly Plan</h3>
-                <span className="px-2.5 py-0.5 rounded-full bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20 text-[10px] font-mono font-bold">
-                  15% OFF
-                </span>
-              </div>
-              <p className="text-xs text-gray-500 mt-1">Ideal for individuals getting started with AI</p>
-
-              <div className="mt-6 flex flex-col gap-1">
-                <div className="flex items-center gap-2">
-                  <span className="text-xs font-mono text-gray-400 line-through">
-                    ৳822
-                  </span>
-                  <span className="text-[10px] font-mono font-semibold text-emerald-600 dark:text-emerald-400">
-                    Save ৳123/mo
-                  </span>
-                </div>
-                <div className="flex items-baseline gap-1">
-                  <span className="text-3xl sm:text-4xl font-bold text-black dark:text-white font-mono">
-                    {formatBDT(PLANS.monthly.priceBDT)}
-                  </span>
-                  <span className="text-xs text-gray-500">/ month</span>
-                </div>
-              </div>
-
-              <div className="mt-6 space-y-2.5 border-t border-black/[0.06] dark:border-white/[0.06] pt-5">
-                {PLANS.monthly.features.map((feature, idx) => (
-                  <div key={idx} className="flex items-start gap-2 text-xs text-gray-700 dark:text-gray-300">
-                    <Check className="w-3.5 h-3.5 text-black dark:text-white shrink-0 mt-0.5" />
-                    <span>{feature}</span>
-                  </div>
-                ))}
-              </div>
-            </div>
-
-            <div className="mt-7 pt-2">
-              <button
-                onClick={() => {
-                  if (!user) {
-                    openAuthModal('register');
-                  } else {
-                    openPaymentModal('monthly');
-                  }
-                }}
-                className="btn-pill-secondary w-full text-center cursor-pointer"
-              >
-                Claim 15% Off • Subscribe (৳699)
-              </button>
-            </div>
-          </div>
-
-          {/* Yearly Plan (Emphasis Card) */}
-          <div className="card-minimal p-5 sm:p-7 flex flex-col justify-between border-black/20 dark:border-white/25 shadow-sm relative min-w-0">
-            <div>
-              <div className="flex flex-wrap justify-between items-center gap-2">
-                <h3 className="text-lg font-bold text-black dark:text-white">Yearly Plan</h3>
-                <span className="px-2.5 py-0.5 rounded-full bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20 text-[10px] font-mono font-bold">
-                  28% OFF • BEST VALUE
-                </span>
-              </div>
-              <p className="text-xs text-gray-500 mt-1">Best value for power users and professionals</p>
-
-              <div className="mt-6 flex flex-col gap-1">
-                <div className="flex items-center gap-2">
-                  <span className="text-xs font-mono text-gray-400 line-through">
-                    ৳8,388
-                  </span>
-                  <span className="text-[10px] font-mono font-semibold text-emerald-600 dark:text-emerald-400">
-                    Save ৳2,389/yr
-                  </span>
-                </div>
-                <div className="flex items-baseline gap-1">
-                  <span className="text-3xl sm:text-4xl font-bold text-black dark:text-white font-mono">
-                    {formatBDT(PLANS.yearly.priceBDT)}
-                  </span>
-                  <span className="text-xs text-gray-500">/ year</span>
-                </div>
-                <p className="text-xs text-gray-500 mt-0.5 font-mono">
-                  Equivalent to ৳500/month
-                </p>
-              </div>
-
-              <div className="mt-6 space-y-2.5 border-t border-black/[0.06] dark:border-white/[0.06] pt-5">
-                {PLANS.yearly.features.map((feature, idx) => (
-                  <div key={idx} className="flex items-start gap-2 text-xs text-gray-700 dark:text-gray-300">
-                    <Check className="w-3.5 h-3.5 text-black dark:text-white shrink-0 mt-0.5" />
-                    <span>{feature}</span>
-                  </div>
-                ))}
-              </div>
-            </div>
-
-            <div className="mt-7 pt-2">
-              <button
-                onClick={() => {
-                  if (!user) {
-                    openAuthModal('register');
-                  } else {
-                    openPaymentModal('yearly');
-                  }
-                }}
-                className="btn-pill-primary w-full text-center cursor-pointer"
-              >
-                Claim 28% Off • Subscribe (৳5,999)
-              </button>
-            </div>
-          </div>
-        </div>
-      </section>
+      {/* 3-Row Animated AI Models Marquee (Placed directly below Pricing) */}
+      <ModelsMarqueeSection />
 
       {/* Product Video Walkthrough Section (Autoplays on scroll) */}
       <VideoDemoSection videoId="HkkLswEAv8I" />
@@ -906,91 +810,6 @@ export const HomePage: React.FC<HomePageProps> = ({ onStartChat }) => {
         </div>
       </section>
 
-      {/* 4-Step Payment Verification Process */}
-      <section className="max-w-4xl mx-auto px-4 sm:px-6">
-        <div className="text-center mb-10 space-y-2">
-          <span className="text-[11px] font-mono uppercase tracking-wider text-gray-400 block">
-            MFS Verification
-          </span>
-          <h2 className="text-2xl font-medium tracking-tight text-black dark:text-white">
-            How Payment Verification Works
-          </h2>
-          <p className="text-xs text-gray-500 max-w-md mx-auto">
-            100% transparent and verified. No automatic recurring card deductions.
-          </p>
-        </div>
-
-        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
-          <div className="card-minimal p-4 space-y-2">
-            <span className="text-xs font-mono font-bold text-gray-400">01</span>
-            <h4 className="font-bold text-xs text-black dark:text-white">Choose Your Plan</h4>
-            <p className="text-[11px] text-gray-500 leading-relaxed">
-              Select Monthly (৳699) or Yearly (৳5,999) and click Subscribe.
-            </p>
-          </div>
-
-          <div className="card-minimal p-4 space-y-2">
-            <span className="text-xs font-mono font-bold text-gray-400">02</span>
-            <h4 className="font-bold text-xs text-black dark:text-white">Send MFS Money</h4>
-            <p className="text-[11px] text-gray-500 leading-relaxed">
-              Use your personal bKash, Nagad, or Rocket app to send payment to our official merchant/personal number.
-            </p>
-          </div>
-
-          <div className="card-minimal p-4 space-y-2">
-            <span className="text-xs font-mono font-bold text-gray-400">03</span>
-            <h4 className="font-bold text-xs text-black dark:text-white">Submit TrxID</h4>
-            <p className="text-[11px] text-gray-500 leading-relaxed">
-              Enter your sender phone number and the SMS Transaction ID (e.g. 9B4F8X12) in checkout.
-            </p>
-          </div>
-
-          <div className="card-minimal p-4 space-y-2">
-            <span className="text-xs font-mono font-bold text-gray-400">04</span>
-            <h4 className="font-bold text-xs text-black dark:text-white">Admin Approval</h4>
-            <p className="text-[11px] text-gray-500 leading-relaxed">
-              Our admin team checks the TrxID with MFS logs, approves the payment, and unlocks your account immediately.
-            </p>
-          </div>
-        </div>
-      </section>
-
-      {/* Enterprise Security & Privacy */}
-      <section className="max-w-4xl mx-auto px-4 sm:px-6">
-        <div className="card-minimal p-7 space-y-5">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-full bg-black/[0.04] dark:bg-white/[0.06] flex items-center justify-center text-black dark:text-white">
-              <Lock className="w-5 h-5" />
-            </div>
-            <div>
-              <h3 className="text-base font-bold text-black dark:text-white">Data Privacy & Zero-Retention Security</h3>
-              <p className="text-xs text-gray-500">Your proprietary code and prompts are private to you</p>
-            </div>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 pt-2 text-xs">
-            <div className="space-y-1">
-              <span className="font-semibold text-black dark:text-white block">TLS 1.3 Encryption</span>
-              <p className="text-gray-500 leading-relaxed text-[11px]">
-                All prompts, responses, and token streams travel across bank-grade encrypted channels.
-              </p>
-            </div>
-            <div className="space-y-1">
-              <span className="font-semibold text-black dark:text-white block">Zero Public Training</span>
-              <p className="text-gray-500 leading-relaxed text-[11px]">
-                User prompts and generated artifacts are strictly never fed into public AI training datasets.
-              </p>
-            </div>
-            <div className="space-y-1">
-              <span className="font-semibold text-black dark:text-white block">Bangladesh Data Integrity</span>
-              <p className="text-gray-500 leading-relaxed text-[11px]">
-                Transparent local records with verified bKash, Nagad, and Rocket receipts for easy accounting.
-              </p>
-            </div>
-          </div>
-        </div>
-      </section>
-
       {/* MFS Trust Section (Clean Monochrome Separator) */}
       <section className="max-w-3xl mx-auto px-4 sm:px-6">
         <div className="card-minimal p-4 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs">
@@ -1008,67 +827,8 @@ export const HomePage: React.FC<HomePageProps> = ({ onStartChat }) => {
         </div>
       </section>
 
-      {/* FAQ Accordion */}
-      <section className="max-w-3xl mx-auto px-4 sm:px-6">
-        <div className="text-center mb-8 space-y-1">
-          <span className="text-[11px] font-mono uppercase tracking-wider text-gray-400 block">
-            Got Questions?
-          </span>
-          <h2 className="text-xl sm:text-2xl font-medium text-black dark:text-white tracking-tight">
-            Frequently Asked Questions
-          </h2>
-        </div>
-
-        <div className="space-y-3 text-xs">
-          {[
-            {
-              q: 'Can I switch between Gemini 4 Carbon, GPT-6 Astra, and Claude Fable 5.2 in the same chat?',
-              a: 'Yes! You can switch foundation models on the fly using the model selector at the top of the chat interface. Your conversation context is maintained across models.'
-            },
-            {
-              q: 'How does payment verification work with bKash, Nagad, and Rocket?',
-              a: 'When you select a plan, you will see our official payment number. Send the exact plan amount (৳699 or ৳5,999) using your MFS app, then copy the Transaction ID (TrxID) received via SMS into the form along with your sender number. Our admin panel verifies the TrxID with MFS records and activates your subscription immediately.'
-            },
-            {
-              q: 'Do I need an international credit card or passport endorsement?',
-              a: 'No. Bangla AI was built specifically to solve the payment roadblock in Bangladesh. You do not need any dual currency card or passport endorsement. Standard bKash, Nagad, or Rocket accounts are 100% sufficient.'
-            },
-            {
-              q: 'What is the token quota and what happens if I reach the limit?',
-              a: 'Monthly subscriptions provide 1,000,000 (1M) tokens (enough for tens of thousands of questions, code analyses, and translations). Yearly subscribers receive 15,000,000 (15M) tokens. You can track your token consumption in real-time on your Account page and renew or top up whenever needed.'
-            },
-            {
-              q: 'Can I use Bangla AI for team or commercial software projects?',
-              a: 'Absolutely. All code and content generated on Bangla AI belongs 100% to you and is free for commercial use in client deliverables, software products, and advertising campaigns.'
-            }
-          ].map((faq, idx) => {
-            const isOpen = openFaqIndex === idx;
-            return (
-              <div
-                key={idx}
-                className="card-minimal p-4 transition-colors cursor-pointer"
-                onClick={() => toggleFaq(idx)}
-              >
-                <div className="flex items-center justify-between gap-3">
-                  <h4 className="font-semibold text-black dark:text-white text-xs sm:text-sm">
-                    {faq.q}
-                  </h4>
-                  {isOpen ? (
-                    <ChevronUp className="w-4 h-4 text-gray-400 shrink-0" />
-                  ) : (
-                    <ChevronDown className="w-4 h-4 text-gray-400 shrink-0" />
-                  )}
-                </div>
-                {isOpen && (
-                  <p className="text-gray-600 dark:text-gray-400 mt-2.5 leading-relaxed text-xs border-t border-black/[0.06] dark:border-white/[0.06] pt-2.5">
-                    {faq.a}
-                  </p>
-                )}
-              </div>
-            );
-          })}
-        </div>
-      </section>
+      {/* Categorized Two-Column Interactive FAQ Section */}
+      <FaqSection />
     </div>
   );
 };

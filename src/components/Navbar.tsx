@@ -63,11 +63,11 @@ export const Navbar: React.FC<NavbarProps> = ({ currentView, setCurrentView }) =
           <button
             onClick={() => {
               if (currentView === 'home') {
-                document.getElementById('pricing-section')?.scrollIntoView({ behavior: 'smooth' });
+                document.getElementById('pricing')?.scrollIntoView({ behavior: 'smooth' });
               } else {
                 setCurrentView('home');
                 setTimeout(() => {
-                  document.getElementById('pricing-section')?.scrollIntoView({ behavior: 'smooth' });
+                  document.getElementById('pricing')?.scrollIntoView({ behavior: 'smooth' });
                 }, 100);
               }
             }}
@@ -255,7 +255,7 @@ export const Navbar: React.FC<NavbarProps> = ({ currentView, setCurrentView }) =
               setCurrentView('home');
               setMobileMenuOpen(false);
               setTimeout(() => {
-                document.getElementById('pricing-section')?.scrollIntoView({ behavior: 'smooth' });
+                document.getElementById('pricing')?.scrollIntoView({ behavior: 'smooth' });
               }, 100);
             }}
             className="w-full text-left px-3 py-2 rounded-lg text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-neutral-800"
