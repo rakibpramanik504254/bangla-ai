@@ -1,35 +1,22 @@
 import React, { useState, useEffect, useRef } from 'react';
 import {
-  MessageSquare,
-  Plus,
-  Trash2,
-  Edit2,
   Check,
-  Sparkles,
-  Bot,
-  Brain,
-  Code2,
   ChevronDown,
   Lock,
   Copy,
-  PanelLeftClose,
   PanelLeftOpen,
-  ArrowRight,
-  Search,
+  Menu,
+  SquarePen,
+  ArrowUpRight,
   RotateCcw,
   Volume2,
   VolumeX,
   Download,
   ThumbsUp,
   ThumbsDown,
-  Home,
-  Sun,
-  Moon,
-  User as UserIcon,
-  Shield,
   FileText,
   FileCode2,
-  UploadCloud
+  UploadCloud,
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext.tsx';
 import { Chat, Message, AiModel, ChatAttachment } from '../../types/index.ts';
@@ -37,12 +24,16 @@ import { createSseLineParser, parseChatStreamPayload } from '../../utils/sse.ts'
 import {
   parseMarkdownBlocks,
   parseInlineSegments,
-  estimateReadingStats
+  estimateReadingStats,
 } from '../../utils/markdownBlocks.ts';
 import { WorkspaceCodeBlock } from './WorkspaceCodeBlock.tsx';
 import { ChatComposer } from './ChatComposer.tsx';
+import { WorkspaceSidebar } from './WorkspaceSidebar.tsx';
+import { WorkspaceSettingsModal } from './WorkspaceSettingsModal.tsx';
+import { WorkspaceModelIcon } from './WorkspaceModelIcon.tsx';
 import { formatFileSize } from '../../utils/chatAttachments.ts';
 import { copyTextSafely } from '../../utils/clipboard.ts';
+import { formatCompactTokens } from '../../utils/workspaceSidebar.ts';
 import { BrandLogo } from '../common/BrandLogo.tsx';
 
 function renderInlineSegments(text: string): React.ReactNode {
@@ -53,20 +44,20 @@ function renderInlineSegments(text: string): React.ReactNode {
         return (
           <code
             key={i}
-            className="px-1.5 py-0.5 mx-0.5 rounded-[5px] bg-black/[0.06] dark:bg-white/[0.1] text-[#9D2E87] dark:text-[#61AFEF] font-mono text-[12px] break-all"
+            className="px-1.5 py-0.5 mx-0.5 rounded-md bg-black/[0.06] dark:bg-white/[0.09] text-[#1f1f1f] dark:text-[#e3e3e3] font-mono text-[12.5px] break-all"
           >
             {seg.value}
           </code>
         );
       case 'bold':
         return (
-          <strong key={i} className="font-semibold text-black dark:text-white">
+          <strong key={i} className="font-semibold text-[#1f1f1f] dark:text-[#e3e3e3]">
             {seg.value}
           </strong>
         );
       case 'italic':
         return (
-          <em key={i} className="italic text-gray-600 dark:text-gray-300">
+          <em key={i} className="italic text-[#444746] dark:text-[#c4c7c5]">
             {seg.value}
           </em>
         );
@@ -77,7 +68,7 @@ function renderInlineSegments(text: string): React.ReactNode {
             href={seg.href}
             target="_blank"
             rel="noopener noreferrer"
-            className="underline decoration-black/30 dark:decoration-white/40 hover:text-black dark:hover:text-white font-medium"
+            className="underline decoration-black/30 dark:decoration-white/35 hover:text-black dark:hover:text-white font-medium"
           >
             {seg.label}
           </a>
@@ -92,7 +83,7 @@ const FormattedMessage: React.FC<{ content: string }> = ({ content }) => {
   const blocks = parseMarkdownBlocks(content);
 
   return (
-    <div className="space-y-3 leading-relaxed text-[13.5px] sm:text-sm min-w-0 max-w-full break-words">
+    <div className="workspace-prose space-y-3.5 text-[15px] text-[#1f1f1f] dark:text-[#e3e3e3] min-w-0 max-w-full break-words">
       {blocks.map((block, index) => {
         if (block.type === 'code') {
           return (
@@ -108,10 +99,10 @@ const FormattedMessage: React.FC<{ content: string }> = ({ content }) => {
 
         if (block.type === 'heading') {
           const headingClasses: Record<1 | 2 | 3 | 4, string> = {
-            1: 'text-lg font-bold text-black dark:text-white pt-2',
-            2: 'text-base font-bold text-black dark:text-white pt-2',
-            3: 'text-[14.5px] font-bold text-black dark:text-white pt-1.5',
-            4: 'text-sm font-semibold text-black dark:text-white pt-1'
+            1: 'text-xl font-semibold text-[#1f1f1f] dark:text-[#e3e3e3] pt-2 tracking-tight',
+            2: 'text-lg font-semibold text-[#1f1f1f] dark:text-[#e3e3e3] pt-2 tracking-tight',
+            3: 'text-base font-semibold text-[#1f1f1f] dark:text-[#e3e3e3] pt-1.5',
+            4: 'text-[15px] font-semibold text-[#1f1f1f] dark:text-[#e3e3e3] pt-1',
           };
           return (
             <h4 key={index} className={headingClasses[block.level]}>
@@ -124,7 +115,7 @@ const FormattedMessage: React.FC<{ content: string }> = ({ content }) => {
           return (
             <blockquote
               key={index}
-              className="rounded-[8px] bg-black/[0.03] dark:bg-white/[0.05] border border-black/[0.07] dark:border-white/[0.08] px-3.5 py-2.5 text-black/80 dark:text-white/85 italic space-y-1"
+              className="rounded-xl bg-[#f0f4f9] dark:bg-[#1e1f20] border-l-2 border-black/25 dark:border-white/25 px-4 py-3 text-[#444746] dark:text-[#c4c7c5] italic space-y-1.5"
             >
               {block.lines.map((qLine, qIdx) => (
                 <p key={qIdx}>{renderInlineSegments(qLine)}</p>
@@ -134,22 +125,27 @@ const FormattedMessage: React.FC<{ content: string }> = ({ content }) => {
         }
 
         if (block.type === 'hr') {
-          return <hr key={index} className="border-black/[0.08] dark:border-white/[0.08] my-2" />;
+          return (
+            <hr
+              key={index}
+              className="border-black/[0.08] dark:border-white/[0.08] my-3"
+            />
+          );
         }
 
         if (block.type === 'list') {
           return (
-            <div key={index} className="space-y-1.5 pl-1">
+            <div key={index} className="space-y-2 pl-1">
               {block.items.map((item, itemIdx) => (
                 <div key={itemIdx} className="flex items-start gap-2.5 min-w-0">
                   {block.ordered ? (
-                    <span className="text-xs font-mono font-semibold text-gray-500 dark:text-gray-400 mt-0.5 shrink-0 tabular-nums">
+                    <span className="text-[13px] font-mono font-medium text-[#444746] dark:text-[#9aa0a6] mt-0.5 shrink-0 tabular-nums">
                       {itemIdx + 1}.
                     </span>
                   ) : (
-                    <span className="w-1.5 h-1.5 rounded-full bg-black/45 dark:bg-white/45 mt-2 shrink-0" />
+                    <span className="w-1.5 h-1.5 rounded-full bg-[#444746]/70 dark:bg-[#9aa0a6]/80 mt-[10px] shrink-0" />
                   )}
-                  <div className="min-w-0 flex-1 text-black/85 dark:text-white/85">
+                  <div className="min-w-0 flex-1 text-[#1f1f1f] dark:text-[#e3e3e3]">
                     {renderInlineSegments(item)}
                   </div>
                 </div>
@@ -162,28 +158,31 @@ const FormattedMessage: React.FC<{ content: string }> = ({ content }) => {
           return (
             <div
               key={index}
-              className="my-2 overflow-x-auto max-w-full rounded-[8px] border border-black/[0.09] dark:border-white/[0.1]"
+              className="my-2 overflow-x-auto max-w-full rounded-xl border border-black/[0.08] dark:border-white/[0.08]"
             >
-              <table className="w-full text-left text-xs border-collapse">
-                <thead className="bg-black/[0.03] dark:bg-white/[0.05] border-b border-black/[0.08] dark:border-white/[0.08]">
+              <table className="w-full text-left text-[13px] border-collapse">
+                <thead className="bg-[#f0f4f9] dark:bg-[#1e1f20] border-b border-black/[0.08] dark:border-white/[0.08]">
                   <tr>
                     {block.headers.map((header, hIdx) => (
                       <th
                         key={hIdx}
-                        className="px-3 py-2 font-semibold text-black dark:text-white whitespace-nowrap"
+                        className="px-3.5 py-2.5 font-semibold text-[#1f1f1f] dark:text-[#e3e3e3] whitespace-nowrap"
                       >
                         {renderInlineSegments(header)}
                       </th>
                     ))}
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-black/[0.05] dark:divide-white/[0.06]">
+                <tbody className="divide-y divide-black/[0.06] dark:divide-white/[0.06]">
                   {block.rows.map((row, rIdx) => (
-                    <tr key={rIdx} className="hover:bg-black/[0.015] dark:hover:bg-white/[0.02]">
+                    <tr
+                      key={rIdx}
+                      className="hover:bg-black/[0.02] dark:hover:bg-white/[0.02]"
+                    >
                       {row.map((cell, cIdx) => (
                         <td
                           key={cIdx}
-                          className="px-3 py-2 text-black/80 dark:text-white/80 align-top"
+                          className="px-3.5 py-2.5 text-[#1f1f1f]/90 dark:text-[#e3e3e3]/90 align-top"
                         >
                           {renderInlineSegments(cell)}
                         </td>
@@ -197,7 +196,10 @@ const FormattedMessage: React.FC<{ content: string }> = ({ content }) => {
         }
 
         return (
-          <p key={index} className="text-black/85 dark:text-white/85 whitespace-pre-wrap break-words">
+          <p
+            key={index}
+            className="text-[#1f1f1f] dark:text-[#e3e3e3] whitespace-pre-wrap break-words"
+          >
             {renderInlineSegments(block.text)}
           </p>
         );
@@ -215,9 +217,9 @@ interface ChatInterfaceProps {
 export const ChatInterface: React.FC<ChatInterfaceProps> = ({
   onNavigateHome,
   onNavigateAccount,
-  onNavigateAdmin
+  onNavigateAdmin,
 }) => {
-  const { user, token, refreshUser, openPaymentModal, theme, toggleTheme } = useAuth();
+  const { user, token, refreshUser, openPaymentModal } = useAuth();
   const [chats, setChats] = useState<Chat[]>([]);
   const [activeChatId, setActiveChatId] = useState<string | null>(null);
   const [messages, setMessages] = useState<Message[]>([]);
@@ -230,14 +232,12 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({
   const [isDraggingWorkspace, setIsDraggingWorkspace] = useState(false);
   const [isStreaming, setIsStreaming] = useState(false);
   const [streamedText, setStreamedText] = useState('');
-  const [searchQuery, setSearchQuery] = useState('');
   const [sidebarOpen, setSidebarOpen] = useState(() =>
     typeof window !== 'undefined' ? window.innerWidth >= 768 : true
   );
   const [modelDropdownOpen, setModelDropdownOpen] = useState(false);
+  const [settingsModalOpen, setSettingsModalOpen] = useState(false);
 
-  const [editingChatId, setEditingChatId] = useState<string | null>(null);
-  const [editTitle, setEditTitle] = useState('');
   const [copiedMessageId, setCopiedMessageId] = useState<string | null>(null);
   const [speakingMessageId, setSpeakingMessageId] = useState<string | null>(null);
   const [messageFeedback, setMessageFeedback] = useState<Record<string, 'up' | 'down'>>({});
@@ -246,13 +246,14 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({
   const inputRef = useRef<HTMLTextAreaElement>(null);
   const abortControllerRef = useRef<AbortController | null>(null);
   const workspaceDragCounterRef = useRef(0);
+  const headerModelMenuRef = useRef<HTMLDivElement>(null);
 
-  const isSubscribed = user?.isSubscribed || user?.role === 'admin';
+  const isSubscribed = Boolean(user?.isSubscribed || user?.role === 'admin');
 
   useEffect(() => {
     fetch('/api/models', { cache: 'no-store' })
-      .then(r => r.json())
-      .then(data => {
+      .then((r) => r.json())
+      .then((data) => {
         setModels(data);
         const def = data.find((m: AiModel) => m.is_default) || data[0];
         if (def) setSelectedModelId(def.id);
@@ -276,11 +277,25 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({
     return () => window.removeEventListener('resize', handleResize);
   }, []);
 
+  useEffect(() => {
+    if (!modelDropdownOpen) return;
+    const handleOutside = (e: MouseEvent) => {
+      if (
+        headerModelMenuRef.current &&
+        !headerModelMenuRef.current.contains(e.target as Node)
+      ) {
+        setModelDropdownOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handleOutside);
+    return () => document.removeEventListener('mousedown', handleOutside);
+  }, [modelDropdownOpen]);
+
   const fetchChats = async () => {
     if (!token) return;
     try {
       const res = await fetch('/api/chats', {
-        headers: { Authorization: `Bearer ${token}` }
+        headers: { Authorization: `Bearer ${token}` },
       });
       if (res.ok) {
         const data = await res.json();
@@ -305,10 +320,10 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({
     }
 
     fetch(`/api/chats/${activeChatId}`, {
-      headers: { Authorization: `Bearer ${token}` }
+      headers: { Authorization: `Bearer ${token}` },
     })
-      .then(r => r.json())
-      .then(data => {
+      .then((r) => r.json())
+      .then((data) => {
         if (data.messages) {
           setMessages(data.messages);
         }
@@ -336,16 +351,16 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`
+          Authorization: `Bearer ${token}`,
         },
         body: JSON.stringify({
           title: 'New Conversation',
-          modelId: selectedModelId
-        })
+          modelId: selectedModelId,
+        }),
       });
       if (res.ok) {
         const newChat = await res.json();
-        setChats(prev => [newChat, ...prev]);
+        setChats((prev) => [newChat, ...prev]);
         setActiveChatId(newChat.id);
         setMessages([]);
         setInputMessage('');
@@ -359,16 +374,15 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({
     }
   };
 
-  const handleDeleteChat = async (id: string, e: React.MouseEvent) => {
-    e.stopPropagation();
+  const handleDeleteChat = async (id: string) => {
     if (!token) return;
     try {
       const res = await fetch(`/api/chats/${id}`, {
         method: 'DELETE',
-        headers: { Authorization: `Bearer ${token}` }
+        headers: { Authorization: `Bearer ${token}` },
       });
       if (res.ok) {
-        setChats(prev => prev.filter(c => c.id !== id));
+        setChats((prev) => prev.filter((c) => c.id !== id));
         if (activeChatId === id) {
           setActiveChatId(null);
           setMessages([]);
@@ -379,24 +393,51 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({
     }
   };
 
-  const handleSaveRename = async (id: string, e: React.FormEvent) => {
-    e.preventDefault();
-    if (!token || !editTitle.trim()) return;
+  const handleSaveRename = async (id: string, newTitle: string) => {
+    if (!token || !newTitle.trim()) return;
     try {
       const res = await fetch(`/api/chats/${id}`, {
         method: 'PATCH',
         headers: {
           'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`
+          Authorization: `Bearer ${token}`,
         },
-        body: JSON.stringify({ title: editTitle.trim() })
+        body: JSON.stringify({ title: newTitle.trim() }),
       });
       if (res.ok) {
-        setChats(prev => prev.map(c => (c.id === id ? { ...c, title: editTitle.trim() } : c)));
-        setEditingChatId(null);
+        setChats((prev) =>
+          prev.map((c) => (c.id === id ? { ...c, title: newTitle.trim() } : c))
+        );
       }
     } catch (err) {
       console.error('Rename chat error:', err);
+    }
+  };
+
+  const handleTogglePinChat = async (id: string, nextPinned: boolean) => {
+    if (!token) return;
+    setChats((prev) =>
+      prev.map((c) => (c.id === id ? { ...c, pinned: nextPinned } : c))
+    );
+    try {
+      const res = await fetch(`/api/chats/${id}`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({ pinned: nextPinned }),
+      });
+      if (!res.ok) {
+        setChats((prev) =>
+          prev.map((c) => (c.id === id ? { ...c, pinned: !nextPinned } : c))
+        );
+      }
+    } catch (err) {
+      console.error('Pin chat error:', err);
+      setChats((prev) =>
+        prev.map((c) => (c.id === id ? { ...c, pinned: !nextPinned } : c))
+      );
     }
   };
 
@@ -407,8 +448,11 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({
   };
 
   const handleSendMessage = async (customPrompt?: string) => {
-    const textToSend = (customPrompt !== undefined ? customPrompt : inputMessage).trim();
-    const attachmentsToSend = customPrompt !== undefined ? [] : pendingAttachments;
+    const textToSend = (
+      customPrompt !== undefined ? customPrompt : inputMessage
+    ).trim();
+    const attachmentsToSend =
+      customPrompt !== undefined ? [] : pendingAttachments;
     if ((!textToSend && attachmentsToSend.length === 0) || isStreaming) return;
 
     if (!isSubscribed) {
@@ -420,21 +464,22 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({
     if (!targetChatId) {
       if (!token) return;
       try {
-        const titleSeed = textToSend || attachmentsToSend[0]?.name || 'New Conversation';
+        const titleSeed =
+          textToSend || attachmentsToSend[0]?.name || 'New Conversation';
         const res = await fetch('/api/chats', {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
-            Authorization: `Bearer ${token}`
+            Authorization: `Bearer ${token}`,
           },
           body: JSON.stringify({
-            title: titleSeed.slice(0, 30) + (titleSeed.length > 30 ? '...' : ''),
-            modelId: selectedModelId
-          })
+            title: titleSeed.slice(0, 34) + (titleSeed.length > 34 ? '...' : ''),
+            modelId: selectedModelId,
+          }),
         });
         if (res.ok) {
           const newChat = await res.json();
-          setChats(prev => [newChat, ...prev]);
+          setChats((prev) => [newChat, ...prev]);
           setActiveChatId(newChat.id);
           targetChatId = newChat.id;
         }
@@ -452,10 +497,10 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({
       model_id: selectedModelId,
       tokens_used: 0,
       ...(attachmentsToSend.length > 0 ? { attachments: attachmentsToSend } : {}),
-      created_at: new Date().toISOString()
+      created_at: new Date().toISOString(),
     };
 
-    setMessages(prev => [...prev, tempUserMsg]);
+    setMessages((prev) => [...prev, tempUserMsg]);
     if (customPrompt === undefined) {
       setInputMessage('');
       setPendingAttachments([]);
@@ -475,19 +520,21 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({
         signal: controller.signal,
         headers: {
           'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`
+          Authorization: `Bearer ${token}`,
         },
         body: JSON.stringify({
           chatId: targetChatId,
           modelId: selectedModelId,
           message: textToSend,
-          attachments: attachmentsToSend
-        })
+          attachments: attachmentsToSend,
+        }),
       });
 
       if (!response.ok) {
         const errJson = await response.json().catch(() => ({}));
-        throw new Error(errJson.error || 'Failed to stream response from foundation model.');
+        throw new Error(
+          errJson.error || 'Failed to stream response from foundation model.'
+        );
       }
 
       const reader = response.body?.getReader();
@@ -530,10 +577,10 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({
         content: fullAssistantReply || 'No response generated.',
         model_id: selectedModelId,
         tokens_used: Math.round(fullAssistantReply.length / 4),
-        created_at: new Date().toISOString()
+        created_at: new Date().toISOString(),
       };
 
-      setMessages(prev => [...prev, finalMsg]);
+      setMessages((prev) => [...prev, finalMsg]);
       setStreamedText('');
       refreshUser();
     } catch (err: any) {
@@ -547,13 +594,13 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({
             content: fullAssistantReply,
             model_id: selectedModelId,
             tokens_used: Math.round(fullAssistantReply.length / 4),
-            created_at: new Date().toISOString()
+            created_at: new Date().toISOString(),
           };
-          setMessages(prev => [...prev, partialMsg]);
+          setMessages((prev) => [...prev, partialMsg]);
         }
         setStreamedText('');
       } else {
-        setMessages(prev => [
+        setMessages((prev) => [
           ...prev,
           {
             id: 'err-' + Date.now(),
@@ -562,8 +609,8 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({
             content: `⚠️ Error: ${err.message}`,
             model_id: selectedModelId,
             tokens_used: 0,
-            created_at: new Date().toISOString()
-          }
+            created_at: new Date().toISOString(),
+          },
         ]);
         setStreamedText('');
       }
@@ -578,20 +625,25 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({
     }
   };
 
-  const selectedModel = models.find(m => m.id === selectedModelId) || models[0];
-  const filteredChats = chats.filter(c => c.title.toLowerCase().includes(searchQuery.toLowerCase()));
+  const selectedModel = models.find((m) => m.id === selectedModelId) || models[0];
 
   const handleCopyResponse = async (msgId: string, content: string) => {
     await copyTextSafely(content);
     setCopiedMessageId(msgId);
     setTimeout(() => {
-      setCopiedMessageId(prev => (prev === msgId ? null : prev));
+      setCopiedMessageId((prev) => (prev === msgId ? null : prev));
     }, 1800);
   };
 
-  const handleDownloadResponse = (msgId: string, content: string, modelLabel: string) => {
+  const handleDownloadResponse = (
+    msgId: string,
+    content: string,
+    modelLabel: string
+  ) => {
     const header = `<!-- Generated via Bangla AI (${modelLabel}) -->\n\n`;
-    const blob = new Blob([header + content], { type: 'text/markdown;charset=utf-8' });
+    const blob = new Blob([header + content], {
+      type: 'text/markdown;charset=utf-8',
+    });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
@@ -604,16 +656,21 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({
 
   const handleExportFullChat = () => {
     if (messages.length === 0) return;
-    const activeChat = chats.find(c => c.id === activeChatId);
+    const activeChat = chats.find((c) => c.id === activeChatId);
     const lines = [
       `# ${activeChat?.title || 'Bangla AI Conversation'}`,
       '',
-      ...messages.map(m => {
-        const speaker = m.role === 'user' ? 'User' : `Assistant (${getModelDisplayName(m.model_id)})`;
+      ...messages.map((m) => {
+        const speaker =
+          m.role === 'user'
+            ? 'User'
+            : `Assistant (${getModelDisplayName(m.model_id)})`;
         return `## ${speaker}\n\n${m.content}\n`;
-      })
+      }),
     ];
-    const blob = new Blob([lines.join('\n')], { type: 'text/markdown;charset=utf-8' });
+    const blob = new Blob([lines.join('\n')], {
+      type: 'text/markdown;charset=utf-8',
+    });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
@@ -640,14 +697,16 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({
     if (!plainText) return;
     const utterance = new SpeechSynthesisUtterance(plainText);
     utterance.lang = /[\u0980-\u09FF]/.test(plainText) ? 'bn-BD' : 'en-US';
-    utterance.onend = () => setSpeakingMessageId(prev => (prev === msgId ? null : prev));
-    utterance.onerror = () => setSpeakingMessageId(prev => (prev === msgId ? null : prev));
+    utterance.onend = () =>
+      setSpeakingMessageId((prev) => (prev === msgId ? null : prev));
+    utterance.onerror = () =>
+      setSpeakingMessageId((prev) => (prev === msgId ? null : prev));
     setSpeakingMessageId(msgId);
     synth.speak(utterance);
   };
 
   const handleToggleFeedback = (msgId: string, vote: 'up' | 'down') => {
-    setMessageFeedback(prev => {
+    setMessageFeedback((prev) => {
       if (prev[msgId] === vote) {
         const next = { ...prev };
         delete next[msgId];
@@ -667,207 +726,87 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({
     }
   };
 
+  const getModelById = (modelId: string) =>
+    models.find((m) => m.id === modelId) || selectedModel;
+
   const getModelDisplayName = (modelId: string) =>
-    models.find(m => m.id === modelId)?.display_name || selectedModel?.display_name || 'Bangla AI';
+    getModelById(modelId)?.display_name || 'Bangla AI';
+
+  const remainingTokens = Math.max(
+    0,
+    (user?.usage_limit || 0) - (user?.current_usage || 0)
+  );
 
   const suggestions = [
-    'Write a TypeScript React hook for debounced search with AbortController',
-    'Write a Python FastAPI endpoint with Pydantic validation and async error handling',
-    'Draft a strategic B2B technology partnership proposal',
-    'Compare PostgreSQL vs MongoDB trade-offs in a Markdown comparison table'
+    {
+      label: 'Code Architecture',
+      prompt: 'Write a TypeScript React hook for debounced search with AbortController',
+    },
+    {
+      label: 'বাংলা লেখা ও বিশ্লেষণ',
+      prompt: 'বাংলাদেশের প্রযুক্তিনির্ভর স্টার্টআপ ইকোসিস্টেম নিয়ে একটি সুসংগঠিত প্রবন্ধ লিখে দাও',
+    },
+    {
+      label: 'Backend Engineering',
+      prompt: 'Write a Python FastAPI endpoint with Pydantic validation and async error handling',
+    },
+    {
+      label: 'Technical Comparison',
+      prompt: 'Compare PostgreSQL vs MongoDB trade-offs in a Markdown comparison table',
+    },
   ];
 
   return (
-    <div className="flex flex-1 h-full w-full max-w-full overflow-hidden bg-white dark:bg-[#1F1F1F] transition-colors relative">
-      {/* Mobile Sidebar Backdrop */}
-      {sidebarOpen && (
-        <div
-          className="fixed inset-0 bg-black/40 z-20 md:hidden"
-          onClick={() => setSidebarOpen(false)}
-          aria-hidden="true"
-        />
-      )}
+    <div className="workspace-typography flex flex-1 h-full w-full max-w-full overflow-hidden bg-white dark:bg-[#131314] text-[#1f1f1f] dark:text-[#e3e3e3] transition-colors relative">
+      {/* Left Collapsible Sidebar / Mobile Drawer */}
+      <WorkspaceSidebar
+        sidebarOpen={sidebarOpen}
+        onCloseSidebar={() => setSidebarOpen(false)}
+        chats={chats}
+        activeChatId={activeChatId}
+        onSelectChat={setActiveChatId}
+        onCreateNewChat={handleCreateNewChat}
+        onTogglePinChat={handleTogglePinChat}
+        onSaveRenameChat={handleSaveRename}
+        onDeleteChat={handleDeleteChat}
+        user={user}
+        isSubscribed={isSubscribed}
+        onOpenSettings={() => setSettingsModalOpen(true)}
+        onNavigateHome={onNavigateHome}
+      />
 
-      {/* Collapsible Sidebar (Slide-over on mobile, inline on desktop) */}
-      <aside
-        className={`${
-          sidebarOpen
-            ? 'translate-x-0 w-72 max-w-[82vw] md:w-72'
-            : '-translate-x-full pointer-events-none md:pointer-events-auto w-72 md:w-0 md:translate-x-0 md:border-r-0'
-        } fixed md:relative top-0 bottom-0 left-0 z-30 md:z-20 shrink-0 border-r border-black/[0.08] dark:border-white/[0.08] bg-[#FAFAFA] dark:bg-[#242424] flex flex-col transition-all duration-300 overflow-hidden`}
-      >
-        <div className="p-3 border-b border-black/[0.08] dark:border-white/[0.08] flex items-center justify-between gap-2">
-          <button
-            onClick={handleCreateNewChat}
-            className="flex-1 h-9 px-3.5 rounded-full bg-black hover:bg-black/90 dark:bg-white dark:hover:bg-white/90 text-white dark:text-black font-medium text-xs flex items-center justify-center gap-1.5 transition-all shadow-xs cursor-pointer"
-          >
-            <Plus className="w-3.5 h-3.5" />
-            <span>New Chat</span>
-          </button>
-          <button
-            onClick={() => setSidebarOpen(false)}
-            aria-label="Collapse sidebar"
-            className="w-9 h-9 flex items-center justify-center text-gray-500 hover:text-black dark:hover:text-white rounded-full hover:bg-black/[0.04] dark:hover:bg-white/[0.05] transition-colors cursor-pointer"
-          >
-            <PanelLeftClose className="w-4 h-4" />
-          </button>
-        </div>
+      {/* Customer Account & Settings Modal (Houses Dark/Light Appearance Switcher) */}
+      <WorkspaceSettingsModal
+        isOpen={settingsModalOpen}
+        onClose={() => setSettingsModalOpen(false)}
+        onNavigateHome={onNavigateHome}
+        onNavigateAccount={onNavigateAccount}
+        onNavigateAdmin={onNavigateAdmin}
+      />
 
-        {/* Search */}
-        <div className="p-2.5">
-          <div className="relative">
-            <Search className="w-3.5 h-3.5 absolute left-3 top-2.5 text-gray-400" />
-            <input
-              type="text"
-              value={searchQuery}
-              onChange={e => setSearchQuery(e.target.value)}
-              placeholder="Search conversations..."
-              className="w-full pl-8 pr-3 py-1.5 text-xs rounded-[8px] border border-black/[0.08] dark:border-white/[0.08] bg-white dark:bg-[#2D2D2D] text-black dark:text-white placeholder-gray-400 focus:outline-none focus:border-black dark:focus:border-white transition-colors"
-            />
-          </div>
-        </div>
-
-        {/* Chats List */}
-        <div className="flex-1 overflow-y-auto px-2 py-1 space-y-0.5">
-          {filteredChats.length === 0 ? (
-            <div className="p-4 text-center text-xs text-gray-400">
-              {searchQuery ? 'No matching chats' : 'No chats yet'}
-            </div>
-          ) : (
-            filteredChats.map(c => (
-              <div
-                key={c.id}
-                className={`group flex items-center justify-between px-3 py-2 rounded-[8px] text-xs transition-colors ${
-                  activeChatId === c.id
-                    ? 'bg-black/[0.06] dark:bg-white/[0.08] text-black dark:text-white font-medium'
-                    : 'text-gray-600 dark:text-gray-400 hover:bg-black/[0.03] dark:hover:bg-white/[0.04]'
-                }`}
-              >
-                {editingChatId === c.id ? (
-                  <div className="flex items-center gap-2 truncate flex-1 mr-1 min-w-0">
-                    <MessageSquare className="w-3.5 h-3.5 shrink-0 text-gray-400" />
-                    <form onSubmit={e => handleSaveRename(c.id, e)} className="flex-1">
-                      <input
-                        type="text"
-                        autoFocus
-                        value={editTitle}
-                        onChange={e => setEditTitle(e.target.value)}
-                        onBlur={() => setEditingChatId(null)}
-                        className="w-full bg-white dark:bg-[#2D2D2D] px-1.5 py-0.5 rounded-[4px] border border-black dark:border-white text-xs focus:outline-none"
-                      />
-                    </form>
-                  </div>
-                ) : (
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setActiveChatId(c.id);
-                      if (typeof window !== 'undefined' && window.innerWidth < 768) {
-                        setSidebarOpen(false);
-                      }
-                    }}
-                    className="flex items-center gap-2 truncate flex-1 mr-1 min-w-0 text-left cursor-pointer"
-                  >
-                    <MessageSquare className="w-3.5 h-3.5 shrink-0 text-gray-400" />
-                    <span className="truncate">{c.title}</span>
-                  </button>
-                )}
-
-                <div className="flex items-center gap-1 opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity shrink-0">
-                  <button
-                    onClick={e => {
-                      e.stopPropagation();
-                      setEditingChatId(c.id);
-                      setEditTitle(c.title);
-                    }}
-                    aria-label="Rename conversation"
-                    className="p-1 text-gray-400 hover:text-black dark:hover:text-white rounded transition-colors"
-                  >
-                    <Edit2 className="w-3 h-3" />
-                  </button>
-                  <button
-                    onClick={e => handleDeleteChat(c.id, e)}
-                    aria-label="Delete conversation"
-                    className="p-1 text-gray-400 hover:text-red-500 rounded transition-colors"
-                  >
-                    <Trash2 className="w-3 h-3" />
-                  </button>
-                </div>
-              </div>
-            ))
-          )}
-        </div>
-
-        {/* Footer info & quick navigation */}
-        <div className="p-2.5 border-t border-black/[0.08] dark:border-white/[0.08] space-y-2 shrink-0">
-          <div className="flex flex-wrap items-center gap-1.5 text-[11px] font-medium">
-            {onNavigateHome && (
-              <button
-                type="button"
-                onClick={() => {
-                  setSidebarOpen(false);
-                  onNavigateHome();
-                }}
-                className="flex-1 h-8 px-2.5 rounded-[8px] border border-black/[0.08] dark:border-white/[0.08] hover:bg-black/[0.04] dark:hover:bg-white/[0.06] text-gray-700 dark:text-gray-200 flex items-center justify-center gap-1.5 transition-colors cursor-pointer"
-              >
-                <Home className="w-3.5 h-3.5 shrink-0" />
-                <span>Overview</span>
-              </button>
-            )}
-            {onNavigateAccount && (
-              <button
-                type="button"
-                onClick={() => {
-                  setSidebarOpen(false);
-                  onNavigateAccount();
-                }}
-                className="flex-1 h-8 px-2.5 rounded-[8px] border border-black/[0.08] dark:border-white/[0.08] hover:bg-black/[0.04] dark:hover:bg-white/[0.06] text-gray-700 dark:text-gray-200 flex items-center justify-center gap-1.5 transition-colors cursor-pointer"
-              >
-                <UserIcon className="w-3.5 h-3.5 shrink-0" />
-                <span>Account</span>
-              </button>
-            )}
-            {user?.role === 'admin' && onNavigateAdmin && (
-              <button
-                type="button"
-                onClick={() => {
-                  setSidebarOpen(false);
-                  onNavigateAdmin();
-                }}
-                className="w-full h-8 px-2.5 rounded-[8px] bg-black text-white dark:bg-white dark:text-black flex items-center justify-center gap-1.5 transition-opacity hover:opacity-90 cursor-pointer"
-              >
-                <Shield className="w-3.5 h-3.5 shrink-0" />
-                <span>Admin Console</span>
-              </button>
-            )}
-          </div>
-          <div className="px-1 text-[11px] font-mono text-gray-500 flex items-center justify-between">
-            <span>Conversations:</span>
-            <span className="font-semibold text-black dark:text-white">{chats.length}</span>
-          </div>
-        </div>
-      </aside>
-
-      {/* Main Chat Canvas (supports drag-and-drop file upload anywhere in workspace) */}
+      {/* Main Editorial Chat Canvas */}
       <main
-        onDragEnter={e => {
+        onDragEnter={(e) => {
           e.preventDefault();
           workspaceDragCounterRef.current += 1;
           if (e.dataTransfer?.types?.includes('Files')) {
             setIsDraggingWorkspace(true);
           }
         }}
-        onDragOver={e => {
+        onDragOver={(e) => {
           e.preventDefault();
         }}
-        onDragLeave={e => {
+        onDragLeave={(e) => {
           e.preventDefault();
-          workspaceDragCounterRef.current = Math.max(0, workspaceDragCounterRef.current - 1);
+          workspaceDragCounterRef.current = Math.max(
+            0,
+            workspaceDragCounterRef.current - 1
+          );
           if (workspaceDragCounterRef.current === 0) {
             setIsDraggingWorkspace(false);
           }
         }}
-        onDrop={e => {
+        onDrop={(e) => {
           e.preventDefault();
           workspaceDragCounterRef.current = 0;
           setIsDraggingWorkspace(false);
@@ -876,104 +815,109 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({
             setDroppedFiles(files);
           }
         }}
-        className="flex-1 min-w-0 w-full max-w-full flex flex-col h-full overflow-hidden relative bg-white dark:bg-[#1F1F1F]"
+        className="flex-1 min-w-0 w-full max-w-full flex flex-col h-full overflow-hidden relative bg-white dark:bg-[#131314]"
       >
         {isDraggingWorkspace && (
           <div
             data-testid="workspace-drop-overlay"
-            className="absolute inset-3 z-40 rounded-[16px] border-2 border-dashed border-black/50 dark:border-white/50 bg-white/90 dark:bg-[#1F1F1F]/90 backdrop-blur-xs flex flex-col items-center justify-center gap-2 pointer-events-none"
+            className="absolute inset-4 z-40 rounded-3xl border-2 border-dashed border-black/35 dark:border-white/35 bg-white/90 dark:bg-[#131314]/90 backdrop-blur-xs flex flex-col items-center justify-center gap-2 pointer-events-none"
           >
-            <div className="w-12 h-12 rounded-full bg-black text-white dark:bg-white dark:text-black flex items-center justify-center shadow-sm">
+            <div className="w-12 h-12 rounded-full bg-[#1f1f1f] text-white dark:bg-[#e3e3e3] dark:text-[#131314] flex items-center justify-center shadow-sm">
               <UploadCloud className="w-5 h-5" />
             </div>
-            <p className="text-sm font-semibold text-black dark:text-white">
+            <p className="text-sm font-semibold text-[#1f1f1f] dark:text-[#e3e3e3]">
               Drop photos or files to attach
             </p>
-            <p className="text-xs text-gray-500">
+            <p className="text-xs text-[#444746] dark:text-[#9aa0a6]">
               PNG, JPG, WEBP, TXT, MD, CSV, JSON, JS, TS, PY, HTML, CSS
             </p>
           </div>
         )}
-        {/* Compact Workspace Top Bar (Website Header hidden to maximize chat space) */}
-        <div className="h-12 shrink-0 border-b border-black/[0.08] dark:border-white/[0.08] px-2 sm:px-4 flex items-center justify-between gap-1.5 sm:gap-3 bg-white/95 dark:bg-[#1F1F1F]/95 backdrop-blur-sm z-10 w-full max-w-full">
+
+        {/* Minimalist Workspace Top Header (No Theme Toggle Button Here) */}
+        <header
+          data-testid="workspace-top-bar"
+          className="h-14 shrink-0 px-2.5 sm:px-5 flex items-center justify-between gap-1.5 sm:gap-2 bg-white/90 dark:bg-[#131314]/90 backdrop-blur-md z-10 w-full max-w-full"
+        >
+          {/* Left: Mobile Drawer Trigger / Desktop Expand Trigger + Model Selector */}
           <div className="flex items-center gap-1 sm:gap-2 min-w-0 flex-1">
-            {onNavigateHome && (
-              <button
-                type="button"
-                onClick={onNavigateHome}
-                aria-label="Back to Overview"
-                title="Back to Bangla AI Overview"
-                className="w-8 h-8 shrink-0 flex items-center justify-center text-gray-600 dark:text-gray-300 hover:text-black dark:hover:text-white rounded-full hover:bg-black/[0.04] dark:hover:bg-white/[0.06] transition-colors cursor-pointer"
-              >
-                <Home className="w-4 h-4" />
-              </button>
-            )}
+            <button
+              type="button"
+              onClick={() => setSidebarOpen(true)}
+              aria-label="Open menu"
+              className="w-9 h-9 md:hidden shrink-0 rounded-full flex items-center justify-center text-[#444746] dark:text-[#c4c7c5] hover:bg-black/[0.05] dark:hover:bg-white/[0.06] transition-colors cursor-pointer"
+            >
+              <Menu className="w-5 h-5" />
+            </button>
 
             {!sidebarOpen && (
               <button
                 type="button"
                 onClick={() => setSidebarOpen(true)}
-                aria-label="Open sidebar"
-                className="w-8 h-8 shrink-0 flex items-center justify-center text-gray-500 hover:text-black dark:hover:text-white rounded-full hover:bg-black/[0.04] dark:hover:bg-white/[0.05] transition-colors cursor-pointer"
+                aria-label="Expand sidebar"
+                className="hidden md:flex w-9 h-9 shrink-0 rounded-full items-center justify-center text-[#444746] dark:text-[#c4c7c5] hover:text-[#1f1f1f] dark:hover:text-[#e3e3e3] hover:bg-black/[0.05] dark:hover:bg-white/[0.06] transition-colors cursor-pointer"
               >
                 <PanelLeftOpen className="w-4 h-4" />
               </button>
             )}
 
-            {/* Model Selector */}
-            <div className="relative min-w-0 flex-1 sm:flex-initial max-w-full">
+            {/* Clean Model Selector Pill */}
+            <div
+              ref={headerModelMenuRef}
+              className="relative min-w-0 max-w-full"
+            >
               <button
                 type="button"
-                onClick={() => setModelDropdownOpen(!modelDropdownOpen)}
+                onClick={() => setModelDropdownOpen((prev) => !prev)}
                 aria-label={`Select AI model: ${selectedModel?.display_name || 'Select Model'}`}
                 aria-expanded={modelDropdownOpen}
-                className="max-w-full min-w-0 flex items-center gap-1.5 sm:gap-2 px-2.5 sm:px-3 py-1.5 rounded-full border border-black/[0.12] dark:border-white/[0.15] hover:border-black/30 dark:hover:border-white/30 bg-white dark:bg-[#262626] text-xs font-medium text-black dark:text-white transition-all cursor-pointer shadow-2xs"
+                className="max-w-full min-w-0 h-9 px-2 sm:px-3 rounded-full hover:bg-[#f0f4f9] dark:hover:bg-[#1e1f20] text-[13px] sm:text-[13.5px] font-medium text-[#1f1f1f] dark:text-[#e3e3e3] flex items-center gap-1.5 sm:gap-2 transition-colors cursor-pointer"
               >
-                <Sparkles className="w-3 h-3 text-gray-500 shrink-0" />
-                <span className="font-semibold truncate">{selectedModel?.display_name || 'Select Model'}</span>
+                <WorkspaceModelIcon model={selectedModel} sizeClass="w-4 h-4" />
+                <span className="truncate font-semibold tracking-tight">
+                  {selectedModel?.display_name || 'Select Model'}
+                </span>
                 {selectedModel?.badge && selectedModel.badge !== 'free' && (
-                  <span className="hidden sm:inline-block shrink-0 text-[10px] uppercase font-mono px-1.5 py-0.2 rounded-full bg-black/[0.05] dark:bg-white/[0.08] text-gray-600 dark:text-gray-400">
+                  <span className="hidden sm:inline-block shrink-0 text-[10px] uppercase font-mono px-1.5 py-0.5 rounded-full bg-[#f0f4f9] dark:bg-[#282a2c] text-[#444746] dark:text-[#9aa0a6]">
                     {selectedModel.badge}
                   </span>
                 )}
-                <ChevronDown className="w-3 h-3 text-gray-400 shrink-0" />
+                <ChevronDown className="w-3.5 h-3.5 text-[#444746] dark:text-[#9aa0a6] shrink-0" />
               </button>
 
               {modelDropdownOpen && (
                 <div
-                  className="fixed sm:absolute left-2 right-2 sm:left-0 sm:right-auto top-13 sm:top-full sm:mt-1.5 sm:w-80 rounded-[10px] bg-white dark:bg-[#262626] border border-black/[0.12] dark:border-white/[0.15] shadow-xl py-1.5 z-50 text-xs animate-in fade-in slide-in-from-top-1"
+                  className="fixed sm:absolute left-3 right-3 sm:left-0 sm:right-auto top-14 sm:top-full sm:mt-1.5 sm:w-80 rounded-2xl bg-white dark:bg-[#1e1f20] border border-black/[0.08] dark:border-white/[0.1] shadow-xl py-1.5 z-50 text-xs animate-in fade-in slide-in-from-top-1"
                   onClick={() => setModelDropdownOpen(false)}
                 >
-                  <div className="px-3.5 py-1.5 text-[10px] uppercase font-mono text-gray-400 border-b border-black/[0.06] dark:border-white/[0.06]">
-                    Frontier Foundation Models
+                  <div className="px-3.5 py-1.5 text-[11px] font-medium text-[#444746] dark:text-[#9aa0a6] border-b border-black/[0.06] dark:border-white/[0.08]">
+                    Foundation Models
                   </div>
-                  <div className="max-h-72 sm:max-h-80 overflow-y-auto">
-                    {models.map(m => (
+                  <div className="max-h-72 sm:max-h-80 overflow-y-auto py-1">
+                    {models.map((m) => (
                       <button
                         key={m.id}
                         type="button"
                         onClick={() => setSelectedModelId(m.id)}
-                        className={`w-full text-left px-3.5 py-2.5 flex items-start gap-2.5 hover:bg-black/[0.03] dark:hover:bg-white/[0.04] transition-colors cursor-pointer ${
+                        className={`w-full text-left px-3.5 py-2.5 flex items-start gap-2.5 hover:bg-black/[0.04] dark:hover:bg-white/[0.06] transition-colors cursor-pointer ${
                           selectedModelId === m.id
-                            ? 'bg-black/[0.04] dark:bg-white/[0.06] text-black dark:text-white font-medium'
-                            : 'text-gray-700 dark:text-gray-300'
+                            ? 'bg-[#f0f4f9] dark:bg-[#282a2c] text-[#1f1f1f] dark:text-[#e3e3e3] font-medium'
+                            : 'text-[#444746] dark:text-[#c4c7c5]'
                         }`}
                       >
                         <div className="mt-0.5 shrink-0">
-                          {m.badge === 'reasoning' ? (
-                            <Brain className="w-3.5 h-3.5 text-black dark:text-white" />
-                          ) : m.badge === 'coding' ? (
-                            <Code2 className="w-3.5 h-3.5 text-black dark:text-white" />
-                          ) : (
-                            <Bot className="w-3.5 h-3.5 text-black dark:text-white" />
-                          )}
+                          <WorkspaceModelIcon model={m} sizeClass="w-4 h-4" />
                         </div>
                         <div className="flex-1 min-w-0">
                           <div className="flex items-center justify-between gap-2">
-                            <span className="font-semibold truncate">{m.display_name}</span>
-                            {selectedModelId === m.id && <Check className="w-3.5 h-3.5 text-black dark:text-white shrink-0" />}
+                            <span className="font-semibold truncate text-[#1f1f1f] dark:text-[#e3e3e3]">
+                              {m.display_name}
+                            </span>
+                            {selectedModelId === m.id && (
+                              <Check className="w-3.5 h-3.5 text-[#1f1f1f] dark:text-[#e3e3e3] shrink-0" />
+                            )}
                           </div>
-                          <p className="text-[10px] text-gray-500 line-clamp-1 mt-0.5 font-normal">
+                          <p className="text-[11px] text-[#444746]/80 dark:text-[#9aa0a6] line-clamp-1 mt-0.5 font-normal">
                             {m.description_en}
                           </p>
                         </div>
@@ -985,6 +929,7 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({
             </div>
           </div>
 
+          {/* Right: Subtle Utility Actions (Export, Quota, Mobile New Chat) */}
           <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
             {messages.length > 0 && (
               <button
@@ -992,45 +937,48 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({
                 onClick={handleExportFullChat}
                 aria-label="Export conversation as Markdown"
                 title="Export conversation (.md)"
-                className="h-8 w-8 sm:w-auto sm:px-2.5 rounded-full border border-black/[0.1] dark:border-white/[0.12] hover:border-black/30 dark:hover:border-white/30 text-[11px] font-medium text-gray-600 dark:text-gray-300 hover:text-black dark:hover:text-white flex items-center justify-center gap-1.5 transition-colors cursor-pointer whitespace-nowrap shrink-0"
+                className="h-8 w-8 sm:w-auto sm:px-3 rounded-full hover:bg-[#f0f4f9] dark:hover:bg-[#1e1f20] border border-black/[0.08] dark:border-white/[0.08] text-[12px] font-medium text-[#444746] dark:text-[#c4c7c5] hover:text-[#1f1f1f] dark:hover:text-[#e3e3e3] flex items-center justify-center gap-1.5 transition-colors cursor-pointer whitespace-nowrap shrink-0"
               >
                 <Download className="w-3.5 h-3.5 shrink-0" />
-                <span className="hidden sm:inline">Export Chat</span>
+                <span className="hidden sm:inline">Export</span>
               </button>
             )}
 
             {user && (
-              <div className="flex items-center gap-1 text-[11px] sm:text-xs font-mono tabular-nums shrink-0 px-1">
-                <span className="text-gray-500 hidden sm:inline">Tokens:</span>
-                <span className="font-semibold text-black dark:text-white">
-                  {Math.max(0, (user.usage_limit || 0) - (user.current_usage || 0)).toLocaleString()}
-                </span>
+              <div
+                title={`${remainingTokens.toLocaleString()} tokens remaining`}
+                className="hidden sm:flex items-center gap-1.5 h-8 px-3 rounded-full bg-[#f0f4f9] dark:bg-[#1e1f20] text-[11.5px] font-mono tabular-nums text-[#444746] dark:text-[#9aa0a6] shrink-0"
+              >
+                <span>{formatCompactTokens(remainingTokens)}</span>
+                <span className="text-[10.5px]">tokens</span>
               </div>
             )}
 
             <button
               type="button"
-              onClick={toggleTheme}
-              aria-label="Toggle theme"
-              className="w-8 h-8 rounded-full bg-black/[0.04] dark:bg-white/[0.08] text-gray-700 dark:text-gray-300 hover:text-black dark:hover:text-white flex items-center justify-center transition-colors shrink-0 cursor-pointer"
+              onClick={handleCreateNewChat}
+              aria-label="New chat"
+              title="New chat"
+              className="w-9 h-9 md:hidden rounded-full flex items-center justify-center text-[#444746] dark:text-[#c4c7c5] hover:bg-black/[0.05] dark:hover:bg-white/[0.06] transition-colors cursor-pointer shrink-0"
             >
-              {theme === 'dark' ? <Sun className="w-3.5 h-3.5" /> : <Moon className="w-3.5 h-3.5" />}
+              <SquarePen className="w-[18px] h-[18px]" />
             </button>
           </div>
-        </div>
+        </header>
 
-        {/* Gating Banner if unpaid */}
+        {/* Subscription Gating Banner (Unpaid Users) */}
         {!isSubscribed && (
-          <div className="bg-[#1F1F1F] text-white dark:bg-white dark:text-[#1F1F1F] px-3 sm:px-4 py-2.5 flex flex-col sm:flex-row items-center justify-between gap-2.5 sm:gap-3 text-xs z-10 text-center sm:text-left">
-            <div className="flex items-center gap-2 min-w-0">
-              <Lock className="w-3.5 h-3.5 text-amber-300 shrink-0" />
+          <div className="mx-3 sm:mx-6 mt-1 mb-2 rounded-2xl bg-[#f0f4f9] dark:bg-[#1e1f20] border border-black/[0.08] dark:border-white/[0.08] px-4 py-2.5 flex flex-col sm:flex-row items-center justify-between gap-2.5 text-xs z-10">
+            <div className="flex items-center gap-2 min-w-0 text-[#1f1f1f] dark:text-[#e3e3e3]">
+              <Lock className="w-3.5 h-3.5 text-amber-600 dark:text-amber-400 shrink-0" />
               <span>
-                <strong>Subscription Required:</strong> Active subscription needed to converse with foundation models.
+                <strong>Subscription Required:</strong> Activate a plan to chat with frontier AI models.
               </span>
             </div>
             <button
+              type="button"
               onClick={() => openPaymentModal('monthly')}
-              className="h-8 px-4 rounded-full bg-white text-black dark:bg-[#1F1F1F] dark:text-white font-semibold text-xs hover:opacity-90 transition-opacity cursor-pointer shrink-0 w-full sm:w-auto"
+              className="h-8 px-4 rounded-full bg-[#1f1f1f] text-white dark:bg-[#e3e3e3] dark:text-[#131314] font-medium text-xs hover:opacity-90 transition-opacity cursor-pointer shrink-0 w-full sm:w-auto"
             >
               Subscribe (৳699/mo)
             </button>
@@ -1038,95 +986,97 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({
         )}
 
         {/* Messages Stream */}
-        <div className="flex-1 min-h-0 w-full max-w-full overflow-y-auto overflow-x-hidden px-2.5 sm:px-6 py-4 sm:py-6 space-y-5">
+        <div className="flex-1 min-h-0 w-full max-w-full overflow-y-auto overflow-x-hidden px-3 sm:px-6 pt-3 pb-6">
           {messages.length === 0 && !isStreaming ? (
-            <div className="min-h-full flex flex-col items-center justify-center max-w-2xl mx-auto text-center py-4 sm:py-10 space-y-4 sm:space-y-6 w-full">
-              <BrandLogo className="w-11 h-11 sm:w-12 sm:h-12 shadow-xs" />
-              <div className="space-y-1.5 px-1">
-                <h2 className="text-xl sm:text-2xl font-bold tracking-tight text-black dark:text-white">
+            <div className="min-h-full flex flex-col items-center justify-center max-w-[720px] mx-auto text-center py-6 sm:py-12 space-y-6 w-full">
+              <div className="space-y-2.5 px-2">
+                <div className="inline-flex items-center justify-center mb-1">
+                  <BrandLogo className="w-11 h-11 shadow-xs" />
+                </div>
+                <h1 className="text-2xl sm:text-[32px] font-semibold tracking-tight text-[#1f1f1f] dark:text-[#e3e3e3] leading-tight">
                   Ready when you are.
-                </h2>
-                <p className="text-xs text-gray-500 max-w-md mx-auto">
-                  Powered by <span className="font-semibold text-black dark:text-white">{selectedModel?.display_name}</span>. Start a query below or select a prompt:
+                </h1>
+                <p className="workspace-prose text-sm text-[#444746] dark:text-[#9aa0a6] max-w-md mx-auto">
+                  Ask anything in <span className="font-medium text-[#1f1f1f] dark:text-[#e3e3e3]">বাংলা</span> or English with{' '}
+                  <span className="font-medium text-[#1f1f1f] dark:text-[#e3e3e3]">
+                    {selectedModel?.display_name || 'Bangla-AI.pro'}
+                  </span>
                 </p>
               </div>
 
-              {/* Suggestions Chips */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 w-full text-left pt-1">
+              {/* Clean 2x2 Prompt Starters */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 w-full text-left pt-2">
                 {suggestions.map((s, idx) => (
                   <button
                     key={idx}
                     type="button"
-                    onClick={() => handleSendMessage(s)}
-                    className="w-full p-3 sm:p-3.5 rounded-[8px] border border-black/[0.08] dark:border-white/[0.08] hover:border-black/30 dark:hover:border-white/30 bg-white dark:bg-[#262626] text-xs text-gray-700 dark:text-gray-300 transition-all flex items-start justify-between gap-2.5 group cursor-pointer shadow-xs text-left"
+                    onClick={() => handleSendMessage(s.prompt)}
+                    className="w-full p-4 rounded-2xl border border-black/[0.06] dark:border-white/[0.08] bg-[#f0f4f9]/70 hover:bg-[#e9eef6] dark:bg-[#1e1f20] dark:hover:bg-[#282a2c] transition-colors flex flex-col justify-between gap-2 group cursor-pointer text-left"
                   >
-                    <span className="leading-snug flex-1 min-w-0 break-words">{s}</span>
-                    <ArrowRight className="w-3.5 h-3.5 text-gray-400 group-hover:translate-x-0.5 group-hover:text-black dark:group-hover:text-white transition-all shrink-0 mt-0.5" />
+                    <div className="flex items-center justify-between gap-2 w-full">
+                      <span className="text-[11px] font-medium text-[#444746] dark:text-[#9aa0a6]">
+                        {s.label}
+                      </span>
+                      <ArrowUpRight className="w-3.5 h-3.5 text-[#444746] dark:text-[#9aa0a6] opacity-60 group-hover:opacity-100 group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition-all shrink-0" />
+                    </div>
+                    <span className="workspace-prose text-[13px] text-[#1f1f1f] dark:text-[#e3e3e3] line-clamp-2">
+                      {s.prompt}
+                    </span>
                   </button>
                 ))}
               </div>
             </div>
           ) : (
-            <div className="max-w-4xl mx-auto w-full min-w-0 space-y-5">
+            <div className="max-w-[780px] mx-auto w-full min-w-0 space-y-7 pt-2">
               {messages.map((m, idx) => {
                 const msgId = m.id || `msg-${idx}`;
-                const modelLabel = getModelDisplayName(m.model_id);
-                const stats = m.role === 'assistant' ? estimateReadingStats(m.content) : null;
+                const msgModel = getModelById(m.model_id);
+                const modelLabel = msgModel?.display_name || 'Bangla AI';
+                const stats =
+                  m.role === 'assistant' ? estimateReadingStats(m.content) : null;
                 const feedbackVote = messageFeedback[msgId];
 
-                return (
-                  <div
-                    key={msgId}
-                    className={`flex gap-2.5 sm:gap-3 w-full min-w-0 ${m.role === 'user' ? 'justify-end' : 'justify-start'}`}
-                  >
-                    {m.role === 'assistant' && (
-                      <BrandLogo className="hidden sm:block w-7 h-7 mt-0.5 shrink-0" />
-                    )}
-
+                if (m.role === 'user') {
+                  return (
                     <div
-                      className={`min-w-0 ${
-                        m.role === 'user'
-                          ? 'max-w-[90%] sm:max-w-[78%] flex flex-col items-end gap-1.5'
-                          : 'w-full max-w-full sm:flex-1 sm:max-w-[92%] space-y-2'
-                      }`}
+                      key={msgId}
+                      className="flex justify-end w-full min-w-0 group"
                     >
-                      <div
-                        className={`w-full min-w-0 max-w-full overflow-hidden rounded-[12px] px-3 sm:px-4 py-2.5 sm:py-3 text-sm leading-relaxed break-words ${
-                          m.role === 'user'
-                            ? 'bg-black text-white dark:bg-white dark:text-black font-normal'
-                            : 'bg-white dark:bg-[#262626] text-black dark:text-white border border-black/[0.08] dark:border-white/[0.08] shadow-xs'
-                        }`}
-                      >
-                        {m.role === 'user' ? (
-                          <div className="space-y-2">
+                      <div className="max-w-[88%] sm:max-w-[76%] flex flex-col items-end gap-1.5 min-w-0">
+                        <div className="rounded-3xl rounded-br-md px-5 py-3.5 bg-[#e9eef6] dark:bg-[#282a2c] text-[#1f1f1f] dark:text-[#e3e3e3] workspace-prose text-[15px] min-w-0 max-w-full break-words">
+                          <div className="space-y-2.5">
                             {m.attachments && m.attachments.length > 0 && (
                               <div
                                 data-testid="user-message-attachments"
                                 className="flex flex-wrap gap-2"
                               >
-                                {m.attachments.map(att =>
+                                {m.attachments.map((att) =>
                                   att.kind === 'image' && att.dataUrl ? (
                                     <div
                                       key={att.id}
-                                      className="rounded-[10px] overflow-hidden border border-white/20 dark:border-black/15 bg-white/10 dark:bg-black/5 max-w-[210px]"
+                                      className="rounded-xl overflow-hidden border border-black/[0.08] dark:border-white/[0.1] bg-white dark:bg-[#1e1f20] max-w-[220px]"
                                     >
                                       <img
                                         src={att.dataUrl}
                                         alt={att.name}
-                                        className="min-w-[56px] min-h-[56px] max-h-44 w-auto object-cover block"
+                                        className="min-w-[56px] min-h-[56px] max-h-48 w-auto object-cover block"
                                       />
                                     </div>
                                   ) : (
                                     <div
                                       key={att.id}
-                                      className="inline-flex items-center gap-2 px-2.5 py-1.5 rounded-[8px] border border-white/20 dark:border-black/15 bg-white/10 dark:bg-black/5 text-xs max-w-[230px]"
+                                      className="inline-flex items-center gap-2 px-3 py-1.5 rounded-xl border border-black/[0.08] dark:border-white/[0.1] bg-white/70 dark:bg-[#1e1f20] text-xs max-w-[230px]"
                                     >
-                                      {/\.(js|ts|py|html|css|json)$/i.test(att.name) ? (
+                                      {/\.(js|ts|py|html|css|json)$/i.test(
+                                        att.name
+                                      ) ? (
                                         <FileCode2 className="w-3.5 h-3.5 shrink-0 opacity-85" />
                                       ) : (
                                         <FileText className="w-3.5 h-3.5 shrink-0 opacity-85" />
                                       )}
-                                      <span className="truncate font-medium">{att.name}</span>
+                                      <span className="truncate font-medium">
+                                        {att.name}
+                                      </span>
                                       <span className="text-[10px] opacity-70 font-mono shrink-0">
                                         {formatFileSize(att.size)}
                                       </span>
@@ -1136,25 +1086,25 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({
                               </div>
                             )}
                             {m.content && (
-                              <p className="whitespace-pre-wrap break-words">{m.content}</p>
+                              <p className="whitespace-pre-wrap break-words">
+                                {m.content}
+                              </p>
                             )}
                           </div>
-                        ) : (
-                          <FormattedMessage content={m.content} />
-                        )}
-                      </div>
+                        </div>
 
-                      {m.role === 'user' ? (
                         <button
                           type="button"
                           onClick={() => handleCopyResponse(msgId, m.content)}
                           aria-label="Copy prompt"
-                          className="h-6 px-2 rounded-md text-[11px] text-gray-400 hover:text-black dark:hover:text-white hover:bg-black/[0.04] dark:hover:bg-white/[0.06] flex items-center gap-1 transition-colors cursor-pointer"
+                          className="h-6 px-2 rounded-md text-[11px] text-[#444746] dark:text-[#9aa0a6] hover:text-[#1f1f1f] dark:hover:text-[#e3e3e3] opacity-70 sm:opacity-0 sm:group-hover:opacity-100 focus:opacity-100 flex items-center gap-1 transition-all cursor-pointer"
                         >
                           {copiedMessageId === msgId ? (
                             <>
                               <Check className="w-3 h-3 text-emerald-500" />
-                              <span className="text-emerald-600 dark:text-emerald-400">Copied</span>
+                              <span className="text-emerald-600 dark:text-emerald-400">
+                                Copied
+                              </span>
                             </>
                           ) : (
                             <>
@@ -1163,140 +1113,169 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({
                             </>
                           )}
                         </button>
-                      ) : (
-                        <div
-                          data-testid="response-action-bar"
-                          className="flex flex-wrap items-center justify-between gap-y-1.5 gap-x-2 px-1"
-                        >
-                          <div className="flex flex-wrap items-center gap-1">
-                            <button
-                              type="button"
-                              onClick={() => handleCopyResponse(msgId, m.content)}
-                              aria-label="Copy response"
-                              className={`h-7 px-2.5 rounded-md text-[11.5px] font-medium flex items-center gap-1.5 transition-colors cursor-pointer whitespace-nowrap shrink-0 ${
-                                copiedMessageId === msgId
-                                  ? 'bg-emerald-50 text-emerald-700 dark:bg-emerald-950/50 dark:text-emerald-400'
-                                  : 'text-gray-600 dark:text-gray-300 hover:text-black dark:hover:text-white hover:bg-black/[0.05] dark:hover:bg-white/[0.07]'
-                              }`}
-                            >
-                              {copiedMessageId === msgId ? (
-                                <>
-                                  <Check className="w-3.5 h-3.5 shrink-0" />
-                                  <span>Copied</span>
-                                </>
-                              ) : (
-                                <>
-                                  <Copy className="w-3.5 h-3.5 shrink-0" />
-                                  <span>Copy</span>
-                                </>
-                              )}
-                            </button>
+                      </div>
+                    </div>
+                  );
+                }
 
-                            <button
-                              type="button"
-                              onClick={() => handleRegenerate(idx)}
-                              disabled={isStreaming}
-                              aria-label="Regenerate response"
-                              className="h-7 px-2.5 rounded-md text-[11.5px] font-medium text-gray-600 dark:text-gray-300 hover:text-black dark:hover:text-white hover:bg-black/[0.05] dark:hover:bg-white/[0.07] flex items-center gap-1.5 transition-colors cursor-pointer disabled:opacity-40 whitespace-nowrap shrink-0"
-                            >
-                              <RotateCcw className="w-3.5 h-3.5 shrink-0" />
-                              <span>Regenerate</span>
-                            </button>
+                // Assistant Editorial Unboxed Message
+                return (
+                  <div
+                    key={msgId}
+                    className="flex gap-3 sm:gap-3.5 justify-start w-full min-w-0"
+                  >
+                    <div className="w-7 h-7 rounded-full bg-[#f0f4f9] dark:bg-[#1e1f20] border border-black/[0.06] dark:border-white/[0.08] flex items-center justify-center shrink-0 mt-0.5">
+                      <WorkspaceModelIcon model={msgModel} sizeClass="w-4 h-4" />
+                    </div>
 
-                            <button
-                              type="button"
-                              onClick={() => handleToggleSpeak(msgId, m.content)}
-                              aria-label={speakingMessageId === msgId ? 'Stop reading aloud' : 'Listen to response'}
-                              className={`h-7 px-2.5 rounded-md text-[11.5px] font-medium flex items-center gap-1.5 transition-colors cursor-pointer whitespace-nowrap shrink-0 ${
-                                speakingMessageId === msgId
-                                  ? 'bg-black text-white dark:bg-white dark:text-black'
-                                  : 'text-gray-600 dark:text-gray-300 hover:text-black dark:hover:text-white hover:bg-black/[0.05] dark:hover:bg-white/[0.07]'
-                              }`}
-                            >
-                              {speakingMessageId === msgId ? (
-                                <>
-                                  <VolumeX className="w-3.5 h-3.5 shrink-0" />
-                                  <span>Stop</span>
-                                </>
-                              ) : (
-                                <>
-                                  <Volume2 className="w-3.5 h-3.5 shrink-0" />
-                                  <span>Listen</span>
-                                </>
-                              )}
-                            </button>
+                    <div className="flex-1 min-w-0 space-y-2.5">
+                      <div className="flex items-center gap-2 text-[12px] font-medium text-[#444746] dark:text-[#9aa0a6]">
+                        <span>{modelLabel}</span>
+                      </div>
 
-                            <button
-                              type="button"
-                              onClick={() => handleDownloadResponse(msgId, m.content, modelLabel)}
-                              aria-label="Download response as Markdown"
-                              className="h-7 px-2.5 rounded-md text-[11.5px] font-medium text-gray-600 dark:text-gray-300 hover:text-black dark:hover:text-white hover:bg-black/[0.05] dark:hover:bg-white/[0.07] flex items-center gap-1.5 transition-colors cursor-pointer whitespace-nowrap shrink-0"
-                            >
-                              <Download className="w-3.5 h-3.5 shrink-0" />
-                              <span className="hidden sm:inline">Save .md</span>
-                            </button>
+                      <FormattedMessage content={m.content} />
 
-                            <div className="flex items-center gap-0.5 pl-1 border-l border-black/[0.08] dark:border-white/[0.08]">
-                              <button
-                                type="button"
-                                onClick={() => handleToggleFeedback(msgId, 'up')}
-                                aria-label="Mark response helpful"
-                                aria-pressed={feedbackVote === 'up'}
-                                className={`w-7 h-7 rounded-md flex items-center justify-center transition-colors cursor-pointer ${
-                                  feedbackVote === 'up'
-                                    ? 'text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/50'
-                                    : 'text-gray-400 hover:text-black dark:hover:text-white hover:bg-black/[0.04] dark:hover:bg-white/[0.06]'
-                                }`}
-                              >
-                                <ThumbsUp className="w-3.5 h-3.5" />
-                              </button>
-                              <button
-                                type="button"
-                                onClick={() => handleToggleFeedback(msgId, 'down')}
-                                aria-label="Mark response unhelpful"
-                                aria-pressed={feedbackVote === 'down'}
-                                className={`w-7 h-7 rounded-md flex items-center justify-center transition-colors cursor-pointer ${
-                                  feedbackVote === 'down'
-                                    ? 'text-rose-600 dark:text-rose-400 bg-rose-50 dark:bg-rose-950/50'
-                                    : 'text-gray-400 hover:text-black dark:hover:text-white hover:bg-black/[0.04] dark:hover:bg-white/[0.06]'
-                                }`}
-                              >
-                                <ThumbsDown className="w-3.5 h-3.5" />
-                              </button>
-                            </div>
-                          </div>
-
-                          <div className="flex items-center gap-1.5 text-[11px] font-mono text-gray-400 tabular-nums">
-                            <span className="truncate max-w-[140px]">{modelLabel}</span>
-                            {m.tokens_used > 0 && (
+                      {/* Subtle Editorial Action Row */}
+                      <div
+                        data-testid="response-action-bar"
+                        className="flex flex-wrap items-center justify-between gap-y-1.5 gap-x-2 pt-0.5"
+                      >
+                        <div className="flex flex-wrap items-center gap-0.5">
+                          <button
+                            type="button"
+                            onClick={() => handleCopyResponse(msgId, m.content)}
+                            aria-label="Copy response"
+                            className={`h-7 px-2 rounded-lg text-[11.5px] font-medium flex items-center gap-1.5 transition-colors cursor-pointer whitespace-nowrap shrink-0 ${
+                              copiedMessageId === msgId
+                                ? 'bg-emerald-500/10 text-emerald-700 dark:text-emerald-400'
+                                : 'text-[#444746] dark:text-[#9aa0a6] hover:text-[#1f1f1f] dark:hover:text-[#e3e3e3] hover:bg-black/[0.04] dark:hover:bg-white/[0.06]'
+                            }`}
+                          >
+                            {copiedMessageId === msgId ? (
                               <>
-                                <span aria-hidden="true">·</span>
-                                <span>{m.tokens_used.toLocaleString()} tok</span>
+                                <Check className="w-3.5 h-3.5 shrink-0" />
+                                <span>Copied</span>
+                              </>
+                            ) : (
+                              <>
+                                <Copy className="w-3.5 h-3.5 shrink-0" />
+                                <span>Copy</span>
                               </>
                             )}
-                            {stats && stats.words > 0 && (
+                          </button>
+
+                          <button
+                            type="button"
+                            onClick={() => handleRegenerate(idx)}
+                            disabled={isStreaming}
+                            aria-label="Regenerate response"
+                            className="h-7 px-2 rounded-lg text-[11.5px] font-medium text-[#444746] dark:text-[#9aa0a6] hover:text-[#1f1f1f] dark:hover:text-[#e3e3e3] hover:bg-black/[0.04] dark:hover:bg-white/[0.06] flex items-center gap-1.5 transition-colors cursor-pointer disabled:opacity-40 whitespace-nowrap shrink-0"
+                          >
+                            <RotateCcw className="w-3.5 h-3.5 shrink-0" />
+                            <span className="hidden sm:inline">Regenerate</span>
+                          </button>
+
+                          <button
+                            type="button"
+                            onClick={() => handleToggleSpeak(msgId, m.content)}
+                            aria-label={
+                              speakingMessageId === msgId
+                                ? 'Stop reading aloud'
+                                : 'Listen to response'
+                            }
+                            className={`h-7 px-2 rounded-lg text-[11.5px] font-medium flex items-center gap-1.5 transition-colors cursor-pointer whitespace-nowrap shrink-0 ${
+                              speakingMessageId === msgId
+                                ? 'bg-[#1f1f1f] text-white dark:bg-[#e3e3e3] dark:text-[#131314]'
+                                : 'text-[#444746] dark:text-[#9aa0a6] hover:text-[#1f1f1f] dark:hover:text-[#e3e3e3] hover:bg-black/[0.04] dark:hover:bg-white/[0.06]'
+                            }`}
+                          >
+                            {speakingMessageId === msgId ? (
                               <>
-                                <span aria-hidden="true" className="hidden sm:inline">·</span>
-                                <span className="hidden sm:inline">{stats.words}w</span>
+                                <VolumeX className="w-3.5 h-3.5 shrink-0" />
+                                <span>Stop</span>
+                              </>
+                            ) : (
+                              <>
+                                <Volume2 className="w-3.5 h-3.5 shrink-0" />
+                                <span className="hidden sm:inline">Listen</span>
                               </>
                             )}
+                          </button>
+
+                          <button
+                            type="button"
+                            onClick={() =>
+                              handleDownloadResponse(msgId, m.content, modelLabel)
+                            }
+                            aria-label="Download response as Markdown"
+                            className="h-7 px-2 rounded-lg text-[11.5px] font-medium text-[#444746] dark:text-[#9aa0a6] hover:text-[#1f1f1f] dark:hover:text-[#e3e3e3] hover:bg-black/[0.04] dark:hover:bg-white/[0.06] flex items-center gap-1.5 transition-colors cursor-pointer whitespace-nowrap shrink-0"
+                          >
+                            <Download className="w-3.5 h-3.5 shrink-0" />
+                            <span className="hidden sm:inline">Save</span>
+                          </button>
+
+                          <div className="flex items-center gap-0.5 pl-1 ml-0.5 border-l border-black/[0.08] dark:border-white/[0.08]">
+                            <button
+                              type="button"
+                              onClick={() => handleToggleFeedback(msgId, 'up')}
+                              aria-label="Mark response helpful"
+                              aria-pressed={feedbackVote === 'up'}
+                              className={`w-7 h-7 rounded-lg flex items-center justify-center transition-colors cursor-pointer ${
+                                feedbackVote === 'up'
+                                  ? 'text-emerald-600 dark:text-emerald-400 bg-emerald-500/10'
+                                  : 'text-[#444746]/80 dark:text-[#9aa0a6]/80 hover:text-[#1f1f1f] dark:hover:text-[#e3e3e3] hover:bg-black/[0.04] dark:hover:bg-white/[0.06]'
+                              }`}
+                            >
+                              <ThumbsUp className="w-3.5 h-3.5" />
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => handleToggleFeedback(msgId, 'down')}
+                              aria-label="Mark response unhelpful"
+                              aria-pressed={feedbackVote === 'down'}
+                              className={`w-7 h-7 rounded-lg flex items-center justify-center transition-colors cursor-pointer ${
+                                feedbackVote === 'down'
+                                  ? 'text-rose-600 dark:text-rose-400 bg-rose-500/10'
+                                  : 'text-[#444746]/80 dark:text-[#9aa0a6]/80 hover:text-[#1f1f1f] dark:hover:text-[#e3e3e3] hover:bg-black/[0.04] dark:hover:bg-white/[0.06]'
+                              }`}
+                            >
+                              <ThumbsDown className="w-3.5 h-3.5" />
+                            </button>
                           </div>
                         </div>
-                      )}
+
+                        <div className="flex items-center gap-1.5 text-[11px] font-mono text-[#444746]/75 dark:text-[#9aa0a6]/75 tabular-nums">
+                          {m.tokens_used > 0 && (
+                            <span>{m.tokens_used.toLocaleString()} tok</span>
+                          )}
+                          {m.tokens_used > 0 && stats && stats.words > 0 && (
+                            <span aria-hidden="true">·</span>
+                          )}
+                          {stats && stats.words > 0 && (
+                            <span>{stats.words}w</span>
+                          )}
+                        </div>
+                      </div>
                     </div>
                   </div>
                 );
               })}
 
               {isStreaming && (
-                <div className="flex gap-2.5 sm:gap-3 justify-start w-full min-w-0 animate-in fade-in">
-                  <BrandLogo className="hidden sm:block w-7 h-7 mt-0.5 shrink-0" />
-                  <div className="w-full max-w-full sm:flex-1 sm:max-w-[92%] min-w-0 overflow-hidden rounded-[12px] px-3 sm:px-4 py-2.5 sm:py-3 bg-white dark:bg-[#262626] text-black dark:text-white border border-black/[0.08] dark:border-white/[0.08] shadow-xs break-words">
+                <div className="flex gap-3 sm:gap-3.5 justify-start w-full min-w-0 animate-in fade-in">
+                  <div className="w-7 h-7 rounded-full bg-[#f0f4f9] dark:bg-[#1e1f20] border border-black/[0.06] dark:border-white/[0.08] flex items-center justify-center shrink-0 mt-0.5">
+                    <WorkspaceModelIcon model={selectedModel} sizeClass="w-4 h-4" />
+                  </div>
+                  <div className="flex-1 min-w-0 space-y-2">
+                    <div className="flex items-center gap-2 text-[12px] font-medium text-[#444746] dark:text-[#9aa0a6]">
+                      <span>{selectedModel?.display_name || 'Bangla AI'}</span>
+                    </div>
                     {streamedText ? (
                       <FormattedMessage content={streamedText} />
                     ) : (
-                      <div className="flex items-center gap-2 text-xs text-gray-500 py-1">
-                        <span>Generating response with {selectedModel?.display_name}...</span>
+                      <div className="flex items-center gap-2 text-[13px] text-[#444746] dark:text-[#9aa0a6] py-1">
+                        <span className="w-2 h-2 rounded-full bg-[#1f1f1f] dark:bg-[#e3e3e3] animate-pulse" />
+                        <span>Thinking...</span>
                       </div>
                     )}
                   </div>
@@ -1308,18 +1287,22 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({
           )}
         </div>
 
-        {/* Expand-on-Focus Chat Composer */}
+        {/* Floating Pill Chat Composer */}
         <ChatComposer
           inputRef={inputRef}
           inputMessage={inputMessage}
           onInputChange={setInputMessage}
           attachments={pendingAttachments}
-          onAddAttachments={newAtts => setPendingAttachments(prev => [...prev, ...newAtts])}
-          onRemoveAttachment={id => setPendingAttachments(prev => prev.filter(a => a.id !== id))}
+          onAddAttachments={(newAtts) =>
+            setPendingAttachments((prev) => [...prev, ...newAtts])
+          }
+          onRemoveAttachment={(id) =>
+            setPendingAttachments((prev) => prev.filter((a) => a.id !== id))
+          }
           onSubmit={() => handleSendMessage()}
           onStopGeneration={handleStopGeneration}
           isStreaming={isStreaming}
-          isSubscribed={Boolean(isSubscribed)}
+          isSubscribed={isSubscribed}
           models={models}
           selectedModelId={selectedModelId}
           onSelectModel={setSelectedModelId}

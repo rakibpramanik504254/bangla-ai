@@ -7,6 +7,7 @@ interface AuthContextType {
   token: string | null;
   loading: boolean;
   theme: 'light' | 'dark';
+  setTheme: (mode: 'light' | 'dark') => void;
   toggleTheme: () => void;
   loginWithGoogle: () => Promise<void>;
   login: (email: string, password: string) => Promise<void>;
@@ -214,6 +215,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         token,
         loading,
         theme,
+        setTheme,
         toggleTheme,
         loginWithGoogle,
         login,

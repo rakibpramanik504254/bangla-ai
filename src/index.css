@@ -241,3 +241,14 @@
   }
 }
 
+/* Editorial Workspace Typography (English + Bengali Hind Siliguri harmony) */
+.workspace-typography {
+  font-family: 'Plus Jakarta Sans', 'Hind Siliguri', 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  letter-spacing: 0;
+}
+
+.workspace-prose {
+  font-family: 'Plus Jakarta Sans', 'Hind Siliguri', 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  line-height: 1.7;
+  letter-spacing: 0;
+}

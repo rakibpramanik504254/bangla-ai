@@ -9,14 +9,16 @@ import {
   Phone,
   Mail,
   Calendar,
-  Sparkles
+  Sparkles,
+  Sun,
+  Moon
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext.tsx';
 import { formatBDT, isSubscriptionActive } from '../../utils/billing.ts';
 import { Payment } from '../../types/index.ts';
 
 export const AccountPage: React.FC = () => {
-  const { user, token, refreshUser, openPaymentModal } = useAuth();
+  const { user, token, refreshUser, openPaymentModal, theme, setTheme } = useAuth();
   const [payments, setPayments] = useState<Payment[]>([]);
   const [loadingPayments, setLoadingPayments] = useState(true);
 
@@ -110,6 +112,38 @@ export const AccountPage: React.FC = () => {
             <div className="flex items-center gap-2.5">
               <Shield className="w-3.5 h-3.5 text-emerald-500 shrink-0" />
               <span>Status: <strong className="text-black dark:text-white">Active</strong></span>
+            </div>
+          </div>
+
+          <div className="pt-3 border-t border-black/[0.08] dark:border-white/[0.08] space-y-2">
+            <span className="text-[11px] font-medium text-gray-500 dark:text-gray-400 block">
+              Workspace Appearance
+            </span>
+            <div className="grid grid-cols-2 gap-1.5 p-1 rounded-lg bg-[#f0f4f9] dark:bg-[#1e1f20] border border-black/[0.06] dark:border-white/[0.08]">
+              <button
+                type="button"
+                onClick={() => setTheme('light')}
+                className={`h-8 rounded-md text-xs font-medium flex items-center justify-center gap-1.5 transition-all cursor-pointer ${
+                  theme === 'light'
+                    ? 'bg-white text-black shadow-2xs'
+                    : 'text-gray-500 hover:text-black dark:hover:text-white'
+                }`}
+              >
+                <Sun className="w-3.5 h-3.5" />
+                <span>Light</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => setTheme('dark')}
+                className={`h-8 rounded-md text-xs font-medium flex items-center justify-center gap-1.5 transition-all cursor-pointer ${
+                  theme === 'dark'
+                    ? 'bg-[#282a2c] text-white shadow-2xs'
+                    : 'text-gray-500 hover:text-black dark:hover:text-white'
+                }`}
+              >
+                <Moon className="w-3.5 h-3.5" />
+                <span>Dark</span>
+              </button>
             </div>
           </div>
         </div>
