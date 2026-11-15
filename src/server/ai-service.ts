@@ -24,7 +24,7 @@ export interface ChatMessageParam {
 
 export interface StreamCallbacks {
   onChunk: (chunk: string) => void;
-  onDone: (fullText: string, promptTokens: number, completionTokens: number) => void;
+  onDone: (fullText: string, promptTokens: number, completionTokens: number) => void | Promise<void>;
   onError: (error: Error) => void;
 }
 
@@ -36,12 +36,12 @@ export class AiService {
   /**
    * Validates if a user can send a prompt (active subscription & within usage limits)
    */
-  public static validateAccess(user: User): { allowed: boolean; reason?: string; statusCode?: number } {
+  public static async validateAccess(user: User): Promise<{ allowed: boolean; reason?: string; statusCode?: number }> {
     if (user.role === 'admin') {
       return { allowed: true };
     }
 
-    const sub = db.getSubscriptionByUserId(user.id);
+    const sub = await db.getSubscriptionByUserId(user.id);
     if (!sub || !isSubscriptionActive(sub)) {
       return {
         allowed: false,
@@ -195,7 +195,7 @@ export class AiService {
     const estimated = estimateTokens(params.lastUserMsg, accumulatedText);
     const promptTokens = upstreamUsage?.promptTokens || estimated.promptTokens;
     const completionTokens = upstreamUsage?.completionTokens || estimated.completionTokens;
-    params.callbacks.onDone(accumulatedText, promptTokens, completionTokens);
+    await params.callbacks.onDone(accumulatedText, promptTokens, completionTokens);
   }
 
   /**
@@ -218,7 +218,7 @@ export class AiService {
     let accumulatedText = '';
 
     // 1. Check OpenRouter Unified Gateway (1 API key accesses all workspace models)
-    const openRouterProvider = db.getProviderBySlug('openrouter');
+    const openRouterProvider = await db.getProviderBySlug('openrouter');
     const openRouterKey = normalizeApiKey(openRouterProvider?.api_key || process.env.OPENROUTER_API_KEY);
     const isOpenRouterEnabled = openRouterProvider ? openRouterProvider.is_active : true;
 
@@ -334,7 +334,7 @@ export class AiService {
 
         if (signal?.aborted) return;
         const tokenStats = estimateTokens(lastUserTokenSource || lastUserMsg, accumulatedText);
-        callbacks.onDone(accumulatedText, tokenStats.promptTokens, tokenStats.completionTokens);
+        await callbacks.onDone(accumulatedText, tokenStats.promptTokens, tokenStats.completionTokens);
         return;
       } catch (err: any) {
         if (signal?.aborted || err?.name === 'AbortError') return;
@@ -409,7 +409,7 @@ export class AiService {
 
     if (signal?.aborted) return;
     const tokenStats = estimateTokens(lastUserTokenSource || lastUserMsg, accumulatedText);
-    callbacks.onDone(accumulatedText, tokenStats.promptTokens, tokenStats.completionTokens);
+    await callbacks.onDone(accumulatedText, tokenStats.promptTokens, tokenStats.completionTokens);
   }
 
   public static splitIntoNaturalChunks(text: string): string[] {

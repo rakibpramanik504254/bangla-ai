@@ -50,41 +50,58 @@ export interface AuthenticatedRequest extends Request {
   user?: User;
 }
 
-export function authenticate(req: AuthenticatedRequest, res: Response, next: NextFunction): void {
-  const authHeader = req.headers.authorization;
-  if (!authHeader || !authHeader.startsWith('Bearer ')) {
-    res.status(401).json({ error: 'Authentication required. Please sign in.' });
-    return;
-  }
+export async function authenticate(req: AuthenticatedRequest, res: Response, next: NextFunction): Promise<void> {
+  try {
+    const authHeader = req.headers.authorization;
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+      res.status(401).json({ error: 'Authentication required. Please sign in.' });
+      return;
+    }
 
-  const token = authHeader.substring(7);
-  const payload = verifyToken(token);
-  if (!payload) {
-    res.status(401).json({ error: 'Expired or invalid session. Please sign in again.' });
-    return;
-  }
+    const token = authHeader.substring(7);
+    const payload = verifyToken(token);
+    if (!payload) {
+      res.status(401).json({ error: 'Expired or invalid session. Please sign in again.' });
+      return;
+    }
 
-  const user = db.getUserById(payload.userId);
-  if (!user) {
-    res.status(401).json({ error: 'User account not found.' });
-    return;
-  }
+    const user = await db.getUserById(payload.userId);
+    if (!user) {
+      res.status(401).json({ error: 'User account not found.' });
+      return;
+    }
 
-  if (user.status === 'suspended') {
-    res.status(403).json({ error: 'Your account has been suspended. Please contact support.' });
-    return;
-  }
+    if (user.status === 'suspended') {
+      res.status(403).json({ error: 'Your account has been suspended. Please contact support.' });
+      return;
+    }
 
-  req.user = user;
-  next();
+    req.user = user;
+    next();
+  } catch (err) {
+    next(err);
+  }
 }
 
-export function requireAdmin(req: AuthenticatedRequest, res: Response, next: NextFunction): void {
-  authenticate(req, res, () => {
+export async function requireAdmin(req: AuthenticatedRequest, res: Response, next: NextFunction): Promise<void> {
+  try {
+    let passedAuth = false;
+    await authenticate(req, res, (err?: unknown) => {
+      if (err) {
+        next(err);
+        return;
+      }
+      passedAuth = true;
+    });
+    if (!passedAuth || res.headersSent) {
+      return;
+    }
     if (req.user?.role !== 'admin') {
       res.status(403).json({ error: 'Forbidden: Administrator privileges required.' });
       return;
     }
     next();
-  });
+  } catch (err) {
+    next(err);
+  }
 }

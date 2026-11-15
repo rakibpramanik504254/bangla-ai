@@ -15,6 +15,7 @@ import {
   Wallet,
   X,
 } from 'lucide-react';
+import { useAuth } from '../../context/AuthContext.tsx';
 import { formatBDT } from '../../utils/billing.ts';
 import {
   FinanceEntryCategory,
@@ -57,11 +58,12 @@ function downloadTextFile(filename: string, content: string, mimeType: string) {
 }
 
 export const MoneyManagementTab: React.FC = () => {
+  const { token } = useAuth();
   const todayISO = useMemo(() => formatLocalDateISO(new Date()), []);
   const yesterdayISO = useMemo(() => getYesterdayISO(todayISO), [todayISO]);
   const currentMonthKey = useMemo(() => getMonthKey(todayISO), [todayISO]);
 
-  // Isolated standalone ledger state backed strictly by localStorage
+  // Isolated standalone ledger state synced to PostgreSQL (with localStorage cache)
   const [entries, setEntries] = useState<FinanceLedgerEntry[]>(() => loadFinanceLedger());
   const [statusMessage, setStatusMessage] = useState<{ kind: 'success' | 'error'; text: string } | null>(null);
 
@@ -104,10 +106,79 @@ export const MoneyManagementTab: React.FC = () => {
   const importInputRef = useRef<HTMLInputElement | null>(null);
   const saleAmountInputRef = useRef<HTMLInputElement | null>(null);
 
-  // Persist every ledger change cleanly to isolated localStorage key
+  // Hydrate ledger from PostgreSQL on mount & auto-migrate any existing local-only entries once
+  useEffect(() => {
+    if (!token) return;
+    let cancelled = false;
+
+    const syncFromServer = async () => {
+      try {
+        const res = await fetch('/api/admin/finance-ledger', {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+        if (!res.ok || cancelled) return;
+        const serverEntries: FinanceLedgerEntry[] = await res.json();
+        if (cancelled) return;
+
+        if (Array.isArray(serverEntries) && serverEntries.length > 0) {
+          setEntries(serverEntries);
+        } else {
+          const localCached = loadFinanceLedger();
+          if (localCached.length > 0) {
+            const importRes = await fetch('/api/admin/finance-ledger/bulk-import', {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+                Authorization: `Bearer ${token}`
+              },
+              body: JSON.stringify({ entries: localCached })
+            });
+            if (importRes.ok && !cancelled) {
+              const importData = await importRes.json();
+              if (Array.isArray(importData.entries)) {
+                setEntries(importData.entries);
+              }
+            }
+          }
+        }
+      } catch (err) {
+        console.error('Failed to load finance ledger from server:', err);
+      }
+    };
+
+    syncFromServer();
+    return () => {
+      cancelled = true;
+    };
+  }, [token]);
+
+  // Persist every ledger change cleanly to isolated localStorage cache
   useEffect(() => {
     saveFinanceLedger(entries);
   }, [entries]);
+
+  const syncCreateOrUpdateEntry = async (entry: FinanceLedgerEntry, isNew: boolean) => {
+    if (!token) return;
+    try {
+      const res = await fetch(
+        isNew ? '/api/admin/finance-ledger' : `/api/admin/finance-ledger/${encodeURIComponent(entry.id)}`,
+        {
+          method: isNew ? 'POST' : 'PUT',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${token}`
+          },
+          body: JSON.stringify(entry)
+        }
+      );
+      if (!res.ok) {
+        const errData = await res.json().catch(() => ({}));
+        showToast('error', errData.error || 'Failed to sync entry with database.');
+      }
+    } catch {
+      showToast('error', 'Network error syncing entry with database.');
+    }
+  };
 
   const activeEntries = useMemo(() => getActiveEntries(entries), [entries]);
   const trashedEntries = useMemo(() => getTrashedEntries(entries), [entries]);
@@ -177,6 +248,7 @@ export const MoneyManagementTab: React.FC = () => {
       setAdAmount('');
       setAdPlatformNote('Meta Ads');
       showToast('success', `Added ${formatBDT(created.amountBDT)} ad spend for ${formatDisplayDate(created.date)}.`);
+      void syncCreateOrUpdateEntry(created, true);
     } catch (err: any) {
       setAdFormError(err?.message || 'Unable to add ad cost entry.');
     }
@@ -219,6 +291,7 @@ export const MoneyManagementTab: React.FC = () => {
         setSaleAmount('');
       }
       showToast('success', `Added ${formatBDT(created.amountBDT)} sale entry for ${formatDisplayDate(created.date)}.`);
+      void syncCreateOrUpdateEntry(created, true);
     } catch (err: any) {
       setSaleFormError(err?.message || 'Unable to add sale entry.');
     }
@@ -270,6 +343,7 @@ export const MoneyManagementTab: React.FC = () => {
       setEntries((prev) => prev.map((item) => (item.id === updated.id ? updated : item)));
       setEditingEntry(null);
       showToast('success', `Updated entry for ${formatDisplayDate(updated.date)}.`);
+      void syncCreateOrUpdateEntry(updated, false);
     } catch (err: any) {
       setEditError(err?.message || 'Could not update entry.');
     }
@@ -278,29 +352,41 @@ export const MoneyManagementTab: React.FC = () => {
   // --- Handlers: Trash / Restore / Delete Forever / Fresh Start ---
   const handleMoveToTrash = (entry: FinanceLedgerEntry) => {
     const nowIso = new Date().toISOString();
-    setEntries((prev) =>
-      prev.map((item) => (item.id === entry.id ? { ...item, deletedAt: nowIso, updatedAt: nowIso } : item))
-    );
+    const updated: FinanceLedgerEntry = { ...entry, deletedAt: nowIso, updatedAt: nowIso };
+    setEntries((prev) => prev.map((item) => (item.id === entry.id ? updated : item)));
     showToast('success', `Moved "${entry.title}" (${formatBDT(entry.amountBDT)}) to Trash.`);
+    void syncCreateOrUpdateEntry(updated, false);
   };
 
   const handleRestoreEntry = (entry: FinanceLedgerEntry) => {
     const nowIso = new Date().toISOString();
-    setEntries((prev) =>
-      prev.map((item) => (item.id === entry.id ? { ...item, deletedAt: null, updatedAt: nowIso } : item))
-    );
+    const updated: FinanceLedgerEntry = { ...entry, deletedAt: null, updatedAt: nowIso };
+    setEntries((prev) => prev.map((item) => (item.id === entry.id ? updated : item)));
     showToast('success', `Restored "${entry.title}" (${formatBDT(entry.amountBDT)}) to Active Ledger.`);
+    void syncCreateOrUpdateEntry(updated, false);
   };
 
   const handlePermanentDelete = (entry: FinanceLedgerEntry) => {
     setEntries((prev) => prev.filter((item) => item.id !== entry.id));
     showToast('success', `Permanently deleted "${entry.title}".`);
+    if (token) {
+      void fetch(`/api/admin/finance-ledger/${encodeURIComponent(entry.id)}`, {
+        method: 'DELETE',
+        headers: { Authorization: `Bearer ${token}` }
+      }).catch(() => {});
+    }
   };
 
   const handleConfirmEmptyTrash = () => {
     setEntries((prev) => prev.filter((item) => item.deletedAt === null));
     setConfirmEmptyTrashOpen(false);
     showToast('success', 'Trash emptied.');
+    if (token) {
+      void fetch('/api/admin/finance-ledger/empty-trash', {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${token}` }
+      }).catch(() => {});
+    }
   };
 
   const handleConfirmFreshStart = () => {
@@ -312,6 +398,12 @@ export const MoneyManagementTab: React.FC = () => {
     setDateFilter('');
     setSearchQuery('');
     showToast('success', 'All manual income and ad cost records have been cleared for a fresh start.');
+    if (token) {
+      void fetch('/api/admin/finance-ledger/reset', {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${token}` }
+      }).catch(() => {});
+    }
   };
 
   // --- Handlers: CSV Export & JSON Backup Export / Import ---
@@ -354,6 +446,22 @@ export const MoneyManagementTab: React.FC = () => {
         }
         return Array.from(existingMap.values());
       });
+      if (token && imported.length > 0) {
+        const res = await fetch('/api/admin/finance-ledger/bulk-import', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${token}`
+          },
+          body: JSON.stringify({ entries: imported })
+        });
+        if (res.ok) {
+          const data = await res.json();
+          if (Array.isArray(data.entries)) {
+            setEntries(data.entries);
+          }
+        }
+      }
       showToast('success', `Imported ${imported.length} finance ${imported.length === 1 ? 'entry' : 'entries'} from JSON backup.`);
     } catch (err: any) {
       showToast('error', err?.message || 'Failed to import JSON backup.');
@@ -383,7 +491,7 @@ export const MoneyManagementTab: React.FC = () => {
               Money Management
             </h2>
             <p className="text-xs text-[#444746] dark:text-[#9aa0a6] mt-0.5 leading-relaxed">
-              Standalone manual finance &amp; Meta ad spend tracker · Saved locally in this browser
+              Standalone manual finance &amp; Meta ad spend tracker · Persisted in PostgreSQL database
             </p>
           </div>
         </div>
