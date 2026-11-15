@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useLayoutEffect, useCallback } from 'react';
 import { AuthProvider, useAuth } from './context/AuthContext.tsx';
 import { Navbar } from './components/Navbar.tsx';
 import { Footer } from './components/Footer.tsx';
@@ -25,10 +25,14 @@ import {
   getPostLoginDestination,
   resolveViewFromPathname,
 } from './utils/navigation.ts';
+import { resetScrollPosition } from './utils/scroll.ts';
 
 function MainApp() {
   const [currentView, setCurrentView] = useState<AppView>(() =>
     resolveViewFromPathname(typeof window !== 'undefined' ? window.location.pathname : '/')
+  );
+  const [currentPathname, setCurrentPathname] = useState<string>(() =>
+    typeof window !== 'undefined' ? window.location.pathname : '/'
   );
 
   const navigateToView = useCallback((view: AppView) => {
@@ -38,16 +42,26 @@ function MainApp() {
       if (window.location.pathname !== targetPath) {
         window.history.pushState({ view }, '', targetPath);
       }
+      setCurrentPathname(window.location.pathname);
     }
+    resetScrollPosition();
   }, []);
 
   useEffect(() => {
     const handlePopState = () => {
       setCurrentView(resolveViewFromPathname(window.location.pathname));
+      setCurrentPathname(window.location.pathname);
     };
     window.addEventListener('popstate', handlePopState);
     return () => window.removeEventListener('popstate', handlePopState);
   }, []);
+
+  // Global ScrollToTop on any URL path or view state change
+  useLayoutEffect(() => {
+    resetScrollPosition();
+    const rafId = window.requestAnimationFrame(() => resetScrollPosition());
+    return () => window.cancelAnimationFrame(rafId);
+  }, [currentView, currentPathname]);
   const {
     user,
     loading,

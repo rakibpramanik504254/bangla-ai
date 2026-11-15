@@ -4,6 +4,7 @@ import { BrandLogo } from './common/BrandLogo.tsx';
 import { useAuth } from '../context/AuthContext.tsx';
 import { useAppInstall } from '../context/AppInstallContext.tsx';
 import { AppView } from '../utils/navigation.ts';
+import { resetScrollPosition } from '../utils/scroll.ts';
 
 interface FooterProps {
   setCurrentView: (view: AppView) => void;
@@ -13,8 +14,8 @@ export const Footer: React.FC<FooterProps> = ({ setCurrentView }) => {
   const { user, openAuthModal, openAccountModal } = useAuth();
   const { isInstalled, triggerInstall } = useAppInstall();
   const handleNav = (view: AppView) => {
+    resetScrollPosition();
     setCurrentView(view);
-    window.scrollTo({ top: 0, behavior: 'smooth' });
   };
   return (
     <footer className="border-t border-black/[0.08] dark:border-white/[0.08] bg-[#f0f4f9]/45 dark:bg-[#131314] text-[#444746] dark:text-[#9aa0a6] text-xs transition-colors">
