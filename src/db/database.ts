@@ -9,6 +9,12 @@ import {
   resolveEnvApiKeyForProvider,
   resolvePostgresPoolConfig,
 } from './postgresConfig.ts';
+import { inferDefaultBrandIcon, normalizeBrandIconKey } from '../utils/modelBrandIcons.ts';
+import {
+  DEFAULT_OG_IMAGE_PATH,
+  DEFAULT_SEO_DESCRIPTION,
+  DEFAULT_SEO_TITLE
+} from '../utils/seo.ts';
 
 export interface User {
   id: string;
@@ -105,6 +111,12 @@ export interface AiModel {
   model_name: string;
   display_name: string;
   description_en: string;
+  custom_name?: string | null;
+  default_name?: string;
+  custom_icon?: string | null;
+  default_icon?: string;
+  custom_description?: string | null;
+  default_description?: string;
   badge: 'super_fast' | 'reasoning' | 'coding' | 'balanced' | 'max' | 'high' | 'xhigh' | 'free';
   is_enabled: boolean;
   is_default: boolean;
@@ -142,6 +154,10 @@ export interface SystemSettings {
   facebook_pixel_access_token?: string;
   facebook_pixel_test_code?: string;
   facebook_page_url?: string;
+  seo_title?: string;
+  seo_description?: string;
+  seo_og_image_url?: string;
+  seo_og_image_data?: string;
 }
 
 interface ProviderKeySettingEntry {
@@ -219,7 +235,10 @@ function createDefaultSystemSettings(): SystemSettings {
     bkash_number: '01812345678',
     nagad_number: '01712345678',
     rocket_number: '01912345678',
-    announcement: 'Welcome to Bangla AI — The Premier Unified Multi-Model AI Hub.'
+    announcement: 'Welcome to Bangla AI — The Premier Unified Multi-Model AI Hub.',
+    seo_title: DEFAULT_SEO_TITLE,
+    seo_description: DEFAULT_SEO_DESCRIPTION,
+    seo_og_image_url: DEFAULT_OG_IMAGE_PATH
   };
 }
 
@@ -417,7 +436,7 @@ function createInitialSeedData(env: Record<string, string | undefined> = process
     }
   ];
 
-  const ai_models: AiModel[] = [
+  const rawModels: AiModel[] = [
     {
       id: 'mod_gemini_4_carbon',
       provider_id: 'prov_gemini',
@@ -560,6 +579,16 @@ function createInitialSeedData(env: Record<string, string | undefined> = process
     },
     ...createSeededFreeModels(now)
   ];
+
+  const ai_models: AiModel[] = rawModels.map(m => ({
+    ...m,
+    custom_name: m.custom_name ?? null,
+    default_name: m.default_name || m.display_name,
+    custom_icon: m.custom_icon ?? null,
+    default_icon: m.default_icon || inferDefaultBrandIcon(m),
+    custom_description: m.custom_description ?? null,
+    default_description: m.default_description || m.description_en,
+  }));
 
   const demoChatId = 'chat_demo_001';
   const chats: Chat[] = [
@@ -777,12 +806,32 @@ function mapProviderRow(
 }
 
 function mapModelRow(row: any): AiModel {
+  const defaultName = String(row.default_name || row.display_name || '');
+  const customName = row.custom_name ? String(row.custom_name) : null;
+  const defaultDesc = String(row.default_description || row.description_en || '');
+  const customDesc = row.custom_description ? String(row.custom_description) : null;
+  const inferredIcon = inferDefaultBrandIcon({
+    id: String(row.id),
+    provider_id: String(row.provider_id),
+    model_name: String(row.model_name),
+    openrouter_model_id: row.openrouter_model_id ? String(row.openrouter_model_id) : undefined,
+    default_name: defaultName
+  });
+  const defaultIcon = normalizeBrandIconKey(row.default_icon) || inferredIcon;
+  const customIcon = normalizeBrandIconKey(row.custom_icon);
+
   return {
     id: String(row.id),
     provider_id: String(row.provider_id),
     model_name: String(row.model_name),
-    display_name: String(row.display_name),
-    description_en: String(row.description_en || ''),
+    display_name: (customName && customName.trim()) || defaultName || String(row.display_name || ''),
+    description_en: (customDesc && customDesc.trim()) || defaultDesc || String(row.description_en || ''),
+    custom_name: customName,
+    default_name: defaultName,
+    custom_icon: customIcon,
+    default_icon: defaultIcon,
+    custom_description: customDesc,
+    default_description: defaultDesc,
     badge: (row.badge || 'balanced') as AiModel['badge'],
     is_enabled: Boolean(row.is_enabled),
     is_default: Boolean(row.is_default),
@@ -988,17 +1037,72 @@ export class Database {
     for (const mod of seed.ai_models) {
       await this.pool.query(
         `INSERT INTO ai_models (
-          id, provider_id, model_name, display_name, description_en, badge,
-          is_enabled, is_default, is_free, context_window, max_output_tokens,
+          id, provider_id, model_name, display_name, description_en,
+          custom_name, default_name, custom_icon, default_icon, custom_description, default_description,
+          badge, is_enabled, is_default, is_free, context_window, max_output_tokens,
           sort_order, openrouter_model_id, created_at
-        ) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14)
+        ) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20)
         ON CONFLICT (id) DO NOTHING`,
         [
-          mod.id, mod.provider_id, mod.model_name, mod.display_name, mod.description_en, mod.badge,
-          mod.is_enabled, mod.is_default, Boolean(mod.is_free), mod.context_window, mod.max_output_tokens,
-          mod.sort_order, mod.openrouter_model_id || null, mod.created_at
+          mod.id,
+          mod.provider_id,
+          mod.model_name,
+          mod.display_name,
+          mod.description_en,
+          mod.custom_name ?? null,
+          mod.default_name || mod.display_name,
+          mod.custom_icon ?? null,
+          mod.default_icon || inferDefaultBrandIcon(mod),
+          mod.custom_description ?? null,
+          mod.default_description || mod.description_en,
+          mod.badge,
+          mod.is_enabled,
+          mod.is_default,
+          Boolean(mod.is_free),
+          mod.context_window,
+          mod.max_output_tokens,
+          mod.sort_order,
+          mod.openrouter_model_id || null,
+          mod.created_at
         ]
       );
+    }
+
+    // 3b. Safely backfill default_name / default_icon / default_description on pre-existing ai_models rows
+    const unmigratedRes = await this.pool.query(
+      `SELECT * FROM ai_models WHERE default_name = '' OR default_name IS NULL`
+    );
+    if (unmigratedRes.rows.length > 0) {
+      const seedById = new Map(seed.ai_models.map(m => [m.id, m]));
+      for (const row of unmigratedRes.rows) {
+        const seedMatch = seedById.get(String(row.id));
+        const defName = seedMatch?.default_name || String(row.display_name || '');
+        const defDesc = seedMatch?.default_description || String(row.description_en || '');
+        const defIcon = seedMatch?.default_icon || inferDefaultBrandIcon({
+          id: String(row.id),
+          provider_id: String(row.provider_id),
+          model_name: String(row.model_name),
+          openrouter_model_id: row.openrouter_model_id ? String(row.openrouter_model_id) : undefined,
+          default_name: defName
+        });
+        const existingName = String(row.display_name || '').trim();
+        const existingDesc = String(row.description_en || '').trim();
+        const migratedCustomName =
+          row.custom_name ?? (seedMatch && existingName && existingName !== defName ? existingName : null);
+        const migratedCustomDesc =
+          row.custom_description ?? (seedMatch && existingDesc && existingDesc !== defDesc ? existingDesc : null);
+
+        await this.pool.query(
+          `UPDATE ai_models
+           SET default_name = $1,
+               default_description = $2,
+               default_icon = $3,
+               custom_name = $4,
+               custom_description = $5
+           WHERE id = $6`,
+          [defName, defDesc, defIcon, migratedCustomName, migratedCustomDesc, row.id]
+        );
+      }
     }
 
     // 4. Idempotently ensure system_settings and provider_api_keys exist in admin_settings
@@ -2191,16 +2295,72 @@ export class Database {
 
   public async updateModel(id: string, updates: Partial<AiModel>): Promise<AiModel | undefined> {
     await this.ensureReady();
+
+    const applyNormalization = (existing: AiModel): AiModel => {
+      const defaultName = (existing.default_name || existing.display_name || '').trim();
+      const defaultDesc = (existing.default_description ?? existing.description_en ?? '').trim();
+      const defaultIcon = normalizeBrandIconKey(existing.default_icon) || inferDefaultBrandIcon(existing);
+
+      let nextCustomName = existing.custom_name ?? null;
+      if (updates.custom_name !== undefined) {
+        const raw = typeof updates.custom_name === 'string' ? updates.custom_name.trim() : '';
+        nextCustomName = raw && raw !== defaultName ? raw : null;
+      } else if (updates.display_name !== undefined) {
+        const raw = typeof updates.display_name === 'string' ? updates.display_name.trim() : '';
+        nextCustomName = raw && raw !== defaultName ? raw : null;
+      }
+
+      let nextCustomDesc = existing.custom_description ?? null;
+      if (updates.custom_description !== undefined) {
+        const raw = typeof updates.custom_description === 'string' ? updates.custom_description.trim() : '';
+        nextCustomDesc = raw && raw !== defaultDesc ? raw : null;
+      } else if (updates.description_en !== undefined) {
+        const raw = typeof updates.description_en === 'string' ? updates.description_en.trim() : '';
+        nextCustomDesc = raw && raw !== defaultDesc ? raw : null;
+      }
+
+      let nextCustomIcon = normalizeBrandIconKey(existing.custom_icon);
+      if (updates.custom_icon !== undefined) {
+        if (updates.custom_icon === null || updates.custom_icon === '') {
+          nextCustomIcon = null;
+        } else {
+          const parsed = normalizeBrandIconKey(updates.custom_icon);
+          nextCustomIcon = parsed && parsed !== defaultIcon ? parsed : null;
+        }
+      }
+
+      const effectiveName = nextCustomName || defaultName;
+      const effectiveDesc = nextCustomDesc || defaultDesc;
+
+      return {
+        ...existing,
+        ...(updates.is_enabled !== undefined && { is_enabled: updates.is_enabled }),
+        ...(updates.is_default !== undefined && { is_default: updates.is_default }),
+        ...(updates.badge !== undefined && { badge: updates.badge }),
+        ...(updates.sort_order !== undefined && { sort_order: updates.sort_order }),
+        ...(updates.openrouter_model_id !== undefined && { openrouter_model_id: updates.openrouter_model_id }),
+        default_name: defaultName,
+        default_description: defaultDesc,
+        default_icon: defaultIcon,
+        custom_name: nextCustomName,
+        custom_description: nextCustomDesc,
+        custom_icon: nextCustomIcon,
+        display_name: effectiveName,
+        description_en: effectiveDesc
+      };
+    };
+
     if (!this.pool) {
-      const model = this.memory!.ai_models.find(m => m.id === id);
-      if (!model) return undefined;
-      Object.assign(model, updates);
-      return model;
+      const idx = this.memory!.ai_models.findIndex(m => m.id === id);
+      if (idx === -1) return undefined;
+      const updated = applyNormalization(this.memory!.ai_models[idx]);
+      this.memory!.ai_models[idx] = updated;
+      return updated;
     }
 
     const existing = await this.getModelById(id);
     if (!existing) return undefined;
-    const merged = { ...existing, ...updates };
+    const merged = applyNormalization(existing);
 
     const res = await this.pool.query(
       `UPDATE ai_models
@@ -2210,8 +2370,14 @@ export class Database {
            display_name = $4,
            openrouter_model_id = $5,
            description_en = $6,
-           sort_order = $7
-       WHERE id = $8
+           sort_order = $7,
+           custom_name = $8,
+           custom_description = $9,
+           custom_icon = $10,
+           default_name = $11,
+           default_description = $12,
+           default_icon = $13
+       WHERE id = $14
        RETURNING *`,
       [
         merged.is_enabled,
@@ -2221,10 +2387,83 @@ export class Database {
         merged.openrouter_model_id || null,
         merged.description_en,
         merged.sort_order,
+        merged.custom_name ?? null,
+        merged.custom_description ?? null,
+        merged.custom_icon ?? null,
+        merged.default_name || merged.display_name,
+        merged.default_description || merged.description_en,
+        merged.default_icon || inferDefaultBrandIcon(merged),
         id
       ]
     );
     return res.rows[0] ? mapModelRow(res.rows[0]) : undefined;
+  }
+
+  public async resetModelCustomizations(id: string): Promise<AiModel | undefined> {
+    await this.ensureReady();
+    if (!this.pool) {
+      const model = this.memory!.ai_models.find(m => m.id === id);
+      if (!model) return undefined;
+      const defaultName = (model.default_name || model.display_name || '').trim();
+      const defaultDesc = (model.default_description || model.description_en || '').trim();
+      const defaultIcon = normalizeBrandIconKey(model.default_icon) || inferDefaultBrandIcon(model);
+      model.custom_name = null;
+      model.custom_description = null;
+      model.custom_icon = null;
+      model.default_name = defaultName;
+      model.default_description = defaultDesc;
+      model.default_icon = defaultIcon;
+      model.display_name = defaultName;
+      model.description_en = defaultDesc;
+      return model;
+    }
+
+    const res = await this.pool.query(
+      `UPDATE ai_models
+       SET custom_name = NULL,
+           custom_description = NULL,
+           custom_icon = NULL,
+           display_name = CASE WHEN default_name <> '' THEN default_name ELSE display_name END,
+           description_en = CASE WHEN default_description <> '' THEN default_description ELSE description_en END
+       WHERE id = $1
+       RETURNING *`,
+      [id]
+    );
+    return res.rows[0] ? mapModelRow(res.rows[0]) : undefined;
+  }
+
+  public async resetAllModelCustomizations(): Promise<number> {
+    await this.ensureReady();
+    if (!this.pool) {
+      let count = 0;
+      for (const model of this.memory!.ai_models) {
+        const defaultName = (model.default_name || model.display_name || '').trim();
+        const defaultDesc = (model.default_description || model.description_en || '').trim();
+        const defaultIcon = normalizeBrandIconKey(model.default_icon) || inferDefaultBrandIcon(model);
+        const hadCustom = Boolean(model.custom_name || model.custom_description || model.custom_icon);
+        model.custom_name = null;
+        model.custom_description = null;
+        model.custom_icon = null;
+        model.default_name = defaultName;
+        model.default_description = defaultDesc;
+        model.default_icon = defaultIcon;
+        model.display_name = defaultName;
+        model.description_en = defaultDesc;
+        if (hadCustom) count++;
+      }
+      return count;
+    }
+
+    const res = await this.pool.query(
+      `UPDATE ai_models
+       SET custom_name = NULL,
+           custom_description = NULL,
+           custom_icon = NULL,
+           display_name = CASE WHEN default_name <> '' THEN default_name ELSE display_name END,
+           description_en = CASE WHEN default_description <> '' THEN default_description ELSE description_en END
+       WHERE custom_name IS NOT NULL OR custom_description IS NOT NULL OR custom_icon IS NOT NULL`
+    );
+    return res.rowCount ?? 0;
   }
 
   public async addModels(newModels: AiModel[]): Promise<number> {
@@ -2238,16 +2477,21 @@ export class Database {
 
     let inserted = 0;
     for (const mod of newModels) {
+      const defName = mod.default_name || mod.display_name;
+      const defDesc = mod.default_description || mod.description_en;
+      const defIcon = mod.default_icon || inferDefaultBrandIcon(mod);
       const res = await this.pool.query(
         `INSERT INTO ai_models (
-          id, provider_id, model_name, display_name, description_en, badge,
-          is_enabled, is_default, is_free, context_window, max_output_tokens,
+          id, provider_id, model_name, display_name, description_en,
+          custom_name, default_name, custom_icon, default_icon, custom_description, default_description,
+          badge, is_enabled, is_default, is_free, context_window, max_output_tokens,
           sort_order, openrouter_model_id, created_at
-        ) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14)
+        ) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20)
         ON CONFLICT (id) DO NOTHING`,
         [
-          mod.id, mod.provider_id, mod.model_name, mod.display_name, mod.description_en, mod.badge,
-          mod.is_enabled, mod.is_default, Boolean(mod.is_free), mod.context_window, mod.max_output_tokens,
+          mod.id, mod.provider_id, mod.model_name, mod.display_name, mod.description_en,
+          mod.custom_name ?? null, defName, mod.custom_icon ?? null, defIcon, mod.custom_description ?? null, defDesc,
+          mod.badge, mod.is_enabled, mod.is_default, Boolean(mod.is_free), mod.context_window, mod.max_output_tokens,
           mod.sort_order, mod.openrouter_model_id || null, mod.created_at
         ]
       );

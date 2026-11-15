@@ -105,9 +105,22 @@ export function sanitizeWorkspaceDescription(description: string): string {
  * Admin endpoints (`/api/admin/models`) continue returning the unsanitized `AiModel` records.
  */
 export function sanitizeModelForWorkspace(model: AiModel): AiModel {
-  const cleanName = sanitizeWorkspaceModelName(model.display_name);
-  const cleanDescription = sanitizeWorkspaceDescription(model.description_en);
-  const cleanBadge = resolveWorkspaceBadge(model);
+  const effectiveName =
+    (typeof model.custom_name === 'string' && model.custom_name.trim()) ||
+    model.default_name ||
+    model.display_name;
+  const effectiveDescription =
+    (typeof model.custom_description === 'string' && model.custom_description.trim()) ||
+    model.default_description ||
+    model.description_en;
+
+  const cleanName = sanitizeWorkspaceModelName(effectiveName);
+  const cleanDescription = sanitizeWorkspaceDescription(effectiveDescription);
+  const cleanBadge = resolveWorkspaceBadge({
+    badge: model.badge,
+    model_name: model.model_name,
+    display_name: effectiveName
+  });
   const cleanModelSlug =
     model.model_name === 'openrouter/free'
       ? 'bangla-ai/smart-router'
@@ -120,6 +133,8 @@ export function sanitizeModelForWorkspace(model: AiModel): AiModel {
     model_name: cleanModelSlug,
     display_name: cleanName,
     description_en: cleanDescription,
+    custom_name: model.custom_name ? cleanName : model.custom_name ?? null,
+    custom_description: model.custom_description ? cleanDescription : model.custom_description ?? null,
     badge: cleanBadge
   };
 }

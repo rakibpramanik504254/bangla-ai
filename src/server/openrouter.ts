@@ -234,7 +234,9 @@ export function formatMessageContentForOpenRouter(
   const safeAttachments = attachments || [];
   const textBlock = buildTextAttachmentPromptBlock(safeAttachments);
   const combinedText = [content.trim(), textBlock].filter(Boolean).join('\n\n');
-  const imageAttachments = safeAttachments.filter(a => a.kind === 'image' && Boolean(a.dataUrl));
+  const imageAttachments = safeAttachments.filter(
+    a => a.kind === 'image' && !a.isGeneratedImage && Boolean(a.dataUrl)
+  );
 
   if (imageAttachments.length === 0) {
     return combinedText;

@@ -6,17 +6,35 @@ import dotenv from 'dotenv';
 import { db, verifyPassword, hashPassword } from './src/db/database.ts';
 import { authenticate, requireAdmin, generateToken, AuthenticatedRequest } from './src/server/auth.ts';
 import { AiService } from './src/server/ai-service.ts';
+import { generateWorkspaceImage } from './src/server/image-service.ts';
 import { buildNewFreeModelsFromOpenRouterApi } from './src/server/openrouter-free-models.ts';
 import { sanitizeModelForWorkspace } from './src/server/model-sanitizer.ts';
 import { normalizeApiKey, buildProviderUpdatePayload } from './src/server/openrouter.ts';
 import { isSubscriptionActive, calculateUsageStats, PLANS } from './src/utils/billing.ts';
 import { sanitizeIncomingAttachments } from './src/utils/chatAttachments.ts';
+import {
+  IMAGE_GENERATION_COMPLETION_TOKENS,
+  IMAGE_GENERATION_PROMPT_TOKENS,
+  IMAGE_GENERATION_TOTAL_TOKENS,
+  buildImageFilename,
+  isAllowedImageProxyUrl
+} from './src/utils/imageGeneration.ts';
+import type { ChatAttachment } from './src/types/index.ts';
 import { resolveUserAvatarUrl } from './src/utils/avatar.ts';
 import {
   type FinanceLedgerEntry,
   isValidISODate,
   getDefaultTitleForCategory
 } from './src/utils/financeLedger.ts';
+import { isValidBrandIconKey } from './src/utils/modelBrandIcons.ts';
+import {
+  DEFAULT_OG_IMAGE_PATH,
+  DEFAULT_SEO_DESCRIPTION,
+  DEFAULT_SEO_TITLE,
+  injectSeoMetaIntoHtml,
+  parseDataUrlImage,
+  resolveSeoMetadata
+} from './src/utils/seo.ts';
 
 dotenv.config();
 
@@ -285,6 +303,31 @@ app.get('/api/settings/public', async (_req: Request, res: Response) => {
     });
   } catch (err: any) {
     res.status(500).json({ error: 'Failed to load public settings: ' + err.message });
+  }
+});
+
+app.get('/api/seo/og-banner', async (_req: Request, res: Response) => {
+  try {
+    const settings = await db.getSettings();
+    const parsed = settings.seo_og_image_data ? parseDataUrlImage(settings.seo_og_image_data) : null;
+    if (parsed) {
+      res.setHeader('Content-Type', parsed.mimeType);
+      res.setHeader('Cache-Control', 'public, max-age=300');
+      res.send(parsed.buffer);
+      return;
+    }
+    const distBanner = path.resolve(process.cwd(), 'dist', 'og-banner.png');
+    const publicBanner = path.resolve(process.cwd(), 'public', 'og-banner.png');
+    const bannerPath = fs.existsSync(distBanner) ? distBanner : publicBanner;
+    if (fs.existsSync(bannerPath)) {
+      res.setHeader('Content-Type', 'image/png');
+      res.setHeader('Cache-Control', 'public, max-age=3600');
+      res.sendFile(bannerPath);
+      return;
+    }
+    res.status(404).json({ error: 'OG banner image not found.' });
+  } catch (err: any) {
+    res.status(500).json({ error: 'Failed to serve OG banner: ' + err.message });
   }
 });
 
@@ -572,6 +615,166 @@ app.post('/api/chat/stream', authenticate, async (req: AuthenticatedRequest, res
   }
 });
 
+// AI Image Generation Endpoint (Pollinations.ai primary + optional Gemini/OpenRouter fallback)
+app.post('/api/generate-image', authenticate, async (req: AuthenticatedRequest, res: Response) => {
+  try {
+    const user = req.user!;
+    const {
+      chatId,
+      prompt,
+      aspectRatio,
+      modelId,
+      seed,
+      preferredProvider,
+      skipUserMessage
+    } = req.body || {};
+
+    const cleanPrompt = typeof prompt === 'string' ? prompt.trim() : '';
+    if (!cleanPrompt) {
+      res.status(400).json({ error: 'Please describe the image you want to create.' });
+      return;
+    }
+    if (cleanPrompt.length > 1200) {
+      res.status(400).json({ error: 'Image prompt must be 1,200 characters or fewer.' });
+      return;
+    }
+
+    const accessCheck = await AiService.validateAccess(user);
+    if (!accessCheck.allowed) {
+      res.status(accessCheck.statusCode || 403).json({ error: accessCheck.reason });
+      return;
+    }
+
+    const enabledModels = await db.listModels(true);
+    const fallbackModelId = enabledModels.find(m => m.is_default)?.id || enabledModels[0]?.id || 'mod_gemini_2_5_flash';
+
+    let targetChat = chatId ? await db.getChat(chatId, user.id) : null;
+    if (!targetChat) {
+      const titleBase = cleanPrompt.slice(0, 32) + (cleanPrompt.length > 32 ? '...' : '');
+      targetChat = await db.createChat(user.id, titleBase, modelId || fallbackModelId);
+    }
+
+    const resolvedModelId = modelId || targetChat.model_id || fallbackModelId;
+
+    const generated = await generateWorkspaceImage({
+      prompt: cleanPrompt,
+      aspectRatio,
+      seed: typeof seed === 'number' ? seed : undefined,
+      preferredProvider
+    });
+
+    const userMessage = skipUserMessage
+      ? null
+      : await db.addMessage(targetChat.id, 'user', cleanPrompt, resolvedModelId, 0);
+
+    const attachment: ChatAttachment = {
+      id: `img_${crypto.randomUUID().slice(0, 8)}`,
+      name: buildImageFilename(generated.enhancedPrompt || cleanPrompt, generated.aspectRatio),
+      mimeType: generated.mimeType,
+      size: generated.sizeBytes,
+      kind: 'image',
+      isGeneratedImage: true,
+      imageUrl: generated.imageUrl,
+      ...(generated.dataUrl ? { dataUrl: generated.dataUrl } : {}),
+      prompt: generated.prompt,
+      enhancedPrompt: generated.enhancedPrompt,
+      aspectRatio: generated.aspectRatio,
+      width: generated.width,
+      height: generated.height,
+      seed: generated.seed,
+      provider: generated.provider
+    };
+
+    const assistantCaption = `Generated **${generated.aspectRatio}** image (${generated.width}×${generated.height})`;
+    const assistantMessage = await db.addMessage(
+      targetChat.id,
+      'assistant',
+      assistantCaption,
+      resolvedModelId,
+      IMAGE_GENERATION_TOTAL_TOKENS,
+      [attachment]
+    );
+
+    const usageRecord = await db.recordUsage(
+      user.id,
+      targetChat.id,
+      resolvedModelId,
+      IMAGE_GENERATION_PROMPT_TOKENS,
+      IMAGE_GENERATION_COMPLETION_TOKENS
+    );
+
+    const updatedUser = await db.getUserById(user.id);
+    const usageLimit = updatedUser?.usage_limit !== undefined ? updatedUser.usage_limit : 0;
+    const usageStats = calculateUsageStats(usageLimit, updatedUser?.current_usage || 0);
+
+    res.json({
+      chat: targetChat,
+      userMessage,
+      assistantMessage,
+      attachment,
+      imageUrl: generated.imageUrl,
+      dataUrl: generated.dataUrl,
+      enhancedPrompt: generated.enhancedPrompt,
+      aspectRatio: generated.aspectRatio,
+      width: generated.width,
+      height: generated.height,
+      seed: generated.seed,
+      provider: generated.provider,
+      usageRecord,
+      usageStats
+    });
+  } catch (err: any) {
+    console.error('Image generation route failed:', err);
+    res.status(502).json({
+      error: err?.message || 'Failed to generate image. Please try again.'
+    });
+  }
+});
+
+// Same-origin proxy for downloading/displaying Pollinations images without CORS issues
+app.get('/api/image-proxy', authenticate, async (req: AuthenticatedRequest, res: Response) => {
+  try {
+    const rawUrl = typeof req.query.url === 'string' ? req.query.url : '';
+    if (!isAllowedImageProxyUrl(rawUrl)) {
+      res.status(400).json({ error: 'Invalid or unsupported image URL.' });
+      return;
+    }
+
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 20000);
+    const upstream = await fetch(rawUrl, {
+      signal: controller.signal,
+      headers: {
+        Accept: 'image/png,image/jpeg,image/webp,image/*;q=0.9',
+        'User-Agent': 'BanglaAI/1.0 (+https://bangla-ai.pro)'
+      }
+    });
+    clearTimeout(timeout);
+
+    if (!upstream.ok) {
+      res.status(502).json({ error: `Upstream image server returned ${upstream.status}` });
+      return;
+    }
+
+    const contentType = upstream.headers.get('content-type') || 'image/png';
+    const arrayBuffer = await upstream.arrayBuffer();
+    const buffer = Buffer.from(arrayBuffer);
+
+    res.setHeader('Content-Type', contentType);
+    res.setHeader('Cache-Control', 'public, max-age=86400');
+    if (req.query.download === '1') {
+      const safeFilename =
+        typeof req.query.filename === 'string' && req.query.filename.trim()
+          ? req.query.filename.replace(/[^a-zA-Z0-9._-]/g, '_')
+          : 'bangla-ai-image.png';
+      res.setHeader('Content-Disposition', `attachment; filename="${safeFilename}"`);
+    }
+    res.send(buffer);
+  } catch (err: any) {
+    res.status(502).json({ error: err?.message || 'Failed to proxy image.' });
+  }
+});
+
 // ==========================================
 // 5. Admin Panel Endpoints (Role Protected)
 // ==========================================
@@ -760,17 +963,44 @@ app.get('/api/admin/models', requireAdmin, async (_req: AuthenticatedRequest, re
 
 app.put('/api/admin/models/:id', requireAdmin, async (req: AuthenticatedRequest, res: Response) => {
   try {
-    const { is_enabled, is_default, badge, display_name, openrouter_model_id } = req.body;
-    const trimmedName = typeof display_name === 'string' ? display_name.trim() : undefined;
-    if (display_name !== undefined && !trimmedName) {
+    const {
+      is_enabled,
+      is_default,
+      badge,
+      display_name,
+      custom_name,
+      description_en,
+      custom_description,
+      custom_icon,
+      openrouter_model_id
+    } = req.body;
+
+    const incomingName = custom_name !== undefined ? custom_name : display_name;
+    const trimmedName = typeof incomingName === 'string' ? incomingName.trim() : undefined;
+    if ((display_name !== undefined || custom_name !== undefined) && incomingName !== null && !trimmedName) {
       res.status(400).json({ error: 'Model display name cannot be empty.' });
       return;
     }
+
+    const incomingDescription = custom_description !== undefined ? custom_description : description_en;
+    const trimmedDescription = typeof incomingDescription === 'string' ? incomingDescription.trim() : undefined;
+
+    if (custom_icon !== undefined && custom_icon !== null && custom_icon !== '' && !isValidBrandIconKey(custom_icon)) {
+      res.status(400).json({ error: 'Invalid brand icon key.' });
+      return;
+    }
+
     const updated = await db.updateModel(req.params.id, {
       ...(is_enabled !== undefined && { is_enabled }),
       ...(is_default !== undefined && { is_default }),
       ...(badge !== undefined && { badge }),
-      ...(trimmedName !== undefined && { display_name: trimmedName }),
+      ...(incomingName !== undefined && { custom_name: incomingName === null ? null : trimmedName }),
+      ...(incomingDescription !== undefined && {
+        custom_description: incomingDescription === null ? null : trimmedDescription
+      }),
+      ...(custom_icon !== undefined && {
+        custom_icon: custom_icon ? String(custom_icon).trim().toLowerCase() : null
+      }),
       ...(openrouter_model_id !== undefined && { openrouter_model_id })
     });
     if (!updated) {
@@ -780,6 +1010,36 @@ app.put('/api/admin/models/:id', requireAdmin, async (req: AuthenticatedRequest,
     res.json(updated);
   } catch (err: any) {
     res.status(500).json({ error: 'Failed to update model: ' + err.message });
+  }
+});
+
+app.post('/api/admin/models/:id/reset', requireAdmin, async (req: AuthenticatedRequest, res: Response) => {
+  try {
+    const reset = await db.resetModelCustomizations(req.params.id);
+    if (!reset) {
+      res.status(404).json({ error: 'Model not found.' });
+      return;
+    }
+    res.json(reset);
+  } catch (err: any) {
+    res.status(500).json({ error: 'Failed to reset model: ' + err.message });
+  }
+});
+
+app.post('/api/admin/models/reset-all', requireAdmin, async (_req: AuthenticatedRequest, res: Response) => {
+  try {
+    const resetCount = await db.resetAllModelCustomizations();
+    res.json({
+      success: true,
+      resetCount,
+      models: await db.listModels(false),
+      message:
+        resetCount > 0
+          ? `Restored ${resetCount} customized model(s) back to their original defaults.`
+          : 'All models are already using their default names, descriptions, and logos.'
+    });
+  } catch (err: any) {
+    res.status(500).json({ error: 'Failed to reset all model customizations: ' + err.message });
   }
 });
 
@@ -827,17 +1087,49 @@ app.post('/api/admin/models/free/toggle-all', requireAdmin, async (req: Authenti
   }
 });
 
+app.post('/api/admin/seo/upload-banner', requireAdmin, async (req: AuthenticatedRequest, res: Response) => {
+  try {
+    const dataUrl = typeof req.body?.dataUrl === 'string' ? req.body.dataUrl : '';
+    const parsed = parseDataUrlImage(dataUrl);
+    if (!parsed) {
+      res.status(400).json({ error: 'Please upload a valid PNG, JPG, or WebP image (max 4 MB).' });
+      return;
+    }
+    const versionedPath = `/api/seo/og-banner?v=${Date.now()}`;
+    await db.updateSettings({
+      seo_og_image_data: dataUrl.trim(),
+      seo_og_image_url: versionedPath
+    });
+    res.json({
+      success: true,
+      seo_og_image_url: versionedPath,
+      has_custom_uploaded_og_banner: true
+    });
+  } catch (err: any) {
+    res.status(500).json({ error: 'Failed to upload OG banner: ' + err.message });
+  }
+});
+
+const sanitizeAdminSettingsResponse = (settings: any, openrouter: any) => {
+  const { seo_og_image_data: rawUploadedBanner, ...safeSettings } = settings || {};
+  return {
+    ...safeSettings,
+    seo_title: safeSettings.seo_title || DEFAULT_SEO_TITLE,
+    seo_description: safeSettings.seo_description || DEFAULT_SEO_DESCRIPTION,
+    seo_og_image_url: safeSettings.seo_og_image_url || DEFAULT_OG_IMAGE_PATH,
+    has_custom_uploaded_og_banner: Boolean(rawUploadedBanner),
+    openrouter_configured: Boolean(openrouter?.api_key),
+    openrouter_key_masked: maskSecretKey(openrouter?.api_key),
+    openrouter_base_url: openrouter?.base_url || 'https://openrouter.ai/api/v1',
+    openrouter_enabled: openrouter ? openrouter.is_active : true
+  };
+};
+
 app.get('/api/admin/settings', requireAdmin, async (_req: AuthenticatedRequest, res: Response) => {
   try {
     const settings = await db.getSettings();
     const openrouter = await db.getProviderBySlug('openrouter');
-    res.json({
-      ...settings,
-      openrouter_configured: Boolean(openrouter?.api_key),
-      openrouter_key_masked: maskSecretKey(openrouter?.api_key),
-      openrouter_base_url: openrouter?.base_url || 'https://openrouter.ai/api/v1',
-      openrouter_enabled: openrouter ? openrouter.is_active : true
-    });
+    res.json(sanitizeAdminSettingsResponse(settings, openrouter));
   } catch (err: any) {
     res.status(500).json({ error: 'Failed to load settings: ' + err.message });
   }
@@ -851,8 +1143,24 @@ app.put('/api/admin/settings', requireAdmin, async (req: AuthenticatedRequest, r
       openrouter_enabled,
       openrouter_configured: _oc,
       openrouter_key_masked: _okm,
+      has_custom_uploaded_og_banner: _hcub,
+      seo_og_image_data: _rawImgData,
       ...settingsUpdates
     } = req.body || {};
+
+    if (typeof settingsUpdates.seo_title === 'string') {
+      settingsUpdates.seo_title = settingsUpdates.seo_title.trim() || DEFAULT_SEO_TITLE;
+    }
+    if (typeof settingsUpdates.seo_description === 'string') {
+      settingsUpdates.seo_description = settingsUpdates.seo_description.trim() || DEFAULT_SEO_DESCRIPTION;
+    }
+    if (typeof settingsUpdates.seo_og_image_url === 'string') {
+      const nextUrl = settingsUpdates.seo_og_image_url.trim() || DEFAULT_OG_IMAGE_PATH;
+      settingsUpdates.seo_og_image_url = nextUrl;
+      if (!nextUrl.startsWith('/api/seo/og-banner')) {
+        settingsUpdates.seo_og_image_data = '';
+      }
+    }
 
     if (
       openrouter_api_key !== undefined ||
@@ -871,13 +1179,7 @@ app.put('/api/admin/settings', requireAdmin, async (req: AuthenticatedRequest, r
 
     const updated = await db.updateSettings(settingsUpdates);
     const openrouter = await db.getProviderBySlug('openrouter');
-    res.json({
-      ...updated,
-      openrouter_configured: Boolean(openrouter?.api_key),
-      openrouter_key_masked: maskSecretKey(openrouter?.api_key),
-      openrouter_base_url: openrouter?.base_url || 'https://openrouter.ai/api/v1',
-      openrouter_enabled: openrouter ? openrouter.is_active : true
-    });
+    res.json(sanitizeAdminSettingsResponse(updated, openrouter));
   } catch (err: any) {
     res.status(500).json({ error: 'Failed to update settings: ' + err.message });
   }
@@ -1138,15 +1440,33 @@ app.post('/api/admin/pixel/test', requireAdmin, async (_req: AuthenticatedReques
 // 6. Vite Middleware Integration
 // ==========================================
 
+async function renderHtmlWithSeo(rawHtml: string): Promise<string> {
+  try {
+    const settings = await db.getSettings();
+    const meta = resolveSeoMetadata(settings, process.env.PUBLIC_SITE_URL);
+    return injectSeoMetaIntoHtml(rawHtml, meta);
+  } catch (err) {
+    console.error('[SEO] Failed to resolve PostgreSQL SEO settings for HTML injection:', err);
+    return injectSeoMetaIntoHtml(rawHtml, resolveSeoMetadata(null, process.env.PUBLIC_SITE_URL));
+  }
+}
+
 async function startServer() {
   await db.init();
 
   const distPath = path.resolve(process.cwd(), 'dist');
 
   if (process.env.NODE_ENV === 'production' && fs.existsSync(distPath)) {
-    app.use(express.static(distPath));
-    app.get('*', (_req, res) => {
-      res.sendFile(path.resolve(distPath, 'index.html'));
+    app.use(express.static(distPath, { index: false }));
+    app.get('*', async (_req, res) => {
+      try {
+        const indexPath = path.resolve(distPath, 'index.html');
+        const rawHtml = fs.readFileSync(indexPath, 'utf-8');
+        const html = await renderHtmlWithSeo(rawHtml);
+        res.status(200).setHeader('Content-Type', 'text/html; charset=utf-8').send(html);
+      } catch (err: any) {
+        res.status(500).send('Failed to render application HTML: ' + err.message);
+      }
     });
   } else {
     const { createServer } = await import('vite');
@@ -1156,9 +1476,26 @@ async function startServer() {
         hmr: process.env.DISABLE_HMR !== 'true',
         watch: process.env.DISABLE_HMR === 'true' ? null : {}
       },
-      appType: 'spa'
+      appType: 'custom'
     });
     app.use(vite.middlewares);
+
+    app.get('*', async (req, res, next) => {
+      if (req.path.startsWith('/api') || /\.[a-z0-9]+$/i.test(req.path)) {
+        next();
+        return;
+      }
+      try {
+        const indexPath = path.resolve(process.cwd(), 'index.html');
+        const rawHtml = fs.readFileSync(indexPath, 'utf-8');
+        const transformed = await vite.transformIndexHtml(req.originalUrl, rawHtml);
+        const html = await renderHtmlWithSeo(transformed);
+        res.status(200).setHeader('Content-Type', 'text/html; charset=utf-8').send(html);
+      } catch (err: any) {
+        vite.ssrFixStacktrace?.(err);
+        next(err);
+      }
+    });
   }
 
   app.listen(PORT, '0.0.0.0', () => {

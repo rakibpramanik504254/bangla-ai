@@ -76,6 +76,15 @@ export interface ChatAttachment {
   kind: 'image' | 'text';
   dataUrl?: string;
   textContent?: string;
+  imageUrl?: string;
+  isGeneratedImage?: boolean;
+  prompt?: string;
+  enhancedPrompt?: string;
+  aspectRatio?: '1:1' | '16:9' | '9:16';
+  width?: number;
+  height?: number;
+  seed?: number;
+  provider?: string;
 }
 
 export interface Message {
@@ -95,6 +104,12 @@ export interface AiModel {
   model_name: string;
   display_name: string;
   description_en: string;
+  custom_name?: string | null;
+  default_name?: string;
+  custom_icon?: string | null;
+  default_icon?: string;
+  custom_description?: string | null;
+  default_description?: string;
   badge: 'super_fast' | 'reasoning' | 'coding' | 'balanced' | 'max' | 'high' | 'xhigh' | 'free';
   is_enabled: boolean;
   is_default: boolean;

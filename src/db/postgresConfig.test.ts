@@ -76,6 +76,22 @@ describe('POSTGRES_SCHEMA_STATEMENTS', () => {
         `Missing DDL for table ${table}`
       );
     }
+
+    const aiModelCustomizationCols = [
+      'custom_name',
+      'default_name',
+      'custom_icon',
+      'default_icon',
+      'custom_description',
+      'default_description'
+    ];
+    for (const col of aiModelCustomizationCols) {
+      assert.match(
+        joined,
+        new RegExp(`ALTER TABLE ai_models ADD COLUMN IF NOT EXISTS ${col}\\b`),
+        `Missing safe ALTER TABLE migration for ai_models.${col}`
+      );
+    }
   });
 });
 

@@ -31,9 +31,21 @@ import { ChatComposer } from './ChatComposer.tsx';
 import { WorkspaceSidebar } from './WorkspaceSidebar.tsx';
 import { WorkspaceSettingsModal } from './WorkspaceSettingsModal.tsx';
 import { WorkspaceModelIcon } from './WorkspaceModelIcon.tsx';
+import {
+  GeneratedImageCard,
+  GeneratingImageSkeleton,
+} from './GeneratedImageCard.tsx';
+import {
+  resolveEffectiveModelName,
+  resolveEffectiveModelDescription,
+} from '../../utils/modelBrandIcons.ts';
 import { formatFileSize } from '../../utils/chatAttachments.ts';
 import { copyTextSafely } from '../../utils/clipboard.ts';
 import { formatCompactTokens } from '../../utils/workspaceSidebar.ts';
+import {
+  isGeneratedImageAttachment,
+  type ImageAspectRatio,
+} from '../../utils/imageGeneration.ts';
 import { BrandLogo } from '../common/BrandLogo.tsx';
 import {
   MobileProfileDrawer,
@@ -247,6 +259,12 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({
   const [speakingMessageId, setSpeakingMessageId] = useState<string | null>(null);
   const [messageFeedback, setMessageFeedback] = useState<Record<string, 'up' | 'down'>>({});
 
+  const [imageMode, setImageMode] = useState(false);
+  const [imageAspectRatio, setImageAspectRatio] = useState<ImageAspectRatio>('1:1');
+  const [isGeneratingImage, setIsGeneratingImage] = useState(false);
+  const [generatingPromptPreview, setGeneratingPromptPreview] = useState('');
+  const [regeneratingMessageId, setRegeneratingMessageId] = useState<string | null>(null);
+
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
   const abortControllerRef = useRef<AbortController | null>(null);
@@ -255,15 +273,26 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({
 
   const isSubscribed = Boolean(user?.isSubscribed || user?.role === 'admin');
 
-  useEffect(() => {
+  const loadWorkspaceModels = () => {
     fetch('/api/models', { cache: 'no-store' })
       .then((r) => r.json())
       .then((data) => {
+        if (!Array.isArray(data)) return;
         setModels(data);
-        const def = data.find((m: AiModel) => m.is_default) || data[0];
-        if (def) setSelectedModelId(def.id);
+        setSelectedModelId((prev) => {
+          if (data.some((m: AiModel) => m.id === prev)) return prev;
+          const def = data.find((m: AiModel) => m.is_default) || data[0];
+          return def ? def.id : prev;
+        });
       })
       .catch(console.error);
+  };
+
+  useEffect(() => {
+    loadWorkspaceModels();
+    const handleModelsUpdated = () => loadWorkspaceModels();
+    window.addEventListener('bangla-ai:models-updated', handleModelsUpdated);
+    return () => window.removeEventListener('bangla-ai:models-updated', handleModelsUpdated);
   }, []);
 
   useEffect(() => {
@@ -338,7 +367,7 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-  }, [messages, streamedText]);
+  }, [messages, streamedText, isGeneratingImage]);
 
   useEffect(() => {
     return () => {
@@ -452,13 +481,149 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({
     }
   };
 
+  const handleGenerateImage = async (
+    rawPrompt: string,
+    options?: {
+      aspectRatio?: ImageAspectRatio;
+      skipUserMessage?: boolean;
+      messageIdForSpinner?: string;
+    }
+  ) => {
+    const cleanPrompt = rawPrompt.trim();
+    if (!cleanPrompt || isStreaming || isGeneratingImage) return;
+
+    if (!isSubscribed) {
+      openPaymentModal('monthly');
+      return;
+    }
+    if (!token) return;
+
+    const chosenRatio = options?.aspectRatio || imageAspectRatio;
+    let targetChatId = activeChatId;
+
+    if (!targetChatId) {
+      try {
+        const res = await fetch('/api/chats', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify({
+            title: cleanPrompt.slice(0, 34) + (cleanPrompt.length > 34 ? '...' : ''),
+            modelId: selectedModelId,
+          }),
+        });
+        if (res.ok) {
+          const newChat = await res.json();
+          setChats((prev) => [newChat, ...prev]);
+          setActiveChatId(newChat.id);
+          targetChatId = newChat.id;
+        }
+      } catch (err) {
+        console.error('Failed to create initial image chat:', err);
+        return;
+      }
+    }
+
+    const tempUserId = 'tmp-img-' + Date.now();
+    if (!options?.skipUserMessage) {
+      const tempUserMsg: Message = {
+        id: tempUserId,
+        chat_id: targetChatId!,
+        role: 'user',
+        content: cleanPrompt,
+        model_id: selectedModelId,
+        tokens_used: 0,
+        created_at: new Date().toISOString(),
+      };
+      setMessages((prev) => [...prev, tempUserMsg]);
+      setInputMessage('');
+    }
+
+    setIsGeneratingImage(true);
+    setGeneratingPromptPreview(cleanPrompt);
+    if (options?.messageIdForSpinner) {
+      setRegeneratingMessageId(options.messageIdForSpinner);
+    }
+
+    try {
+      const res = await fetch('/api/generate-image', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          chatId: targetChatId,
+          prompt: cleanPrompt,
+          aspectRatio: chosenRatio,
+          modelId: selectedModelId,
+          skipUserMessage: Boolean(options?.skipUserMessage),
+        }),
+      });
+
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        throw new Error(data.error || 'Failed to generate image.');
+      }
+
+      setMessages((prev) => {
+        const mapped = data.userMessage
+          ? prev.map((m) => (m.id === tempUserId ? data.userMessage : m))
+          : prev;
+        return data.assistantMessage ? [...mapped, data.assistantMessage] : mapped;
+      });
+
+      refreshUser();
+    } catch (err: any) {
+      setMessages((prev) => [
+        ...prev,
+        {
+          id: 'err-img-' + Date.now(),
+          chat_id: targetChatId!,
+          role: 'assistant',
+          content: `⚠️ Error: ${err?.message || 'Failed to generate image.'}`,
+          model_id: selectedModelId,
+          tokens_used: 0,
+          created_at: new Date().toISOString(),
+        },
+      ]);
+    } finally {
+      setIsGeneratingImage(false);
+      setGeneratingPromptPreview('');
+      setRegeneratingMessageId(null);
+    }
+  };
+
+  const handleRegenerateGeneratedImage = (
+    msgId: string,
+    attachment: ChatAttachment,
+    fallbackContent: string
+  ) => {
+    if (isStreaming || isGeneratingImage) return;
+    const promptToUse = attachment.prompt || attachment.enhancedPrompt || fallbackContent;
+    if (!promptToUse) return;
+    handleGenerateImage(promptToUse, {
+      aspectRatio: attachment.aspectRatio || imageAspectRatio,
+      skipUserMessage: true,
+      messageIdForSpinner: msgId,
+    });
+  };
+
   const handleSendMessage = async (customPrompt?: string) => {
     const textToSend = (
       customPrompt !== undefined ? customPrompt : inputMessage
     ).trim();
+
+    if (imageMode && customPrompt === undefined) {
+      await handleGenerateImage(textToSend);
+      return;
+    }
+
     const attachmentsToSend =
       customPrompt !== undefined ? [] : pendingAttachments;
-    if ((!textToSend && attachmentsToSend.length === 0) || isStreaming) return;
+    if ((!textToSend && attachmentsToSend.length === 0) || isStreaming || isGeneratingImage) return;
 
     if (!isSubscribed) {
       openPaymentModal('monthly');
@@ -734,8 +899,10 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({
   const getModelById = (modelId: string) =>
     models.find((m) => m.id === modelId) || selectedModel;
 
-  const getModelDisplayName = (modelId: string) =>
-    getModelById(modelId)?.display_name || 'Bangla AI';
+  const getModelDisplayName = (modelId: string) => {
+    const mod = getModelById(modelId);
+    return mod ? resolveEffectiveModelName(mod) : 'Bangla AI';
+  };
 
   const remainingTokens = Math.max(
     0,
@@ -895,13 +1062,13 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({
               <button
                 type="button"
                 onClick={() => setModelDropdownOpen((prev) => !prev)}
-                aria-label={`Select AI model: ${selectedModel?.display_name || 'Select Model'}`}
+                aria-label={`Select AI model: ${selectedModel ? resolveEffectiveModelName(selectedModel) : 'Select Model'}`}
                 aria-expanded={modelDropdownOpen}
                 className="max-w-full min-w-0 h-9 px-2 sm:px-3 rounded-full hover:bg-[#f0f4f9] dark:hover:bg-[#1e1f20] text-[13px] sm:text-[13.5px] font-medium text-[#1f1f1f] dark:text-[#e3e3e3] flex items-center gap-1.5 sm:gap-2 transition-colors cursor-pointer"
               >
                 <WorkspaceModelIcon model={selectedModel} sizeClass="w-4 h-4" />
                 <span className="truncate font-semibold tracking-tight">
-                  {selectedModel?.display_name || 'Select Model'}
+                  {selectedModel ? resolveEffectiveModelName(selectedModel) : 'Select Model'}
                 </span>
                 {selectedModel?.badge && selectedModel.badge !== 'free' && (
                   <span className="hidden sm:inline-block shrink-0 text-[10px] uppercase font-mono px-1.5 py-0.5 rounded-full bg-[#f0f4f9] dark:bg-[#282a2c] text-[#444746] dark:text-[#9aa0a6]">
@@ -937,14 +1104,14 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({
                         <div className="flex-1 min-w-0">
                           <div className="flex items-center justify-between gap-2">
                             <span className="font-semibold truncate text-[#1f1f1f] dark:text-[#e3e3e3]">
-                              {m.display_name}
+                              {resolveEffectiveModelName(m)}
                             </span>
                             {selectedModelId === m.id && (
                               <Check className="w-3.5 h-3.5 text-[#1f1f1f] dark:text-[#e3e3e3] shrink-0" />
                             )}
                           </div>
                           <p className="text-[11px] text-[#444746]/80 dark:text-[#9aa0a6] line-clamp-1 mt-0.5 font-normal">
-                            {m.description_en}
+                            {resolveEffectiveModelDescription(m)}
                           </p>
                         </div>
                       </button>
@@ -1037,7 +1204,7 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({
                 <p className="workspace-prose text-sm text-[#444746] dark:text-[#9aa0a6] max-w-md mx-auto">
                   Ask anything in <span className="font-medium text-[#1f1f1f] dark:text-[#e3e3e3]">বাংলা</span> or English with{' '}
                   <span className="font-medium text-[#1f1f1f] dark:text-[#e3e3e3]">
-                    {selectedModel?.display_name || 'Bangla-AI.pro'}
+                    {selectedModel ? resolveEffectiveModelName(selectedModel) : 'Bangla-AI.pro'}
                   </span>
                 </p>
               </div>
@@ -1157,6 +1324,10 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({
                 }
 
                 // Assistant Editorial Unboxed Message
+                const generatedImages = (m.attachments || []).filter(
+                  isGeneratedImageAttachment
+                );
+
                 return (
                   <div
                     key={msgId}
@@ -1169,131 +1340,158 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({
                     <div className="flex-1 min-w-0 space-y-2.5">
                       <div className="flex items-center gap-2 text-[12px] font-medium text-[#444746] dark:text-[#9aa0a6]">
                         <span>{modelLabel}</span>
+                        {generatedImages.length > 0 && (
+                          <span className="text-[11px] opacity-75">· Image Studio</span>
+                        )}
                       </div>
 
-                      <FormattedMessage content={m.content} />
-
-                      {/* Subtle Editorial Action Row */}
-                      <div
-                        data-testid="response-action-bar"
-                        className="flex flex-wrap items-center justify-between gap-y-1.5 gap-x-2 pt-0.5"
-                      >
-                        <div className="flex flex-wrap items-center gap-0.5">
-                          <button
-                            type="button"
-                            onClick={() => handleCopyResponse(msgId, m.content)}
-                            aria-label="Copy response"
-                            className={`h-7 px-2 rounded-lg text-[11.5px] font-medium flex items-center gap-1.5 transition-colors cursor-pointer whitespace-nowrap shrink-0 ${
-                              copiedMessageId === msgId
-                                ? 'bg-emerald-500/10 text-emerald-700 dark:text-emerald-400'
-                                : 'text-[#444746] dark:text-[#9aa0a6] hover:text-[#1f1f1f] dark:hover:text-[#e3e3e3] hover:bg-black/[0.04] dark:hover:bg-white/[0.06]'
-                            }`}
-                          >
-                            {copiedMessageId === msgId ? (
-                              <>
-                                <Check className="w-3.5 h-3.5 shrink-0" />
-                                <span>Copied</span>
-                              </>
-                            ) : (
-                              <>
-                                <Copy className="w-3.5 h-3.5 shrink-0" />
-                                <span>Copy</span>
-                              </>
-                            )}
-                          </button>
-
-                          <button
-                            type="button"
-                            onClick={() => handleRegenerate(idx)}
-                            disabled={isStreaming}
-                            aria-label="Regenerate response"
-                            className="h-7 px-2 rounded-lg text-[11.5px] font-medium text-[#444746] dark:text-[#9aa0a6] hover:text-[#1f1f1f] dark:hover:text-[#e3e3e3] hover:bg-black/[0.04] dark:hover:bg-white/[0.06] flex items-center gap-1.5 transition-colors cursor-pointer disabled:opacity-40 whitespace-nowrap shrink-0"
-                          >
-                            <RotateCcw className="w-3.5 h-3.5 shrink-0" />
-                            <span className="hidden sm:inline">Regenerate</span>
-                          </button>
-
-                          <button
-                            type="button"
-                            onClick={() => handleToggleSpeak(msgId, m.content)}
-                            aria-label={
-                              speakingMessageId === msgId
-                                ? 'Stop reading aloud'
-                                : 'Listen to response'
-                            }
-                            className={`h-7 px-2 rounded-lg text-[11.5px] font-medium flex items-center gap-1.5 transition-colors cursor-pointer whitespace-nowrap shrink-0 ${
-                              speakingMessageId === msgId
-                                ? 'bg-[#1f1f1f] text-white dark:bg-[#e3e3e3] dark:text-[#131314]'
-                                : 'text-[#444746] dark:text-[#9aa0a6] hover:text-[#1f1f1f] dark:hover:text-[#e3e3e3] hover:bg-black/[0.04] dark:hover:bg-white/[0.06]'
-                            }`}
-                          >
-                            {speakingMessageId === msgId ? (
-                              <>
-                                <VolumeX className="w-3.5 h-3.5 shrink-0" />
-                                <span>Stop</span>
-                              </>
-                            ) : (
-                              <>
-                                <Volume2 className="w-3.5 h-3.5 shrink-0" />
-                                <span className="hidden sm:inline">Listen</span>
-                              </>
-                            )}
-                          </button>
-
-                          <button
-                            type="button"
-                            onClick={() =>
-                              handleDownloadResponse(msgId, m.content, modelLabel)
-                            }
-                            aria-label="Download response as Markdown"
-                            className="h-7 px-2 rounded-lg text-[11.5px] font-medium text-[#444746] dark:text-[#9aa0a6] hover:text-[#1f1f1f] dark:hover:text-[#e3e3e3] hover:bg-black/[0.04] dark:hover:bg-white/[0.06] flex items-center gap-1.5 transition-colors cursor-pointer whitespace-nowrap shrink-0"
-                          >
-                            <Download className="w-3.5 h-3.5 shrink-0" />
-                            <span className="hidden sm:inline">Save</span>
-                          </button>
-
-                          <div className="flex items-center gap-0.5 pl-1 ml-0.5 border-l border-black/[0.08] dark:border-white/[0.08]">
-                            <button
-                              type="button"
-                              onClick={() => handleToggleFeedback(msgId, 'up')}
-                              aria-label="Mark response helpful"
-                              aria-pressed={feedbackVote === 'up'}
-                              className={`w-7 h-7 rounded-lg flex items-center justify-center transition-colors cursor-pointer ${
-                                feedbackVote === 'up'
-                                  ? 'text-emerald-600 dark:text-emerald-400 bg-emerald-500/10'
-                                  : 'text-[#444746]/80 dark:text-[#9aa0a6]/80 hover:text-[#1f1f1f] dark:hover:text-[#e3e3e3] hover:bg-black/[0.04] dark:hover:bg-white/[0.06]'
-                              }`}
-                            >
-                              <ThumbsUp className="w-3.5 h-3.5" />
-                            </button>
-                            <button
-                              type="button"
-                              onClick={() => handleToggleFeedback(msgId, 'down')}
-                              aria-label="Mark response unhelpful"
-                              aria-pressed={feedbackVote === 'down'}
-                              className={`w-7 h-7 rounded-lg flex items-center justify-center transition-colors cursor-pointer ${
-                                feedbackVote === 'down'
-                                  ? 'text-rose-600 dark:text-rose-400 bg-rose-500/10'
-                                  : 'text-[#444746]/80 dark:text-[#9aa0a6]/80 hover:text-[#1f1f1f] dark:hover:text-[#e3e3e3] hover:bg-black/[0.04] dark:hover:bg-white/[0.06]'
-                              }`}
-                            >
-                              <ThumbsDown className="w-3.5 h-3.5" />
-                            </button>
-                          </div>
-                        </div>
-
-                        <div className="flex items-center gap-1.5 text-[11px] font-mono text-[#444746]/75 dark:text-[#9aa0a6]/75 tabular-nums">
+                      {generatedImages.length > 0 ? (
+                        <div className="space-y-3">
+                          {generatedImages.map((imgAtt) => (
+                            <GeneratedImageCard
+                              key={imgAtt.id}
+                              attachment={imgAtt}
+                              authToken={token}
+                              isBusy={isStreaming || isGeneratingImage}
+                              isRegeneratingThis={regeneratingMessageId === msgId}
+                              onRegenerate={(att) =>
+                                handleRegenerateGeneratedImage(msgId, att, m.content)
+                              }
+                            />
+                          ))}
                           {m.tokens_used > 0 && (
-                            <span>{m.tokens_used.toLocaleString()} tok</span>
-                          )}
-                          {m.tokens_used > 0 && stats && stats.words > 0 && (
-                            <span aria-hidden="true">·</span>
-                          )}
-                          {stats && stats.words > 0 && (
-                            <span>{stats.words}w</span>
+                            <div className="text-[11px] font-mono text-[#444746]/75 dark:text-[#9aa0a6]/75 tabular-nums">
+                              {m.tokens_used.toLocaleString()} tok
+                            </div>
                           )}
                         </div>
-                      </div>
+                      ) : (
+                        <>
+                          <FormattedMessage content={m.content} />
+
+                          {/* Subtle Editorial Action Row */}
+                          <div
+                            data-testid="response-action-bar"
+                            className="flex flex-wrap items-center justify-between gap-y-1.5 gap-x-2 pt-0.5"
+                          >
+                            <div className="flex flex-wrap items-center gap-0.5">
+                              <button
+                                type="button"
+                                onClick={() => handleCopyResponse(msgId, m.content)}
+                                aria-label="Copy response"
+                                className={`h-7 px-2 rounded-lg text-[11.5px] font-medium flex items-center gap-1.5 transition-colors cursor-pointer whitespace-nowrap shrink-0 ${
+                                  copiedMessageId === msgId
+                                    ? 'bg-emerald-500/10 text-emerald-700 dark:text-emerald-400'
+                                    : 'text-[#444746] dark:text-[#9aa0a6] hover:text-[#1f1f1f] dark:hover:text-[#e3e3e3] hover:bg-black/[0.04] dark:hover:bg-white/[0.06]'
+                                }`}
+                              >
+                                {copiedMessageId === msgId ? (
+                                  <>
+                                    <Check className="w-3.5 h-3.5 shrink-0" />
+                                    <span>Copied</span>
+                                  </>
+                                ) : (
+                                  <>
+                                    <Copy className="w-3.5 h-3.5 shrink-0" />
+                                    <span>Copy</span>
+                                  </>
+                                )}
+                              </button>
+
+                              <button
+                                type="button"
+                                onClick={() => handleRegenerate(idx)}
+                                disabled={isStreaming || isGeneratingImage}
+                                aria-label="Regenerate response"
+                                className="h-7 px-2 rounded-lg text-[11.5px] font-medium text-[#444746] dark:text-[#9aa0a6] hover:text-[#1f1f1f] dark:hover:text-[#e3e3e3] hover:bg-black/[0.04] dark:hover:bg-white/[0.06] flex items-center gap-1.5 transition-colors cursor-pointer disabled:opacity-40 whitespace-nowrap shrink-0"
+                              >
+                                <RotateCcw className="w-3.5 h-3.5 shrink-0" />
+                                <span className="hidden sm:inline">Regenerate</span>
+                              </button>
+
+                              <button
+                                type="button"
+                                onClick={() => handleToggleSpeak(msgId, m.content)}
+                                aria-label={
+                                  speakingMessageId === msgId
+                                    ? 'Stop reading aloud'
+                                    : 'Listen to response'
+                                }
+                                className={`h-7 px-2 rounded-lg text-[11.5px] font-medium flex items-center gap-1.5 transition-colors cursor-pointer whitespace-nowrap shrink-0 ${
+                                  speakingMessageId === msgId
+                                    ? 'bg-[#1f1f1f] text-white dark:bg-[#e3e3e3] dark:text-[#131314]'
+                                    : 'text-[#444746] dark:text-[#9aa0a6] hover:text-[#1f1f1f] dark:hover:text-[#e3e3e3] hover:bg-black/[0.04] dark:hover:bg-white/[0.06]'
+                                }`}
+                              >
+                                {speakingMessageId === msgId ? (
+                                  <>
+                                    <VolumeX className="w-3.5 h-3.5 shrink-0" />
+                                    <span>Stop</span>
+                                  </>
+                                ) : (
+                                  <>
+                                    <Volume2 className="w-3.5 h-3.5 shrink-0" />
+                                    <span className="hidden sm:inline">Listen</span>
+                                  </>
+                                )}
+                              </button>
+
+                              <button
+                                type="button"
+                                onClick={() =>
+                                  handleDownloadResponse(msgId, m.content, modelLabel)
+                                }
+                                aria-label="Download response as Markdown"
+                                className="h-7 px-2 rounded-lg text-[11.5px] font-medium text-[#444746] dark:text-[#9aa0a6] hover:text-[#1f1f1f] dark:hover:text-[#e3e3e3] hover:bg-black/[0.04] dark:hover:bg-white/[0.06] flex items-center gap-1.5 transition-colors cursor-pointer whitespace-nowrap shrink-0"
+                              >
+                                <Download className="w-3.5 h-3.5 shrink-0" />
+                                <span className="hidden sm:inline">Save</span>
+                              </button>
+
+                              <div className="flex items-center gap-0.5 pl-1 ml-0.5 border-l border-black/[0.08] dark:border-white/[0.08]">
+                                <button
+                                  type="button"
+                                  onClick={() => handleToggleFeedback(msgId, 'up')}
+                                  aria-label="Mark response helpful"
+                                  aria-pressed={feedbackVote === 'up'}
+                                  className={`w-7 h-7 rounded-lg flex items-center justify-center transition-colors cursor-pointer ${
+                                    feedbackVote === 'up'
+                                      ? 'text-emerald-600 dark:text-emerald-400 bg-emerald-500/10'
+                                      : 'text-[#444746]/80 dark:text-[#9aa0a6]/80 hover:text-[#1f1f1f] dark:hover:text-[#e3e3e3] hover:bg-black/[0.04] dark:hover:bg-white/[0.06]'
+                                  }`}
+                                >
+                                  <ThumbsUp className="w-3.5 h-3.5" />
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={() => handleToggleFeedback(msgId, 'down')}
+                                  aria-label="Mark response unhelpful"
+                                  aria-pressed={feedbackVote === 'down'}
+                                  className={`w-7 h-7 rounded-lg flex items-center justify-center transition-colors cursor-pointer ${
+                                    feedbackVote === 'down'
+                                      ? 'text-rose-600 dark:text-rose-400 bg-rose-500/10'
+                                      : 'text-[#444746]/80 dark:text-[#9aa0a6]/80 hover:text-[#1f1f1f] dark:hover:text-[#e3e3e3] hover:bg-black/[0.04] dark:hover:bg-white/[0.06]'
+                                  }`}
+                                >
+                                  <ThumbsDown className="w-3.5 h-3.5" />
+                                </button>
+                              </div>
+                            </div>
+
+                            <div className="flex items-center gap-1.5 text-[11px] font-mono text-[#444746]/75 dark:text-[#9aa0a6]/75 tabular-nums">
+                              {m.tokens_used > 0 && (
+                                <span>{m.tokens_used.toLocaleString()} tok</span>
+                              )}
+                              {m.tokens_used > 0 && stats && stats.words > 0 && (
+                                <span aria-hidden="true">·</span>
+                              )}
+                              {stats && stats.words > 0 && (
+                                <span>{stats.words}w</span>
+                              )}
+                            </div>
+                          </div>
+                        </>
+                      )}
                     </div>
                   </div>
                 );
@@ -1306,7 +1504,7 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({
                   </div>
                   <div className="flex-1 min-w-0 space-y-2">
                     <div className="flex items-center gap-2 text-[12px] font-medium text-[#444746] dark:text-[#9aa0a6]">
-                      <span>{selectedModel?.display_name || 'Bangla AI'}</span>
+                      <span>{selectedModel ? resolveEffectiveModelName(selectedModel) : 'Bangla AI'}</span>
                     </div>
                     {streamedText ? (
                       <FormattedMessage content={streamedText} />
@@ -1318,6 +1516,14 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({
                     )}
                   </div>
                 </div>
+              )}
+
+              {isGeneratingImage && (
+                <GeneratingImageSkeleton
+                  prompt={generatingPromptPreview}
+                  aspectRatio={imageAspectRatio}
+                  model={selectedModel}
+                />
               )}
 
               <div ref={messagesEndRef} />
@@ -1347,6 +1553,11 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({
           onOpenPaymentModal={() => openPaymentModal('monthly')}
           externalDroppedFiles={droppedFiles}
           onClearExternalDroppedFiles={() => setDroppedFiles(null)}
+          imageMode={imageMode}
+          onToggleImageMode={() => setImageMode((prev) => !prev)}
+          aspectRatio={imageAspectRatio}
+          onSelectAspectRatio={setImageAspectRatio}
+          isGeneratingImage={isGeneratingImage}
         />
       </main>
     </div>

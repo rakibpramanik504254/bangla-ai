@@ -30,6 +30,8 @@ import { formatBDT } from '../../utils/billing.ts';
 import { AdminStats, AiProvider, AiModel, Payment } from '../../types/index.ts';
 import { trackMetaPurchase } from '../../utils/metaPixel.ts';
 import { MoneyManagementTab } from './MoneyManagementTab.tsx';
+import { ModelsCatalogTab } from './ModelsCatalogTab.tsx';
+import { SeoSettingsCard } from './SeoSettingsCard.tsx';
 
 interface AdminUser {
   id: string;
@@ -81,11 +83,6 @@ export const AdminPanel: React.FC = () => {
   const [openrouterQuickKey, setOpenrouterQuickKey] = useState('');
   const [savingSettings, setSavingSettings] = useState(false);
   const [testingPixel, setTestingPixel] = useState(false);
-  const [modelFilter, setModelFilter] = useState<'all' | 'flagship' | 'free'>('all');
-  const [syncingFreeModels, setSyncingFreeModels] = useState(false);
-  const [editingModelId, setEditingModelId] = useState<string | null>(null);
-  const [editingModelName, setEditingModelName] = useState('');
-  const [savingModelId, setSavingModelId] = useState<string | null>(null);
   const [feedback, setFeedback] = useState<string | null>(null);
 
   const fetchStats = async () => {
@@ -443,119 +440,6 @@ export const AdminPanel: React.FC = () => {
     }
   };
 
-  const handleToggleModel = async (model: AiModel) => {
-    try {
-      const res = await fetch(`/api/admin/models/${model.id}`, {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`
-        },
-        body: JSON.stringify({
-          is_enabled: !model.is_enabled
-        })
-      });
-      if (res.ok) {
-        fetchProvidersAndModels();
-        setFeedback(`Model ${model.display_name} is now ${!model.is_enabled ? 'enabled' : 'disabled'}.`);
-      }
-    } catch (err) {
-      console.error(err);
-    }
-  };
-
-  const handleStartModelRename = (model: AiModel) => {
-    setEditingModelId(model.id);
-    setEditingModelName(model.display_name);
-  };
-
-  const handleSaveModelRename = async (modelId: string) => {
-    const trimmed = editingModelName.trim();
-    if (!trimmed) {
-      setFeedback('Error: Model name cannot be empty.');
-      return;
-    }
-    setSavingModelId(modelId);
-    try {
-      const res = await fetch(`/api/admin/models/${modelId}`, {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`
-        },
-        body: JSON.stringify({ display_name: trimmed })
-      });
-      const data = await res.json().catch(() => ({}));
-      if (!res.ok) {
-        setFeedback(`Error: ${data.error || 'Failed to rename model.'}`);
-        return;
-      }
-      setModels(prev => prev.map(m => (m.id === modelId ? { ...m, display_name: data.display_name || trimmed } : m)));
-      setEditingModelId(null);
-      setEditingModelName('');
-      setFeedback(`Model renamed to "${data.display_name || trimmed}". Customers now see this name in Workspace.`);
-    } catch (err: any) {
-      setFeedback(`Error: ${err.message || 'Failed to rename model.'}`);
-    } finally {
-      setSavingModelId(null);
-    }
-  };
-
-  const handleSyncFreeModels = async () => {
-    if (!token) return;
-    setSyncingFreeModels(true);
-    try {
-      const res = await fetch('/api/admin/models/sync-openrouter-free', {
-        method: 'POST',
-        headers: {
-          Authorization: `Bearer ${token}`
-        }
-      });
-      const data = await res.json().catch(() => ({}));
-      if (!res.ok) {
-        setFeedback(`Error: ${data.error || 'Failed to sync OpenRouter free models.'}`);
-      } else {
-        if (Array.isArray(data.models)) {
-          setModels(data.models);
-        } else {
-          fetchProvidersAndModels();
-        }
-        setFeedback(data.message || 'OpenRouter free models synced.');
-      }
-    } catch (err: any) {
-      setFeedback(`Error: ${err.message || 'Failed to sync OpenRouter free models.'}`);
-    } finally {
-      setSyncingFreeModels(false);
-    }
-  };
-
-  const handleBulkToggleFreeModels = async (enableAll: boolean) => {
-    if (!token) return;
-    try {
-      const res = await fetch('/api/admin/models/free/toggle-all', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`
-        },
-        body: JSON.stringify({ is_enabled: enableAll })
-      });
-      const data = await res.json().catch(() => ({}));
-      if (!res.ok) {
-        setFeedback(`Error: ${data.error || 'Failed to update OpenRouter free models.'}`);
-      } else {
-        if (Array.isArray(data.models)) {
-          setModels(data.models);
-        } else {
-          fetchProvidersAndModels();
-        }
-        setFeedback(data.message || `All OpenRouter free models turned ${enableAll ? 'ON' : 'OFF'}.`);
-      }
-    } catch (err: any) {
-      setFeedback(`Error: ${err.message || 'Failed to update OpenRouter free models.'}`);
-    }
-  };
-
   const handleSaveSettings = async (e: React.FormEvent) => {
     e.preventDefault();
     setSavingSettings(true);
@@ -578,7 +462,7 @@ export const AdminPanel: React.FC = () => {
       if (res.ok) {
         setOpenrouterQuickKey('');
         fetchProvidersAndModels();
-        setFeedback('Platform settings, OpenRouter API config, MFS numbers & Meta Pixel saved successfully.');
+        setFeedback('Platform settings, SEO meta tags, OpenRouter API config, MFS numbers & Meta Pixel saved successfully.');
       }
     } catch (err) {
       console.error(err);
@@ -1512,315 +1396,15 @@ export const AdminPanel: React.FC = () => {
       )}
 
       {/* Tab 4: Models */}
-      {activeTab === 'models' && (() => {
-        const isFreeModel = (m: AiModel) =>
-          Boolean(m.is_free || m.badge === 'free' || m.model_name.endsWith(':free') || m.model_name === 'openrouter/free');
-        const freeModelsList = models.filter(isFreeModel);
-        const freeOnCount = freeModelsList.filter(m => m.is_enabled).length;
-        const flagshipModelsList = models.filter(m => !isFreeModel(m));
-        const visibleModels =
-          modelFilter === 'free' ? freeModelsList :
-          modelFilter === 'flagship' ? flagshipModelsList : models;
-
-        return (
-          <div className="space-y-4">
-            {/* Free Models Toolbar & Filter Controls */}
-            <div className="bg-white dark:bg-[#1e1f20] p-4 rounded-2xl border border-black/[0.08] dark:border-white/[0.08] flex flex-col lg:flex-row lg:items-center justify-between gap-3 text-xs">
-              <div className="flex flex-wrap items-center gap-1.5">
-                <button
-                  type="button"
-                  onClick={() => setModelFilter('all')}
-                  className={`h-8 px-3 rounded-full font-medium cursor-pointer transition-colors ${
-                    modelFilter === 'all'
-                      ? 'bg-[#e9eef6] text-[#1f1f1f] dark:bg-[#282a2c] dark:text-[#e3e3e3] font-semibold'
-                      : 'bg-[#f0f4f9] dark:bg-[#131314] text-[#444746] dark:text-[#9aa0a6]'
-                  }`}
-                >
-                  All Models ({models.length})
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setModelFilter('flagship')}
-                  className={`h-8 px-3 rounded-full font-medium cursor-pointer transition-colors ${
-                    modelFilter === 'flagship'
-                      ? 'bg-[#e9eef6] text-[#1f1f1f] dark:bg-[#282a2c] dark:text-[#e3e3e3] font-semibold'
-                      : 'bg-[#f0f4f9] dark:bg-[#131314] text-[#444746] dark:text-[#9aa0a6]'
-                  }`}
-                >
-                  Flagship ({flagshipModelsList.length})
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setModelFilter('free')}
-                  className={`h-8 px-3 rounded-full font-medium cursor-pointer transition-colors ${
-                    modelFilter === 'free'
-                      ? 'bg-[#e9eef6] text-[#1f1f1f] dark:bg-[#282a2c] dark:text-[#e3e3e3] font-semibold'
-                      : 'bg-[#f0f4f9] dark:bg-[#131314] text-[#444746] dark:text-[#9aa0a6]'
-                  }`}
-                >
-                  OpenRouter Free ({freeOnCount}/{freeModelsList.length} ON)
-                </button>
-              </div>
-
-              <div className="flex flex-wrap items-center gap-2">
-                <button
-                  type="button"
-                  disabled={syncingFreeModels}
-                  onClick={handleSyncFreeModels}
-                  className="h-8 px-3.5 rounded-full border border-black/[0.1] dark:border-white/[0.12] hover:bg-[#f0f4f9] dark:hover:bg-[#282a2c] font-semibold flex items-center gap-1.5 cursor-pointer disabled:opacity-50 transition-colors"
-                >
-                  <RefreshCw className={`w-3.5 h-3.5 ${syncingFreeModels ? 'animate-spin' : ''}`} />
-                  <span>{syncingFreeModels ? 'Syncing...' : 'Sync Free Models'}</span>
-                </button>
-                <button
-                  type="button"
-                  onClick={() => handleBulkToggleFreeModels(true)}
-                  className="h-8 px-3 rounded-full bg-emerald-600 hover:bg-emerald-700 text-white font-semibold cursor-pointer"
-                >
-                  Turn All Free ON
-                </button>
-                <button
-                  type="button"
-                  onClick={() => handleBulkToggleFreeModels(false)}
-                  className="h-8 px-3 rounded-full border border-black/[0.1] dark:border-white/[0.12] text-[#444746] dark:text-[#9aa0a6] hover:text-red-600 font-semibold cursor-pointer"
-                >
-                  Turn All Free OFF
-                </button>
-              </div>
-            </div>
-
-            <div className="bg-white dark:bg-[#1e1f20] rounded-2xl border border-black/[0.08] dark:border-white/[0.08] overflow-hidden">
-              {/* Mobile Card Layout */}
-              <div className="md:hidden divide-y divide-black/[0.06] dark:divide-white/[0.06] text-xs">
-                {visibleModels.map(m => (
-                  <div key={m.id} className="p-4 space-y-2.5">
-                    <div className="flex flex-wrap items-start justify-between gap-2">
-                      <div className="min-w-0 flex-1">
-                        {editingModelId === m.id ? (
-                          <form
-                            onSubmit={e => {
-                              e.preventDefault();
-                              handleSaveModelRename(m.id);
-                            }}
-                            className="flex flex-wrap items-center gap-1.5 mb-1"
-                          >
-                            <input
-                              type="text"
-                              autoFocus
-                              value={editingModelName}
-                              onChange={e => setEditingModelName(e.target.value)}
-                              onKeyDown={e => {
-                                if (e.key === 'Escape') {
-                                  setEditingModelId(null);
-                                  setEditingModelName('');
-                                }
-                              }}
-                              aria-label={`New name for ${m.display_name}`}
-                              className="flex-1 min-w-[140px] px-2.5 py-1 rounded-lg border border-[#1f1f1f] dark:border-[#e3e3e3] bg-[#f0f4f9] dark:bg-[#131314] text-xs font-semibold text-[#1f1f1f] dark:text-[#e3e3e3] focus:outline-none"
-                            />
-                            <button
-                              type="submit"
-                              disabled={savingModelId === m.id}
-                              aria-label="Save model name"
-                              className="h-7 px-2.5 rounded-full bg-[#1f1f1f] text-white dark:bg-[#e3e3e3] dark:text-[#131314] font-semibold text-[11px] cursor-pointer disabled:opacity-50"
-                            >
-                              {savingModelId === m.id ? 'Saving...' : 'Save'}
-                            </button>
-                            <button
-                              type="button"
-                              onClick={() => {
-                                setEditingModelId(null);
-                                setEditingModelName('');
-                              }}
-                              aria-label="Cancel rename"
-                              className="h-7 px-2.5 rounded-full border border-black/[0.1] dark:border-white/[0.12] text-[11px] cursor-pointer"
-                            >
-                              Cancel
-                            </button>
-                          </form>
-                        ) : (
-                          <div className="flex items-center gap-1.5 flex-wrap">
-                            <div className="font-semibold text-[#1f1f1f] dark:text-[#e3e3e3] break-words">{m.display_name}</div>
-                            <button
-                              type="button"
-                              onClick={() => handleStartModelRename(m)}
-                              aria-label={`Rename ${m.display_name}`}
-                              title="Rename model for customers"
-                              className="p-1 text-[#444746] dark:text-[#9aa0a6] hover:text-[#1f1f1f] dark:hover:text-[#e3e3e3] rounded cursor-pointer"
-                            >
-                              <Edit className="w-3 h-3" />
-                            </button>
-                          </div>
-                        )}
-                        <div className="text-[10px] font-mono text-[#444746] dark:text-[#9aa0a6] break-all">{m.openrouter_model_id || m.model_name}</div>
-                      </div>
-                      <span className={`px-2 py-0.5 rounded-full text-[10px] font-mono uppercase font-bold shrink-0 ${
-                        isFreeModel(m)
-                          ? 'bg-emerald-50 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-800'
-                          : 'bg-[#f0f4f9] dark:bg-[#282a2c] text-[#1f1f1f] dark:text-[#e3e3e3]'
-                      }`}>
-                        {isFreeModel(m) ? 'FREE' : m.badge}
-                      </span>
-                    </div>
-
-                    <div className="flex flex-wrap items-center justify-between gap-2 text-[11px] font-mono text-[#444746] dark:text-[#9aa0a6]">
-                      <span>Ctx: {m.context_window.toLocaleString()}</span>
-                      <span>Out: {m.max_output_tokens.toLocaleString()}</span>
-                    </div>
-
-                    <div className="flex items-center justify-between gap-2 pt-1">
-                      <span className={`px-2 py-0.5 rounded-full text-[10px] font-mono uppercase ${
-                        m.is_enabled
-                          ? 'bg-emerald-50 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-400'
-                          : 'bg-[#f0f4f9] dark:bg-[#282a2c] text-[#444746] dark:text-[#9aa0a6]'
-                      }`}>
-                        {m.is_enabled ? 'ON in Workspace' : 'OFF'}
-                      </span>
-                      <button
-                        type="button"
-                        role="switch"
-                        aria-checked={m.is_enabled}
-                        aria-label={`Toggle ${m.display_name}`}
-                        onClick={() => handleToggleModel(m)}
-                        className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer items-center rounded-full transition-colors ${
-                          m.is_enabled ? 'bg-emerald-600' : 'bg-gray-300 dark:bg-gray-600'
-                        }`}
-                      >
-                        <span
-                          className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
-                            m.is_enabled ? 'translate-x-6' : 'translate-x-1'
-                          }`}
-                        />
-                      </button>
-                    </div>
-                  </div>
-                ))}
-              </div>
-
-              {/* Desktop Table Layout */}
-              <div className="hidden md:block overflow-x-auto">
-                <table className="w-full text-left text-xs">
-                  <thead className="border-b border-black/[0.08] dark:border-white/[0.08] text-[#444746] dark:text-[#9aa0a6] font-mono text-[11px]">
-                    <tr>
-                      <th className="py-3 px-4 font-medium">Model Name &amp; Slug</th>
-                      <th className="py-3 px-4 font-medium">Tier</th>
-                      <th className="py-3 px-4 font-medium">Context Window</th>
-                      <th className="py-3 px-4 font-medium">Max Output</th>
-                      <th className="py-3 px-4 font-medium">Workspace Status</th>
-                      <th className="py-3 px-4 font-medium text-right">ON / OFF Toggle</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-black/[0.06] dark:divide-white/[0.06]">
-                    {visibleModels.map(m => (
-                      <tr key={m.id} className="hover:bg-[#f0f4f9]/60 dark:hover:bg-[#282a2c]/60 transition-colors">
-                        <td className="py-3 px-4">
-                          {editingModelId === m.id ? (
-                            <form
-                              onSubmit={e => {
-                                e.preventDefault();
-                                handleSaveModelRename(m.id);
-                              }}
-                              className="flex items-center gap-1.5 mb-1"
-                            >
-                              <input
-                                type="text"
-                                autoFocus
-                                value={editingModelName}
-                                onChange={e => setEditingModelName(e.target.value)}
-                                onKeyDown={e => {
-                                  if (e.key === 'Escape') {
-                                    setEditingModelId(null);
-                                    setEditingModelName('');
-                                  }
-                                }}
-                                aria-label={`New name for ${m.display_name}`}
-                                className="w-60 px-2.5 py-1 rounded-lg border border-[#1f1f1f] dark:border-[#e3e3e3] bg-[#f0f4f9] dark:bg-[#131314] text-xs font-semibold text-[#1f1f1f] dark:text-[#e3e3e3] focus:outline-none"
-                              />
-                              <button
-                                type="submit"
-                                disabled={savingModelId === m.id}
-                                aria-label="Save model name"
-                                className="h-7 px-2.5 rounded-full bg-[#1f1f1f] text-white dark:bg-[#e3e3e3] dark:text-[#131314] font-semibold text-[11px] flex items-center gap-1 cursor-pointer disabled:opacity-50"
-                              >
-                                <Check className="w-3 h-3" />
-                                <span>{savingModelId === m.id ? 'Saving...' : 'Save'}</span>
-                              </button>
-                              <button
-                                type="button"
-                                onClick={() => {
-                                  setEditingModelId(null);
-                                  setEditingModelName('');
-                                }}
-                                aria-label="Cancel rename"
-                                className="h-7 px-2.5 rounded-full border border-black/[0.1] dark:border-white/[0.12] text-[11px] cursor-pointer"
-                              >
-                                Cancel
-                              </button>
-                            </form>
-                          ) : (
-                            <div className="flex items-center gap-2">
-                              <span className="font-semibold text-[#1f1f1f] dark:text-[#e3e3e3]">{m.display_name}</span>
-                              <button
-                                type="button"
-                                onClick={() => handleStartModelRename(m)}
-                                aria-label={`Rename ${m.display_name}`}
-                                title="Rename model for customers"
-                                className="px-2 py-0.5 rounded-full border border-black/[0.08] dark:border-white/[0.1] hover:bg-[#f0f4f9] dark:hover:bg-[#282a2c] text-[10px] font-medium text-[#444746] dark:text-[#9aa0a6] hover:text-[#1f1f1f] dark:hover:text-[#e3e3e3] flex items-center gap-1 transition-colors cursor-pointer"
-                              >
-                                <Edit className="w-2.5 h-2.5" />
-                                <span>Rename</span>
-                              </button>
-                            </div>
-                          )}
-                          <div className="text-[10px] font-mono text-[#444746] dark:text-[#9aa0a6]">{m.openrouter_model_id || m.model_name}</div>
-                        </td>
-                        <td className="py-3 px-4">
-                          <span className={`px-2 py-0.5 rounded-full text-[10px] font-mono uppercase font-bold ${
-                            isFreeModel(m)
-                              ? 'bg-emerald-50 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-800'
-                              : 'bg-[#f0f4f9] dark:bg-[#282a2c] text-[#1f1f1f] dark:text-[#e3e3e3]'
-                          }`}>
-                            {isFreeModel(m) ? 'FREE' : m.badge}
-                          </span>
-                        </td>
-                        <td className="py-3 px-4 font-mono">{m.context_window.toLocaleString()}</td>
-                        <td className="py-3 px-4 font-mono">{m.max_output_tokens.toLocaleString()}</td>
-                        <td className="py-3 px-4">
-                          <span className={`px-2 py-0.5 rounded-full text-[10px] font-mono uppercase ${
-                            m.is_enabled
-                              ? 'bg-emerald-50 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-400'
-                              : 'bg-[#f0f4f9] dark:bg-[#282a2c] text-[#444746] dark:text-[#9aa0a6]'
-                          }`}>
-                            {m.is_enabled ? 'ON in Workspace' : 'OFF'}
-                          </span>
-                        </td>
-                        <td className="py-3 px-4 text-right">
-                          <button
-                            type="button"
-                            role="switch"
-                            aria-checked={m.is_enabled}
-                            aria-label={`Toggle ${m.display_name}`}
-                            onClick={() => handleToggleModel(m)}
-                            className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer items-center rounded-full transition-colors ${
-                              m.is_enabled ? 'bg-emerald-600' : 'bg-gray-300 dark:bg-gray-600'
-                            }`}
-                          >
-                            <span
-                              className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
-                                m.is_enabled ? 'translate-x-6' : 'translate-x-1'
-                              }`}
-                            />
-                          </button>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            </div>
-          </div>
-        );
-      })()}
+      {activeTab === 'models' && (
+        <ModelsCatalogTab
+          token={token}
+          models={models}
+          setModels={setModels}
+          onRefreshModels={fetchProvidersAndModels}
+          setFeedback={setFeedback}
+        />
+      )}
 
       {/* Tab: Money Management (Standalone Isolated Finance & Ad Spend Tracker) */}
       {activeTab === 'finance' && <MoneyManagementTab />}
@@ -2074,6 +1658,14 @@ export const AdminPanel: React.FC = () => {
               />
             </div>
           </div>
+
+          {/* SEO & Social Share Preview (PostgreSQL Persistent) */}
+          <SeoSettingsCard
+            token={token}
+            globalSettings={globalSettings}
+            setGlobalSettings={setGlobalSettings}
+            setFeedback={setFeedback}
+          />
 
           <div className="pt-2">
             <button

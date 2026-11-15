@@ -8,6 +8,8 @@ import {
   FileText,
   FileCode2,
   Image as ImageIcon,
+  ImagePlus,
+  Loader2,
   ChevronDown,
   Check,
   AlertCircle,
@@ -20,7 +22,12 @@ import {
   formatFileSize,
   processSelectedFiles,
 } from '../../utils/chatAttachments.ts';
+import {
+  IMAGE_ASPECT_RATIOS,
+  type ImageAspectRatio,
+} from '../../utils/imageGeneration.ts';
 import { WorkspaceModelIcon } from './WorkspaceModelIcon.tsx';
+import { resolveEffectiveModelName } from '../../utils/modelBrandIcons.ts';
 
 interface ChatComposerProps {
   inputRef: React.RefObject<HTMLTextAreaElement | null>;
@@ -39,6 +46,11 @@ interface ChatComposerProps {
   onOpenPaymentModal: () => void;
   externalDroppedFiles?: File[] | null;
   onClearExternalDroppedFiles?: () => void;
+  imageMode?: boolean;
+  onToggleImageMode?: () => void;
+  aspectRatio?: ImageAspectRatio;
+  onSelectAspectRatio?: (ratio: ImageAspectRatio) => void;
+  isGeneratingImage?: boolean;
 }
 
 const CODE_EXTENSIONS = new Set(['.js', '.ts', '.py', '.html', '.css', '.json']);
@@ -68,6 +80,11 @@ export const ChatComposer: React.FC<ChatComposerProps> = ({
   onOpenPaymentModal,
   externalDroppedFiles,
   onClearExternalDroppedFiles,
+  imageMode = false,
+  onToggleImageMode,
+  aspectRatio = '1:1',
+  onSelectAspectRatio,
+  isGeneratingImage = false,
 }) => {
   const [attachMenuOpen, setAttachMenuOpen] = useState(false);
   const [toolbarModelOpen, setToolbarModelOpen] = useState(false);
@@ -109,14 +126,15 @@ export const ChatComposer: React.FC<ChatComposerProps> = ({
     if (!el) return;
 
     el.style.height = 'auto';
-    const nextHeight = Math.max(44, el.scrollHeight);
+    const minHeight = imageMode && !inputMessage ? 52 : 44;
+    const nextHeight = Math.max(minHeight, el.scrollHeight);
     const { heightPx, overflowY } = clampComposerHeight(
       nextHeight,
       COMPOSER_MAX_HEIGHT_PX
     );
     el.style.height = `${heightPx}px`;
     el.style.overflowY = overflowY;
-  }, [inputMessage, attachments.length]);
+  }, [inputMessage, attachments.length, imageMode]);
 
   // Close popovers on outside click
   useEffect(() => {
@@ -203,10 +221,15 @@ export const ChatComposer: React.FC<ChatComposerProps> = ({
     }
   };
 
-  const canSend =
-    (inputMessage.trim().length > 0 || attachments.length > 0) &&
-    isSubscribed &&
-    !isStreaming;
+  const canSend = imageMode
+    ? inputMessage.trim().length > 0 &&
+      isSubscribed &&
+      !isStreaming &&
+      !isGeneratingImage
+    : (inputMessage.trim().length > 0 || attachments.length > 0) &&
+      isSubscribed &&
+      !isStreaming &&
+      !isGeneratingImage;
 
   return (
     <div className="px-3 sm:px-6 pt-2 pb-3 sm:pb-4 bg-white dark:bg-[#131314] shrink-0 w-full max-w-full">
@@ -265,12 +288,69 @@ export const ChatComposer: React.FC<ChatComposerProps> = ({
           <form
             onSubmit={(e) => {
               e.preventDefault();
-              if (!isStreaming) {
+              if (!isStreaming && !isGeneratingImage) {
                 onSubmit();
               }
             }}
             className="w-full"
           >
+            {/* Active Image Mode Chip & Aspect Ratio Selector */}
+            {imageMode && (
+              <div
+                data-testid="image-mode-indicator"
+                className="flex flex-wrap items-center justify-between gap-2 pb-2.5 mb-2 border-b border-black/[0.06] dark:border-white/[0.08]"
+              >
+                <div className="inline-flex items-center gap-1.5 pl-2.5 pr-1.5 py-1 rounded-full bg-[#1f1f1f] text-white dark:bg-[#e3e3e3] dark:text-[#131314] text-[11.5px] font-medium shadow-xs">
+                  <ImagePlus className="w-3.5 h-3.5 shrink-0" />
+                  <span>Create Image</span>
+                  {onToggleImageMode && (
+                    <button
+                      type="button"
+                      onMouseDown={(e) => e.preventDefault()}
+                      onClick={() => {
+                        onToggleImageMode();
+                        requestAnimationFrame(() => inputRef.current?.focus());
+                      }}
+                      aria-label="Exit Create Image mode"
+                      data-testid="exit-image-mode-btn"
+                      className="w-4 h-4 rounded-full hover:bg-white/20 dark:hover:bg-black/15 flex items-center justify-center transition-colors cursor-pointer"
+                    >
+                      <X className="w-3 h-3" />
+                    </button>
+                  )}
+                </div>
+
+                {onSelectAspectRatio && (
+                  <div
+                    role="group"
+                    aria-label="Image aspect ratio"
+                    className="flex flex-wrap items-center gap-1"
+                  >
+                    {IMAGE_ASPECT_RATIOS.map((ratioSpec) => {
+                      const isSelected = aspectRatio === ratioSpec.id;
+                      return (
+                        <button
+                          key={ratioSpec.id}
+                          type="button"
+                          onMouseDown={(e) => e.preventDefault()}
+                          onClick={() => onSelectAspectRatio(ratioSpec.id)}
+                          aria-pressed={isSelected}
+                          data-testid={`aspect-ratio-${ratioSpec.id}`}
+                          className={`h-7 px-2.5 rounded-full text-[11px] font-medium transition-colors cursor-pointer whitespace-nowrap ${
+                            isSelected
+                              ? 'bg-[#1f1f1f] text-white dark:bg-[#e3e3e3] dark:text-[#131314]'
+                              : 'bg-white/60 dark:bg-[#282a2c]/70 text-[#444746] dark:text-[#c4c7c5] hover:text-[#1f1f1f] dark:hover:text-[#e3e3e3] border border-black/[0.08] dark:border-white/[0.08]'
+                          }`}
+                        >
+                          {ratioSpec.label}
+                        </button>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
+            )}
+
             {/* Pre-send Attachment Previews */}
             {attachments.length > 0 && (
               <div
@@ -341,15 +421,17 @@ export const ChatComposer: React.FC<ChatComposerProps> = ({
               onKeyDown={(e) => {
                 if (e.key === 'Enter' && !e.shiftKey) {
                   e.preventDefault();
-                  if (!isStreaming) {
+                  if (!isStreaming && !isGeneratingImage) {
                     onSubmit();
                   }
                 }
               }}
               placeholder={
-                isSubscribed
-                  ? 'Ask Bangla-AI.pro...'
-                  : 'Activate a subscription plan to chat...'
+                !isSubscribed
+                  ? 'Activate a subscription plan to chat...'
+                  : imageMode
+                    ? 'Describe the image you want to create...'
+                    : 'Ask Bangla-AI.pro...'
               }
               disabled={!isSubscribed}
               className="w-full min-w-0 resize-none bg-transparent px-1.5 py-0.5 text-[15px] leading-[1.6] text-[#1f1f1f] dark:text-[#e3e3e3] placeholder-[#444746]/75 dark:placeholder-[#9aa0a6]/80 focus:outline-none disabled:opacity-50 max-h-[180px]"
@@ -360,7 +442,7 @@ export const ChatComposer: React.FC<ChatComposerProps> = ({
               data-testid="composer-bottom-toolbar"
               className="mt-2 pt-1 flex items-center justify-between gap-2"
             >
-              {/* Left Controls: + Attach Menu */}
+              {/* Left Controls: + Menu */}
               <div className="relative flex items-center gap-1.5">
                 <button
                   type="button"
@@ -369,10 +451,10 @@ export const ChatComposer: React.FC<ChatComposerProps> = ({
                     setToolbarModelOpen(false);
                     setAttachMenuOpen((prev) => !prev);
                   }}
-                  aria-label="Attach photos or files"
+                  aria-label="Attach files or create image"
                   aria-expanded={attachMenuOpen}
                   data-testid="toolbar-attach-btn"
-                  title="Add photos or files"
+                  title="Add files or create image"
                   className={`w-9 h-9 rounded-full flex items-center justify-center transition-colors cursor-pointer shrink-0 ${
                     attachMenuOpen
                       ? 'bg-[#e9eef6] dark:bg-[#282a2c] text-[#1f1f1f] dark:text-[#e3e3e3]'
@@ -405,6 +487,37 @@ export const ChatComposer: React.FC<ChatComposerProps> = ({
                       <Paperclip className="w-4 h-4 text-[#444746] dark:text-[#9aa0a6]" />
                       <span>Attach file or code</span>
                     </button>
+                    {onToggleImageMode && (
+                      <>
+                        <div className="my-1 border-t border-black/[0.06] dark:border-white/[0.08]" />
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setAttachMenuOpen(false);
+                            if (!isSubscribed) {
+                              onOpenPaymentModal();
+                              return;
+                            }
+                            if (!imageMode) {
+                              onToggleImageMode();
+                            }
+                            requestAnimationFrame(() => inputRef.current?.focus());
+                          }}
+                          data-testid="menu-create-image-btn"
+                          className={`w-full px-3.5 py-2 text-left flex items-center justify-between gap-2.5 transition-colors cursor-pointer ${
+                            imageMode
+                              ? 'bg-[#e9eef6]/70 dark:bg-white/[0.08] font-medium text-[#1f1f1f] dark:text-[#e3e3e3]'
+                              : 'text-[#1f1f1f] dark:text-[#e3e3e3] hover:bg-black/[0.04] dark:hover:bg-white/[0.06]'
+                          }`}
+                        >
+                          <span className="flex items-center gap-2.5">
+                            <ImagePlus className="w-4 h-4 text-[#444746] dark:text-[#9aa0a6]" />
+                            <span>Create Image</span>
+                          </span>
+                          {imageMode && <Check className="w-3.5 h-3.5 shrink-0" />}
+                        </button>
+                      </>
+                    )}
                   </div>
                 )}
               </div>
@@ -419,13 +532,13 @@ export const ChatComposer: React.FC<ChatComposerProps> = ({
                       setAttachMenuOpen(false);
                       setToolbarModelOpen((prev) => !prev);
                     }}
-                    aria-label={`Switch model (${selectedModel?.display_name || 'Select Model'})`}
+                    aria-label={`Switch model (${selectedModel ? resolveEffectiveModelName(selectedModel) : 'Select Model'})`}
                     aria-expanded={toolbarModelOpen}
                     data-testid="toolbar-model-btn"
                     className="h-8 max-w-[175px] sm:max-w-[235px] px-2.5 rounded-full hover:bg-black/[0.05] dark:hover:bg-white/[0.07] text-[12px] font-medium text-[#444746] dark:text-[#c4c7c5] hover:text-[#1f1f1f] dark:hover:text-[#e3e3e3] flex items-center gap-1.5 transition-colors cursor-pointer"
                   >
                     <WorkspaceModelIcon model={selectedModel} sizeClass="w-3.5 h-3.5" />
-                    <span className="truncate">{selectedModel?.display_name || 'Select Model'}</span>
+                    <span className="truncate">{selectedModel ? resolveEffectiveModelName(selectedModel) : 'Select Model'}</span>
                     <ChevronDown className="w-3.5 h-3.5 opacity-70 shrink-0" />
                   </button>
 
@@ -455,7 +568,7 @@ export const ChatComposer: React.FC<ChatComposerProps> = ({
                           >
                             <div className="flex items-center gap-2.5 min-w-0">
                               <WorkspaceModelIcon model={m} sizeClass="w-4 h-4" />
-                              <span className="truncate">{m.display_name}</span>
+                              <span className="truncate">{resolveEffectiveModelName(m)}</span>
                             </div>
                             {selectedModelId === m.id && (
                               <Check className="w-3.5 h-3.5 text-[#1f1f1f] dark:text-[#e3e3e3] shrink-0" />
@@ -484,11 +597,15 @@ export const ChatComposer: React.FC<ChatComposerProps> = ({
                     type="submit"
                     disabled={!canSend}
                     onMouseDown={(e) => e.preventDefault()}
-                    aria-label="Send message"
+                    aria-label={imageMode ? 'Generate image' : 'Send message'}
                     data-testid="send-message-btn"
                     className="w-9 h-9 rounded-full bg-[#1f1f1f] hover:bg-[#333333] dark:bg-[#e3e3e3] dark:hover:bg-white text-white dark:text-[#131314] flex items-center justify-center disabled:opacity-25 transition-all shrink-0 cursor-pointer"
                   >
-                    <ArrowUp className="w-4 h-4 stroke-[2.2]" />
+                    {isGeneratingImage ? (
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                    ) : (
+                      <ArrowUp className="w-4 h-4 stroke-[2.2]" />
+                    )}
                   </button>
                 )}
               </div>

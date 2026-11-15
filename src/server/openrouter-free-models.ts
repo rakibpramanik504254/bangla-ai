@@ -1,4 +1,5 @@
 import { AiModel } from '../db/database.ts';
+import { inferDefaultBrandIcon } from '../utils/modelBrandIcons.ts';
 
 export interface FreeModelSeedSpec {
   id: string;
@@ -165,6 +166,17 @@ export function createSeededFreeModels(now: string): AiModel[] {
     model_name: spec.slug,
     display_name: spec.displayName,
     description_en: spec.description,
+    custom_name: null,
+    default_name: spec.displayName,
+    custom_icon: null,
+    default_icon: inferDefaultBrandIcon({
+      id: spec.id,
+      provider_id: 'prov_openrouter',
+      model_name: spec.slug,
+      default_name: spec.displayName
+    }),
+    custom_description: null,
+    default_description: spec.description,
     badge: spec.badge,
     is_enabled: false, // Turned OFF by default; Admin toggles ON when needed
     is_default: false,
@@ -246,6 +258,17 @@ export function buildNewFreeModelsFromOpenRouterApi(
       model_name: slug,
       display_name: cleanName,
       description_en: rawDesc,
+      custom_name: null,
+      default_name: cleanName,
+      custom_icon: null,
+      default_icon: inferDefaultBrandIcon({
+        id: generatedId,
+        provider_id: 'prov_openrouter',
+        model_name: slug,
+        default_name: cleanName
+      }),
+      custom_description: null,
+      default_description: rawDesc,
       badge: 'free',
       is_enabled: false,
       is_default: false,

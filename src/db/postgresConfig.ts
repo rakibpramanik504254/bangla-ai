@@ -133,6 +133,12 @@ export const POSTGRES_SCHEMA_STATEMENTS: readonly string[] = [
     model_name TEXT NOT NULL,
     display_name TEXT NOT NULL,
     description_en TEXT NOT NULL DEFAULT '',
+    custom_name TEXT,
+    default_name TEXT NOT NULL DEFAULT '',
+    custom_icon TEXT,
+    default_icon TEXT NOT NULL DEFAULT 'default',
+    custom_description TEXT,
+    default_description TEXT NOT NULL DEFAULT '',
     badge TEXT NOT NULL DEFAULT 'balanced',
     is_enabled BOOLEAN NOT NULL DEFAULT TRUE,
     is_default BOOLEAN NOT NULL DEFAULT FALSE,
@@ -143,6 +149,12 @@ export const POSTGRES_SCHEMA_STATEMENTS: readonly string[] = [
     openrouter_model_id TEXT,
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
   )`,
+  `ALTER TABLE ai_models ADD COLUMN IF NOT EXISTS custom_name TEXT`,
+  `ALTER TABLE ai_models ADD COLUMN IF NOT EXISTS default_name TEXT NOT NULL DEFAULT ''`,
+  `ALTER TABLE ai_models ADD COLUMN IF NOT EXISTS custom_icon TEXT`,
+  `ALTER TABLE ai_models ADD COLUMN IF NOT EXISTS default_icon TEXT NOT NULL DEFAULT 'default'`,
+  `ALTER TABLE ai_models ADD COLUMN IF NOT EXISTS custom_description TEXT`,
+  `ALTER TABLE ai_models ADD COLUMN IF NOT EXISTS default_description TEXT NOT NULL DEFAULT ''`,
   `CREATE INDEX IF NOT EXISTS idx_ai_models_sort_order ON ai_models (sort_order)`,
 
   // 6. Chats

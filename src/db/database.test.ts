@@ -13,6 +13,7 @@ interface MockState {
   payments: Map<string, any>;
   chats: Map<string, any>;
   messages: Map<string, any>;
+  aiModels: Map<string, any>;
   financeLedger: Map<string, any>;
 }
 
@@ -27,6 +28,7 @@ function createMockPool(): { pool: PoolLike; state: MockState } {
     payments: new Map(),
     chats: new Map(),
     messages: new Map(),
+    aiModels: new Map(),
     financeLedger: new Map()
   };
 
@@ -266,6 +268,111 @@ function createMockPool(): { pool: PoolLike; state: MockState } {
       return { rows: [], rowCount: count };
     }
 
+    if (sql.startsWith('INSERT INTO ai_models')) {
+      const id = String(params[0]);
+      if (!state.aiModels.has(id)) {
+        state.aiModels.set(id, {
+          id,
+          provider_id: params[1],
+          model_name: params[2],
+          display_name: params[3],
+          description_en: params[4],
+          custom_name: params[5],
+          default_name: params[6],
+          custom_icon: params[7],
+          default_icon: params[8],
+          custom_description: params[9],
+          default_description: params[10],
+          badge: params[11],
+          is_enabled: params[12],
+          is_default: params[13],
+          is_free: params[14],
+          context_window: params[15],
+          max_output_tokens: params[16],
+          sort_order: params[17],
+          openrouter_model_id: params[18],
+          created_at: params[19]
+        });
+      }
+      return { rows: [], rowCount: 1 };
+    }
+
+    if (sql.startsWith("SELECT * FROM ai_models WHERE default_name = '' OR default_name IS NULL")) {
+      const rows = Array.from(state.aiModels.values()).filter(m => !m.default_name);
+      return { rows, rowCount: rows.length };
+    }
+
+    if (sql.startsWith('SELECT * FROM ai_models WHERE id = $1')) {
+      const found = state.aiModels.get(String(params[0]));
+      return { rows: found ? [found] : [], rowCount: found ? 1 : 0 };
+    }
+
+    if (sql.startsWith('SELECT * FROM ai_models')) {
+      const onlyEnabled = sql.includes('WHERE is_enabled = TRUE');
+      const rows = Array.from(state.aiModels.values())
+        .filter(m => !onlyEnabled || m.is_enabled)
+        .sort((a, b) => a.sort_order - b.sort_order);
+      return { rows, rowCount: rows.length };
+    }
+
+    if (sql.startsWith('UPDATE ai_models SET is_enabled = $1, is_default = $2')) {
+      const id = String(params[13]);
+      const existing = state.aiModels.get(id);
+      if (!existing) return { rows: [], rowCount: 0 };
+      const updated = {
+        ...existing,
+        is_enabled: params[0],
+        is_default: params[1],
+        badge: params[2],
+        display_name: params[3],
+        openrouter_model_id: params[4],
+        description_en: params[5],
+        sort_order: params[6],
+        custom_name: params[7],
+        custom_description: params[8],
+        custom_icon: params[9],
+        default_name: params[10],
+        default_description: params[11],
+        default_icon: params[12]
+      };
+      state.aiModels.set(id, updated);
+      return { rows: [updated], rowCount: 1 };
+    }
+
+    if (sql.startsWith('UPDATE ai_models SET custom_name = NULL') && sql.includes('WHERE id = $1')) {
+      const id = String(params[0]);
+      const existing = state.aiModels.get(id);
+      if (!existing) return { rows: [], rowCount: 0 };
+      const reset = {
+        ...existing,
+        custom_name: null,
+        custom_description: null,
+        custom_icon: null,
+        display_name: existing.default_name || existing.display_name,
+        description_en: existing.default_description || existing.description_en
+      };
+      state.aiModels.set(id, reset);
+      return { rows: [reset], rowCount: 1 };
+    }
+
+    if (sql.startsWith('UPDATE ai_models SET custom_name = NULL') && sql.includes('WHERE custom_name IS NOT NULL')) {
+      let count = 0;
+      for (const [id, existing] of state.aiModels.entries()) {
+        if (existing.custom_name !== null || existing.custom_description !== null || existing.custom_icon !== null) {
+          state.aiModels.set(id, {
+            ...existing,
+            custom_name: null,
+            custom_description: null,
+            custom_icon: null,
+            display_name: existing.default_name || existing.display_name,
+            description_en: existing.default_description || existing.description_en
+          });
+          count++;
+        }
+      }
+      return { rows: [], rowCount: count };
+    }
+
     return { rows: [], rowCount: 0 };
   };
 
@@ -374,5 +481,79 @@ describe('Database PostgreSQL Persistence', () => {
     const resetCount = await database.resetFinanceLedger();
     assert.equal(resetCount, 1);
     assert.equal((await database.listFinanceLedgerEntries()).length, 0);
+  });
+
+  it('persists ai_models custom name/description/icon in PostgreSQL without altering routing slugs and supports single + global reset', async () => {
+    const { pool } = createMockPool();
+    const database = new Database({ pool, env: {} });
+    await database.init();
+
+    const target = await database.getModelById('mod_or_free_gemma_4_31b');
+    assert.ok(target);
+    assert.equal(target.default_icon, 'gemini');
+    assert.equal(target.openrouter_model_id, 'google/gemma-4-31b-it:free');
+
+    // Customize name, description, and logo
+    const updated = await database.updateModel('mod_or_free_gemma_4_31b', {
+      custom_name: 'DeepSeek Custom Pro',
+      custom_description: 'Deep coding and reasoning engine.',
+      custom_icon: 'deepseek'
+    });
+    assert.ok(updated);
+    assert.equal(updated.display_name, 'DeepSeek Custom Pro');
+    assert.equal(updated.description_en, 'Deep coding and reasoning engine.');
+    assert.equal(updated.custom_icon, 'deepseek');
+    assert.equal(updated.default_name, 'Google Gemma 4 31B (Free)');
+    assert.equal(updated.default_icon, 'gemini');
+    // Routing slug must remain untouched
+    assert.equal(updated.model_name, 'google/gemma-4-31b-it:free');
+    assert.equal(updated.openrouter_model_id, 'google/gemma-4-31b-it:free');
+
+    // Reset single model back to defaults
+    const resetSingle = await database.resetModelCustomizations('mod_or_free_gemma_4_31b');
+    assert.ok(resetSingle);
+    assert.equal(resetSingle.custom_name, null);
+    assert.equal(resetSingle.custom_description, null);
+    assert.equal(resetSingle.custom_icon, null);
+    assert.equal(resetSingle.display_name, 'Google Gemma 4 31B (Free)');
+    assert.equal(resetSingle.default_icon, 'gemini');
+
+    // Customize two models and test global reset
+    await database.updateModel('mod_gemini_4_carbon', { custom_icon: 'claude', custom_name: 'Claude Carbon' });
+    await database.updateModel('mod_gpt_6_astra', { custom_icon: 'nvidia' });
+    const resetCount = await database.resetAllModelCustomizations();
+    assert.equal(resetCount, 2);
+
+    const carbonAfter = await database.getModelById('mod_gemini_4_carbon');
+    assert.equal(carbonAfter?.custom_icon, null);
+    assert.equal(carbonAfter?.custom_name, null);
+    assert.equal(carbonAfter?.display_name, 'Gemini 4 Carbon (high)');
+  });
+
+  it('persists SEO title, description, and OG banner URL/data in PostgreSQL admin_settings', async () => {
+    const { pool, state } = createMockPool();
+    const db1 = new Database({ pool, env: {} });
+    await db1.init();
+
+    const defaults = await db1.getSettings();
+    assert.equal(defaults.seo_og_image_url, '/og-banner.png');
+    assert.ok(defaults.seo_title && defaults.seo_title.includes('Bangla-AI.pro'));
+
+    await db1.updateSettings({
+      seo_title: 'Bangla-AI.pro — Custom Social Title',
+      seo_description: 'Custom Bengali + English SEO description for crawlers.',
+      seo_og_image_url: '/api/seo/og-banner?v=12345',
+      seo_og_image_data: 'data:image/png;base64,iVBORw0KGgo='
+    });
+
+    const db2 = new Database({ pool, env: {} });
+    await db2.init();
+    const reloaded = await db2.getSettings();
+
+    assert.equal(reloaded.seo_title, 'Bangla-AI.pro — Custom Social Title');
+    assert.equal(reloaded.seo_description, 'Custom Bengali + English SEO description for crawlers.');
+    assert.equal(reloaded.seo_og_image_url, '/api/seo/og-banner?v=12345');
+    assert.equal(reloaded.seo_og_image_data, 'data:image/png;base64,iVBORw0KGgo=');
+    assert.ok(state.adminSettings.has('system_settings'));
   });
 });
