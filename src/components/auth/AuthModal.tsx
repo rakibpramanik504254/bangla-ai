@@ -93,7 +93,11 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, defaultTa
           const data = await res.json();
           if (!res.ok) throw new Error(data.error || 'Failed to request reset OTP');
           setSuccess(data.message + (data.demoOtp ? ` (OTP: ${data.demoOtp})` : ''));
-          if (data.demoOtp) setResetToken(data.demoOtp);
+          if (data.demoOtp) {
+            setResetToken(data.demoOtp);
+          } else {
+            setResetToken('');
+          }
           setResetStep(2);
         } else {
           if (!resetToken.trim() || !newPassword) {

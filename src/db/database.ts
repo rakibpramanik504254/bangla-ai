@@ -158,6 +158,10 @@ export interface SystemSettings {
   seo_description?: string;
   seo_og_image_url?: string;
   seo_og_image_data?: string;
+  mail_enabled?: boolean;
+  mail_webhook_url?: string;
+  mail_webhook_secret?: string;
+  mail_notify_admin_on_payment?: boolean;
 }
 
 interface ProviderKeySettingEntry {
@@ -238,7 +242,11 @@ function createDefaultSystemSettings(): SystemSettings {
     announcement: 'Welcome to Bangla AI — The Premier Unified Multi-Model AI Hub.',
     seo_title: DEFAULT_SEO_TITLE,
     seo_description: DEFAULT_SEO_DESCRIPTION,
-    seo_og_image_url: DEFAULT_OG_IMAGE_PATH
+    seo_og_image_url: DEFAULT_OG_IMAGE_PATH,
+    mail_enabled: true,
+    mail_webhook_url: '',
+    mail_webhook_secret: '',
+    mail_notify_admin_on_payment: true
   };
 }
 

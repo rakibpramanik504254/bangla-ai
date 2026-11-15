@@ -35,6 +35,22 @@ import {
   parseDataUrlImage,
   resolveSeoMetadata
 } from './src/utils/seo.ts';
+import {
+  buildPaymentApprovedEmail,
+  buildPaymentRejectedEmail,
+  buildPaymentSubmittedAdminEmail,
+  buildPaymentSubmittedUserEmail,
+  buildPasswordResetOtpEmail,
+  buildTestEmail,
+  buildWelcomeEmail,
+  DEFAULT_SUPPORT_EMAIL,
+  maskMailWebhookUrl,
+  normalizeMailWebhookUrl,
+  resolveMailRuntimeConfig,
+  sendMailSafe,
+  sendMailViaAppsScript,
+  validateAppsScriptWebhookUrl
+} from './src/server/mail.ts';
 
 dotenv.config();
 
@@ -84,6 +100,18 @@ app.post('/api/auth/register', async (req: Request, res: Response) => {
 
     const token = generateToken(newUser);
     const sub = await db.getSubscriptionByUserId(newUser.id);
+    const settings = await db.getSettings();
+    const supportEmail = settings.support_email || DEFAULT_SUPPORT_EMAIL;
+
+    void sendMailSafe(
+      settings,
+      buildWelcomeEmail({
+        to: newUser.email,
+        name: newUser.name,
+        usageLimit: newUser.usage_limit,
+        supportEmail
+      })
+    );
 
     res.status(201).json({
       token,
@@ -246,9 +274,41 @@ app.post('/api/auth/forgot-password', async (req: Request, res: Response) => {
       reset_token_expires_at: new Date(Date.now() + 15 * 60 * 1000).toISOString()
     });
 
+    const settings = await db.getSettings();
+    const mailConfig = resolveMailRuntimeConfig(settings);
+
+    if (mailConfig.enabled && mailConfig.configured) {
+      const mailResult = await sendMailViaAppsScript({
+        webhookUrl: mailConfig.webhookUrl,
+        secret: mailConfig.secret,
+        message: buildPasswordResetOtpEmail({
+          to: user.email,
+          name: user.name,
+          otp: resetToken,
+          expiresInMinutes: 15,
+          supportEmail: mailConfig.supportEmail
+        })
+      });
+
+      if (!mailResult.ok) {
+        console.error('[Mail] Forgot-password delivery failed:', mailResult.error);
+        res.status(502).json({
+          error: 'Unable to send reset verification email right now. Please try again shortly or contact support.'
+        });
+        return;
+      }
+
+      res.json({
+        message: 'A password reset verification code has been sent to your email address.',
+        emailSent: true
+      });
+      return;
+    }
+
     res.json({
-      message: 'Password reset OTP has been generated.',
-      demoOtp: resetToken
+      message: 'Email delivery is not configured yet. Use this verification OTP:',
+      demoOtp: resetToken,
+      emailSent: false
     });
   } catch (err: any) {
     res.status(500).json({ error: 'Password reset request failed: ' + err.message });
@@ -263,7 +323,15 @@ app.post('/api/auth/reset-password', async (req: Request, res: Response) => {
       return;
     }
     const user = await db.getUserByEmail(email);
-    if (!user || user.reset_token !== token) {
+    const expiresAtMs = user?.reset_token_expires_at
+      ? new Date(user.reset_token_expires_at).getTime()
+      : 0;
+    if (
+      !user ||
+      !user.reset_token ||
+      user.reset_token !== String(token).trim() ||
+      (expiresAtMs > 0 && expiresAtMs < Date.now())
+    ) {
       res.status(400).json({ error: 'Invalid or expired reset code.' });
       return;
     }
@@ -380,6 +448,43 @@ const handlePaymentSubmission = async (req: AuthenticatedRequest, res: Response)
       trxId: cleanTrx,
       senderNumber: cleanSender
     });
+
+    const settings = await db.getSettings();
+    const mailConfig = resolveMailRuntimeConfig(settings);
+    const planDetails = PLANS[selectedPlan];
+
+    if (req.user?.email) {
+      void sendMailSafe(
+        settings,
+        buildPaymentSubmittedUserEmail({
+          to: req.user.email,
+          name: req.user.name || 'Customer',
+          planName: planDetails.name,
+          amountBdt: payment.amount,
+          gateway: selectedGateway,
+          trxId: payment.trx_id,
+          senderNumber: cleanSender,
+          supportEmail: mailConfig.supportEmail
+        })
+      );
+    }
+
+    if (mailConfig.notifyAdminOnPayment && mailConfig.supportEmail) {
+      void sendMailSafe(
+        settings,
+        buildPaymentSubmittedAdminEmail({
+          to: mailConfig.supportEmail,
+          userName: req.user?.name || 'Customer',
+          userEmail: req.user?.email || '',
+          planName: planDetails.name,
+          amountBdt: payment.amount,
+          gateway: selectedGateway,
+          trxId: payment.trx_id,
+          senderNumber: cleanSender,
+          supportEmail: mailConfig.supportEmail
+        })
+      );
+    }
 
     res.json({
       success: true,
@@ -1111,7 +1216,16 @@ app.post('/api/admin/seo/upload-banner', requireAdmin, async (req: Authenticated
 });
 
 const sanitizeAdminSettingsResponse = (settings: any, openrouter: any) => {
-  const { seo_og_image_data: rawUploadedBanner, ...safeSettings } = settings || {};
+  const {
+    seo_og_image_data: rawUploadedBanner,
+    mail_webhook_url: rawMailWebhookUrl,
+    mail_webhook_secret: rawMailWebhookSecret,
+    ...safeSettings
+  } = settings || {};
+  const resolvedMail = resolveMailRuntimeConfig(settings);
+  const resolvedWebhookForMask =
+    normalizeMailWebhookUrl(rawMailWebhookUrl) || normalizeMailWebhookUrl(process.env.GOOGLE_APPS_SCRIPT_URL);
+
   return {
     ...safeSettings,
     seo_title: safeSettings.seo_title || DEFAULT_SEO_TITLE,
@@ -1121,7 +1235,16 @@ const sanitizeAdminSettingsResponse = (settings: any, openrouter: any) => {
     openrouter_configured: Boolean(openrouter?.api_key),
     openrouter_key_masked: maskSecretKey(openrouter?.api_key),
     openrouter_base_url: openrouter?.base_url || 'https://openrouter.ai/api/v1',
-    openrouter_enabled: openrouter ? openrouter.is_active : true
+    openrouter_enabled: openrouter ? openrouter.is_active : true,
+    mail_enabled: safeSettings.mail_enabled !== false,
+    mail_notify_admin_on_payment: safeSettings.mail_notify_admin_on_payment !== false,
+    mail_configured: resolvedMail.configured,
+    mail_webhook_source: resolvedMail.source,
+    mail_webhook_url_masked: maskMailWebhookUrl(resolvedWebhookForMask),
+    mail_secret_configured: Boolean(
+      (typeof rawMailWebhookSecret === 'string' && rawMailWebhookSecret.trim()) ||
+        (process.env.MAIL_WEBHOOK_SECRET || '').trim()
+    )
   };
 };
 
@@ -1145,6 +1268,13 @@ app.put('/api/admin/settings', requireAdmin, async (req: AuthenticatedRequest, r
       openrouter_key_masked: _okm,
       has_custom_uploaded_og_banner: _hcub,
       seo_og_image_data: _rawImgData,
+      mail_configured: _mc,
+      mail_webhook_source: _mws,
+      mail_webhook_url_masked: _mwum,
+      mail_secret_configured: _msc,
+      mail_webhook_url,
+      mail_webhook_secret,
+      clear_mail_webhook_url,
       ...settingsUpdates
     } = req.body || {};
 
@@ -1160,6 +1290,21 @@ app.put('/api/admin/settings', requireAdmin, async (req: AuthenticatedRequest, r
       if (!nextUrl.startsWith('/api/seo/og-banner')) {
         settingsUpdates.seo_og_image_data = '';
       }
+    }
+
+    if (clear_mail_webhook_url === true) {
+      settingsUpdates.mail_webhook_url = '';
+    } else if (typeof mail_webhook_url === 'string' && mail_webhook_url.trim()) {
+      const urlCheck = validateAppsScriptWebhookUrl(mail_webhook_url);
+      if (!urlCheck.valid) {
+        res.status(400).json({ error: urlCheck.error || 'Invalid Google Apps Script Web App URL.' });
+        return;
+      }
+      settingsUpdates.mail_webhook_url = urlCheck.url;
+    }
+
+    if (typeof mail_webhook_secret === 'string' && mail_webhook_secret.trim()) {
+      settingsUpdates.mail_webhook_secret = mail_webhook_secret.trim();
     }
 
     if (
@@ -1182,6 +1327,49 @@ app.put('/api/admin/settings', requireAdmin, async (req: AuthenticatedRequest, r
     res.json(sanitizeAdminSettingsResponse(updated, openrouter));
   } catch (err: any) {
     res.status(500).json({ error: 'Failed to update settings: ' + err.message });
+  }
+});
+
+app.post('/api/admin/mail/test', requireAdmin, async (req: AuthenticatedRequest, res: Response) => {
+  try {
+    const settings = await db.getSettings();
+    const savedConfig = resolveMailRuntimeConfig(settings);
+    const overrideUrl = typeof req.body?.webhookUrl === 'string' ? req.body.webhookUrl.trim() : '';
+    const overrideSecret = typeof req.body?.webhookSecret === 'string' ? req.body.webhookSecret.trim() : '';
+    const targetEmail = (
+      typeof req.body?.toEmail === 'string' && req.body.toEmail.trim()
+        ? req.body.toEmail.trim()
+        : savedConfig.supportEmail
+    );
+
+    const activeWebhookUrl = overrideUrl || savedConfig.webhookUrl;
+    const activeSecret = overrideSecret || savedConfig.secret;
+
+    if (!activeWebhookUrl) {
+      res.status(400).json({ error: 'Please paste and save your Google Apps Script Web App URL first.' });
+      return;
+    }
+
+    const result = await sendMailViaAppsScript({
+      webhookUrl: activeWebhookUrl,
+      secret: activeSecret,
+      message: buildTestEmail({
+        to: targetEmail,
+        supportEmail: savedConfig.supportEmail
+      })
+    });
+
+    if (!result.ok) {
+      res.status(502).json({ error: result.error || 'Failed to send test email.' });
+      return;
+    }
+
+    res.json({
+      success: true,
+      message: `Test email sent to ${result.sentTo || targetEmail}! Please check your inbox (and Spam folder just in case).`
+    });
+  } catch (err: any) {
+    res.status(500).json({ error: 'Test email failed: ' + err.message });
   }
 });
 
@@ -1378,6 +1566,26 @@ app.post('/api/admin/payments/:id/approve', requireAdmin, async (req: Authentica
     // Trigger Meta Conversions API Purchase Event
     const pixelFired = await sendMetaConversionsPurchase(result.payment, settings);
 
+    // Send subscription activation receipt email to customer
+    const customer = await db.getUserById(result.payment.user_id);
+    if (customer?.email) {
+      const planKey = result.payment.plan_id === 'yearly' ? 'yearly' : 'monthly';
+      void sendMailSafe(
+        settings,
+        buildPaymentApprovedEmail({
+          to: customer.email,
+          name: customer.name || result.payment.user_name || 'Customer',
+          planName: result.payment.plan_name || PLANS[planKey].name,
+          amountBdt: Number(result.payment.amount),
+          gateway: result.payment.gateway,
+          trxId: result.payment.trx_id,
+          expiresAt: result.subscription?.expires_at,
+          usageLimit: customer.usage_limit,
+          supportEmail: settings.support_email || DEFAULT_SUPPORT_EMAIL
+        })
+      );
+    }
+
     res.json({
       success: true,
       message: `Payment approved! Subscription activated for ${result.payment.user_name || 'user'}.`,
@@ -1395,6 +1603,26 @@ app.post('/api/admin/payments/:id/reject', requireAdmin, async (req: Authenticat
     const { id } = req.params;
     const { note } = req.body;
     const rejected = await db.rejectPayment(id, req.user!.id, note);
+    const settings = await db.getSettings();
+    const customer = await db.getUserById(rejected.user_id);
+
+    if (customer?.email) {
+      const planKey = rejected.plan_id === 'yearly' ? 'yearly' : 'monthly';
+      void sendMailSafe(
+        settings,
+        buildPaymentRejectedEmail({
+          to: customer.email,
+          name: customer.name || rejected.user_name || 'Customer',
+          planName: rejected.plan_name || PLANS[planKey].name,
+          amountBdt: Number(rejected.amount),
+          gateway: rejected.gateway,
+          trxId: rejected.trx_id,
+          note: typeof note === 'string' ? note : undefined,
+          supportEmail: settings.support_email || DEFAULT_SUPPORT_EMAIL
+        })
+      );
+    }
+
     res.json({
       success: true,
       message: 'Payment rejected.',

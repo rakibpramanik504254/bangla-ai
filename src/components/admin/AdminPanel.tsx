@@ -32,6 +32,7 @@ import { trackMetaPurchase } from '../../utils/metaPixel.ts';
 import { MoneyManagementTab } from './MoneyManagementTab.tsx';
 import { ModelsCatalogTab } from './ModelsCatalogTab.tsx';
 import { SeoSettingsCard } from './SeoSettingsCard.tsx';
+import { EmailSettingsCard } from './EmailSettingsCard.tsx';
 
 interface AdminUser {
   id: string;
@@ -81,6 +82,8 @@ export const AdminPanel: React.FC = () => {
 
   const [globalSettings, setGlobalSettings] = useState<any>({});
   const [openrouterQuickKey, setOpenrouterQuickKey] = useState('');
+  const [mailWebhookInput, setMailWebhookInput] = useState('');
+  const [mailSecretInput, setMailSecretInput] = useState('');
   const [savingSettings, setSavingSettings] = useState(false);
   const [testingPixel, setTestingPixel] = useState(false);
   const [feedback, setFeedback] = useState<string | null>(null);
@@ -445,10 +448,18 @@ export const AdminPanel: React.FC = () => {
     setSavingSettings(true);
     try {
       const trimmedQuickKey = openrouterQuickKey.trim();
+      const trimmedMailWebhook = mailWebhookInput.trim();
+      const trimmedMailSecret = mailSecretInput.trim();
       const payload = {
         ...globalSettings,
         ...(trimmedQuickKey
           ? { openrouter_api_key: trimmedQuickKey, openrouter_enabled: true }
+          : {}),
+        ...(trimmedMailWebhook
+          ? { mail_webhook_url: trimmedMailWebhook, mail_enabled: true }
+          : {}),
+        ...(trimmedMailSecret
+          ? { mail_webhook_secret: trimmedMailSecret }
           : {})
       };
       const res = await fetch('/api/admin/settings', {
@@ -459,13 +470,20 @@ export const AdminPanel: React.FC = () => {
         },
         body: JSON.stringify(payload)
       });
-      if (res.ok) {
-        setOpenrouterQuickKey('');
-        fetchProvidersAndModels();
-        setFeedback('Platform settings, SEO meta tags, OpenRouter API config, MFS numbers & Meta Pixel saved successfully.');
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        setFeedback(`Error: ${data.error || 'Failed to update settings.'}`);
+        return;
       }
+      setOpenrouterQuickKey('');
+      setMailWebhookInput('');
+      setMailSecretInput('');
+      setGlobalSettings(data);
+      fetchProvidersAndModels();
+      setFeedback('Platform settings, Email System, SEO meta tags, OpenRouter API, MFS numbers & Meta Pixel saved successfully.');
     } catch (err) {
       console.error(err);
+      setFeedback('Error: Network error while saving settings.');
     } finally {
       setSavingSettings(false);
     }
@@ -1658,6 +1676,18 @@ export const AdminPanel: React.FC = () => {
               />
             </div>
           </div>
+
+          {/* Automated Email System (Google Apps Script) */}
+          <EmailSettingsCard
+            token={token}
+            globalSettings={globalSettings}
+            setGlobalSettings={setGlobalSettings}
+            webhookUrlInput={mailWebhookInput}
+            setWebhookUrlInput={setMailWebhookInput}
+            webhookSecretInput={mailSecretInput}
+            setWebhookSecretInput={setMailSecretInput}
+            setFeedback={setFeedback}
+          />
 
           {/* SEO & Social Share Preview (PostgreSQL Persistent) */}
           <SeoSettingsCard
