@@ -11,8 +11,10 @@ interface AuthContextType {
   setTheme: (mode: 'light' | 'dark') => void;
   toggleTheme: () => void;
   loginWithGoogle: () => Promise<User>;
+  bindGoogleAccount: () => Promise<User>;
   login: (email: string, password: string) => Promise<User>;
   register: (name: string, email: string, password: string, phone?: string) => Promise<User>;
+  applySession: (newToken: string, authenticatedUser: User) => void;
   logout: () => Promise<void>;
   refreshUser: () => Promise<void>;
   isAuthModalOpen: boolean;
@@ -172,6 +174,66 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
+  const bindGoogleAccount = async () => {
+    const activeToken = token || localStorage.getItem('bangla_ai_token');
+    if (!activeToken) {
+      throw new Error('Please sign in first to bind your Google account.');
+    }
+
+    try {
+      const { user: fbUser } = await signInWithGoogle();
+      if (!fbUser.email) {
+        throw new Error('Google account must have an associated email address.');
+      }
+
+      const googlePhotoUrl =
+        fbUser.photoURL?.trim() ||
+        fbUser.providerData?.find((p) => p?.photoURL)?.photoURL?.trim() ||
+        '';
+
+      const res = await fetch('/api/auth/bind-google', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${activeToken}`
+        },
+        body: JSON.stringify({
+          email: fbUser.email,
+          name: fbUser.displayName || fbUser.email.split('@')[0],
+          photoURL: googlePhotoUrl,
+          picture: googlePhotoUrl,
+          avatar_url: googlePhotoUrl,
+          uid: fbUser.uid
+        })
+      });
+
+      const data = await res.json();
+      if (!res.ok) {
+        throw new Error(data.error || 'Failed to bind Google account.');
+      }
+
+      const resolvedAvatar = resolveUserAvatarUrl(data.user) || googlePhotoUrl || undefined;
+      const hydratedUser: User = {
+        ...data.user,
+        ...(resolvedAvatar ? { avatar_url: resolvedAvatar } : {})
+      };
+      setUser(hydratedUser);
+      return hydratedUser;
+    } catch (err: any) {
+      if (err?.code === 'auth/popup-closed-by-user' || err?.code === 'auth/cancelled-popup-request') {
+        throw new Error('Google binding cancelled. Please complete the prompt.');
+      }
+      if (err?.code === 'auth/popup-blocked') {
+        throw new Error('Popup was blocked by your browser. Please allow popups and try again.');
+      }
+      if (err?.code === 'auth/unauthorized-domain') {
+        const host = typeof window !== 'undefined' ? window.location.hostname : 'this domain';
+        throw new Error(`Domain "${host}" is not authorized in Firebase Auth.`);
+      }
+      throw new Error(err?.message || 'Failed to bind Google account.');
+    }
+  };
+
   const login = async (email: string, password: string) => {
     const res = await fetch('/api/auth/login', {
       method: 'POST',
@@ -208,6 +270,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setUser(data.user);
     setIsAuthModalOpen(false);
     return data.user as User;
+  };
+
+  const applySession = (newToken: string, authenticatedUser: User) => {
+    localStorage.setItem('bangla_ai_token', newToken);
+    setToken(newToken);
+    setUser(authenticatedUser);
   };
 
   const logout = async () => {
@@ -257,8 +325,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         setTheme,
         toggleTheme,
         loginWithGoogle,
+        bindGoogleAccount,
         login,
         register,
+        applySession,
         logout,
         refreshUser,
         isAuthModalOpen,

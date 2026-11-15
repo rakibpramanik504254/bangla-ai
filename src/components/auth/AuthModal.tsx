@@ -1,8 +1,13 @@
 import React, { useEffect, useState } from 'react';
-import { X, AlertCircle, CheckCircle2, ArrowRight, ShieldCheck, Mail, Lock, User as UserIcon, Phone, KeyRound } from 'lucide-react';
+import { X, AlertCircle, CheckCircle2, ArrowRight, ShieldCheck, Mail, Lock, User as UserIcon, Phone, KeyRound, ExternalLink } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext.tsx';
 import { BrandLogo } from '../common/BrandLogo.tsx';
 import { User } from '../../types/index.ts';
+import {
+  buildAndroidChromeIntentUrl,
+  isAndroidUserAgent,
+  isFacebookInAppBrowser
+} from '../../utils/expressCheckout.ts';
 
 interface AuthModalProps {
   isOpen: boolean;
@@ -65,7 +70,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, defaultTa
     try {
       if (tab === 'login') {
         if (!email.trim() || !password) {
-          throw new Error('Please enter both email and password.');
+          throw new Error('Please enter both email or mobile number and password.');
         }
         const authenticatedUser = await login(email.trim(), password);
         onClose();
@@ -241,6 +246,23 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, defaultTa
                 </span>
               </button>
 
+              {typeof navigator !== 'undefined' && isFacebookInAppBrowser(navigator.userAgent) && (
+                <div className="p-2.5 rounded-xl bg-[#f0f4f9] dark:bg-[#131314] border border-black/[0.08] dark:border-white/[0.08] text-[11px] text-[#444746] dark:text-[#9aa0a6] flex flex-wrap items-center justify-between gap-2">
+                  <span>Inside Facebook browser?</span>
+                  {isAndroidUserAgent(navigator.userAgent) && typeof window !== 'undefined' ? (
+                    <a
+                      href={buildAndroidChromeIntentUrl(window.location.href)}
+                      className="font-semibold text-[#1f1f1f] dark:text-[#e3e3e3] inline-flex items-center gap-1 underline"
+                    >
+                      <span>Open in Chrome</span>
+                      <ExternalLink className="w-3 h-3" />
+                    </a>
+                  ) : (
+                    <span className="font-medium text-[#1f1f1f] dark:text-[#e3e3e3]">Tap &middot;&middot;&middot; &rarr; Open in Browser</span>
+                  )}
+                </div>
+              )}
+
               {/* Minimal Divider */}
               <div className="relative flex items-center justify-center my-1">
                 <div className="border-t border-black/[0.08] dark:border-white/[0.08] w-full" />
@@ -275,16 +297,16 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, defaultTa
 
             <div>
               <label className="block text-xs font-medium text-[#1f1f1f] dark:text-[#e3e3e3] mb-1">
-                Email Address *
+                {tab === 'login' ? 'Email or Mobile Number *' : 'Email Address *'}
               </label>
               <div className="relative">
                 <Mail className="w-3.5 h-3.5 absolute left-3.5 top-3 text-[#444746] dark:text-[#9aa0a6]" />
                 <input
-                  type="email"
+                  type={tab === 'login' ? 'text' : 'email'}
                   required
                   value={email}
                   onChange={e => setEmail(e.target.value)}
-                  placeholder="name@domain.com"
+                  placeholder={tab === 'login' ? 'name@domain.com or 017XXXXXXXX' : 'name@domain.com'}
                   className="w-full pl-9 pr-3.5 py-2.5 text-xs rounded-xl border border-black/[0.08] dark:border-white/[0.08] bg-[#f0f4f9] dark:bg-[#131314] text-[#1f1f1f] dark:text-[#e3e3e3] placeholder:text-[#444746]/70 dark:placeholder:text-[#9aa0a6]/70 focus:outline-none focus:border-[#1f1f1f] dark:focus:border-[#e3e3e3] transition-colors"
                 />
               </div>
@@ -389,7 +411,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, defaultTa
               ) : (
                 <>
                   <span>
-                    {tab === 'login' && 'Sign In with Email'}
+                    {tab === 'login' && 'Sign In'}
                     {tab === 'register' && 'Create Account'}
                     {tab === 'forgot' && (resetStep === 1 ? 'Send Reset OTP' : 'Update Password')}
                   </span>

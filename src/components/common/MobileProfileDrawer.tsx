@@ -14,6 +14,7 @@ import {
 } from 'lucide-react';
 import { User } from '../../types/index.ts';
 import { AppView, getAccountRoleLabel } from '../../utils/navigation.ts';
+import { formatUserContactSubtitle } from '../../utils/expressCheckout.ts';
 import { useAppInstall } from '../../context/AppInstallContext.tsx';
 import { UserAvatar } from './UserAvatar.tsx';
 
@@ -153,7 +154,7 @@ export const MobileProfileDrawer: React.FC<MobileProfileDrawerProps> = ({
           </div>
 
           <p className="text-xs text-[#444746] dark:text-[#9aa0a6] truncate">
-            {user.email}
+            {formatUserContactSubtitle(user)}
           </p>
 
           <div className="px-3 py-2 rounded-xl bg-[#f0f4f9] dark:bg-[#131314] border border-black/[0.06] dark:border-white/[0.06] flex items-center justify-between text-xs font-mono tabular-nums">

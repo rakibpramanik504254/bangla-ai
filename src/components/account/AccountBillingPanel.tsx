@@ -2,13 +2,18 @@ import React, { useCallback, useEffect, useState } from 'react';
 import {
   AlertCircle,
   ArrowUpRight,
+  CheckCircle2,
   CreditCard,
+  ExternalLink,
   Home,
+  Lock,
   LogOut,
+  Mail,
   MessageSquare,
   Moon,
   RefreshCw,
   Shield,
+  ShieldCheck,
   Sun,
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext.tsx';
@@ -20,6 +25,12 @@ import {
   getSubscriptionSummary,
   normalizePaymentStatus,
 } from '../../utils/navigation.ts';
+import {
+  buildAndroidChromeIntentUrl,
+  isAndroidUserAgent,
+  isFacebookInAppBrowser,
+  isSyntheticPhoneEmail,
+} from '../../utils/expressCheckout.ts';
 
 interface AccountBillingPanelProps {
   compact?: boolean;
@@ -36,10 +47,18 @@ export const AccountBillingPanel: React.FC<AccountBillingPanelProps> = ({
   onNavigateHome,
   onNavigateAdmin,
 }) => {
-  const { user, token, refreshUser, openPaymentModal, theme, setTheme, logout } = useAuth();
+  const { user, token, refreshUser, bindGoogleAccount, openPaymentModal, theme, setTheme, logout } = useAuth();
   const [payments, setPayments] = useState<Payment[]>([]);
   const [loadingPayments, setLoadingPayments] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+
+  // Account Security & Recovery state (Email, Password, Google Binding)
+  const [emailInput, setEmailInput] = useState('');
+  const [savingEmail, setSavingEmail] = useState(false);
+  const [passwordInput, setPasswordInput] = useState('');
+  const [savingPassword, setSavingPassword] = useState(false);
+  const [bindingGoogle, setBindingGoogle] = useState(false);
+  const [securityFeedback, setSecurityFeedback] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
 
   const fetchPayments = useCallback(async () => {
     if (!token) {
@@ -74,6 +93,92 @@ export const AccountBillingPanel: React.FC<AccountBillingPanelProps> = ({
     }
   };
 
+  const handleSaveEmail = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!token || !emailInput.trim()) return;
+    setSecurityFeedback(null);
+    setSavingEmail(true);
+    try {
+      const res = await fetch('/api/auth/profile', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({ email: emailInput.trim() }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        throw new Error(data.error || 'Failed to add email address.');
+      }
+      setEmailInput('');
+      await refreshUser();
+      setSecurityFeedback({
+        type: 'success',
+        text: 'Email address saved! Receipts and password OTPs will now go to your inbox.',
+      });
+    } catch (err: any) {
+      setSecurityFeedback({ type: 'error', text: err?.message || 'Could not update email.' });
+    } finally {
+      setSavingEmail(false);
+    }
+  };
+
+  const handleSavePassword = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!token) return;
+    if (passwordInput.length < 6) {
+      setSecurityFeedback({ type: 'error', text: 'Password must be at least 6 characters.' });
+      return;
+    }
+    setSecurityFeedback(null);
+    setSavingPassword(true);
+    try {
+      const res = await fetch('/api/auth/set-password', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({ newPassword: passwordInput }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        throw new Error(data.error || 'Failed to set password.');
+      }
+      setPasswordInput('');
+      await refreshUser();
+      setSecurityFeedback({
+        type: 'success',
+        text: 'Password saved! You can now sign in anytime with your phone or email.',
+      });
+    } catch (err: any) {
+      setSecurityFeedback({ type: 'error', text: err?.message || 'Could not save password.' });
+    } finally {
+      setSavingPassword(false);
+    }
+  };
+
+  const handleBindGoogle = async () => {
+    setSecurityFeedback(null);
+    setBindingGoogle(true);
+    try {
+      await bindGoogleAccount();
+      await refreshUser();
+      setSecurityFeedback({
+        type: 'success',
+        text: 'Google account bound successfully! You can now 1-click Sign in with Google anytime.',
+      });
+    } catch (err: any) {
+      setSecurityFeedback({
+        type: 'error',
+        text: err?.message || 'Failed to bind Google account.',
+      });
+    } finally {
+      setBindingGoogle(false);
+    }
+  };
+
   if (!user) {
     return (
       <div className="py-12 text-center space-y-2">
@@ -90,6 +195,14 @@ export const AccountBillingPanel: React.FC<AccountBillingPanelProps> = ({
 
   const roleLabel = getAccountRoleLabel(user);
   const summary = getSubscriptionSummary(user);
+  const needsEmail = Boolean(user.needs_email || isSyntheticPhoneEmail(user.email));
+  const hasPassword = user.has_password !== false;
+  const googleLinked = Boolean(user.google_linked || user.firebase_uid);
+  const needsAccountSetup = needsEmail || !hasPassword || !googleLinked;
+  const isFbIab =
+    typeof navigator !== 'undefined' && isFacebookInAppBrowser(navigator.userAgent);
+  const isAndroid =
+    typeof navigator !== 'undefined' && isAndroidUserAgent(navigator.userAgent);
 
   const renderStatusBadge = (status?: string | null) => {
     const badge = normalizePaymentStatus(status);
@@ -152,8 +265,8 @@ export const AccountBillingPanel: React.FC<AccountBillingPanelProps> = ({
                 </span>
               </div>
               <p className="text-xs text-[#444746] dark:text-[#9aa0a6] truncate mt-0.5">
-                {user.email}
-                {user.phone ? ` · ${user.phone}` : ''}
+                {needsEmail ? (user.phone ? `Phone: ${user.phone}` : 'Phone Account') : user.email}
+                {!needsEmail && user.phone ? ` · ${user.phone}` : ''}
               </p>
             </div>
           </div>
@@ -197,6 +310,202 @@ export const AccountBillingPanel: React.FC<AccountBillingPanelProps> = ({
                 <span>Dark Mode</span>
               </button>
             </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Section 1b: Account Security & Login Recovery (Email, Password, Google Binding) */}
+      <section aria-label="Account Security and Login Recovery" className="space-y-3.5" data-testid="account-security-section">
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <h3 className="text-xs font-semibold uppercase tracking-wider text-[#444746] dark:text-[#9aa0a6]">
+            Account Security &amp; Connected Login
+          </h3>
+          {needsAccountSetup ? (
+            <span className="text-[11px] font-medium px-2.5 py-0.5 rounded-full border border-amber-500/25 bg-amber-500/10 text-amber-700 dark:text-amber-300">
+              Recommended Setup
+            </span>
+          ) : (
+            <span className="text-[11px] font-medium px-2.5 py-0.5 rounded-full border border-emerald-500/25 bg-emerald-500/10 text-emerald-700 dark:text-emerald-400">
+              Fully Secured
+            </span>
+          )}
+        </div>
+
+        <div className="rounded-2xl bg-[#f0f4f9] dark:bg-[#131314] border border-black/[0.06] dark:border-white/[0.08] p-4 sm:p-5 space-y-4">
+          {securityFeedback && (
+            <div
+              className={`p-3 text-xs rounded-xl border flex items-start gap-2 ${
+                securityFeedback.type === 'success'
+                  ? 'bg-emerald-500/10 border-emerald-500/25 text-emerald-700 dark:text-emerald-300'
+                  : 'bg-red-500/10 border-red-500/25 text-red-600 dark:text-red-300'
+              }`}
+            >
+              {securityFeedback.type === 'success' ? (
+                <CheckCircle2 className="w-4 h-4 shrink-0 mt-0.5" />
+              ) : (
+                <AlertCircle className="w-4 h-4 shrink-0 mt-0.5" />
+              )}
+              <span className="leading-relaxed">{securityFeedback.text}</span>
+            </div>
+          )}
+
+          {(needsEmail || !hasPassword) && (
+            <p className="text-xs text-[#444746] dark:text-[#9aa0a6] leading-relaxed">
+              Add an email, set a password, or bind your Google account below so you can easily log back in from any browser and receive payment receipts.
+            </p>
+          )}
+
+          {/* Row 1: Email Address */}
+          <div className="pt-1">
+            {needsEmail ? (
+              <form onSubmit={handleSaveEmail} className="space-y-1.5">
+                <label className="block text-xs font-semibold text-[#1f1f1f] dark:text-[#e3e3e3]">
+                  Add Email Address <span className="font-normal text-[#444746] dark:text-[#9aa0a6]">(For receipts &amp; OTP recovery)</span>
+                </label>
+                <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
+                  <div className="relative flex-1 min-w-0">
+                    <Mail className="w-3.5 h-3.5 absolute left-3 top-3 text-[#444746] dark:text-[#9aa0a6]" />
+                    <input
+                      type="email"
+                      required
+                      value={emailInput}
+                      onChange={e => setEmailInput(e.target.value)}
+                      placeholder="yourname@gmail.com"
+                      data-testid="account-add-email-input"
+                      className="w-full pl-9 pr-3 py-2 text-xs rounded-xl border border-black/[0.08] dark:border-white/[0.08] bg-white dark:bg-[#1e1f20] text-[#1f1f1f] dark:text-[#e3e3e3] focus:outline-none focus:border-[#1f1f1f] dark:focus:border-[#e3e3e3]"
+                    />
+                  </div>
+                  <button
+                    type="submit"
+                    disabled={savingEmail || !emailInput.trim()}
+                    data-testid="account-add-email-btn"
+                    className="h-9 px-4 rounded-full bg-[#1f1f1f] hover:bg-[#1f1f1f]/90 dark:bg-[#e3e3e3] dark:hover:bg-[#e3e3e3]/90 text-white dark:text-[#131314] text-xs font-semibold shrink-0 disabled:opacity-50 cursor-pointer"
+                  >
+                    {savingEmail ? 'Saving...' : 'Add Email'}
+                  </button>
+                </div>
+              </form>
+            ) : (
+              <div className="flex flex-wrap items-center justify-between gap-2 text-xs py-1">
+                <span className="text-[#444746] dark:text-[#9aa0a6] flex items-center gap-1.5">
+                  <Mail className="w-3.5 h-3.5" />
+                  <span>Recovery Email: <strong className="text-[#1f1f1f] dark:text-[#e3e3e3]">{user.email}</strong></span>
+                </span>
+                <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-emerald-700 dark:text-emerald-400">
+                  <CheckCircle2 className="w-3.5 h-3.5" />
+                  <span>Email Added</span>
+                </span>
+              </div>
+            )}
+          </div>
+
+          {/* Row 2: Set Password */}
+          <div className="pt-3 border-t border-black/[0.06] dark:border-white/[0.08]">
+            {!hasPassword ? (
+              <form onSubmit={handleSavePassword} className="space-y-1.5">
+                <label className="block text-xs font-semibold text-[#1f1f1f] dark:text-[#e3e3e3]">
+                  Set Account Password <span className="font-normal text-[#444746] dark:text-[#9aa0a6]">(Sign in anytime with phone or email)</span>
+                </label>
+                <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
+                  <div className="relative flex-1 min-w-0">
+                    <Lock className="w-3.5 h-3.5 absolute left-3 top-3 text-[#444746] dark:text-[#9aa0a6]" />
+                    <input
+                      type="password"
+                      required
+                      value={passwordInput}
+                      onChange={e => setPasswordInput(e.target.value)}
+                      placeholder="Create password (min 6 characters)"
+                      data-testid="account-set-password-input"
+                      className="w-full pl-9 pr-3 py-2 text-xs rounded-xl border border-black/[0.08] dark:border-white/[0.08] bg-white dark:bg-[#1e1f20] text-[#1f1f1f] dark:text-[#e3e3e3] focus:outline-none focus:border-[#1f1f1f] dark:focus:border-[#e3e3e3]"
+                    />
+                  </div>
+                  <button
+                    type="submit"
+                    disabled={savingPassword || passwordInput.length < 6}
+                    data-testid="account-set-password-btn"
+                    className="h-9 px-4 rounded-full bg-[#1f1f1f] hover:bg-[#1f1f1f]/90 dark:bg-[#e3e3e3] dark:hover:bg-[#e3e3e3]/90 text-white dark:text-[#131314] text-xs font-semibold shrink-0 disabled:opacity-50 cursor-pointer"
+                  >
+                    {savingPassword ? 'Saving...' : 'Set Password'}
+                  </button>
+                </div>
+              </form>
+            ) : (
+              <div className="flex flex-wrap items-center justify-between gap-2 text-xs py-1">
+                <span className="text-[#444746] dark:text-[#9aa0a6] flex items-center gap-1.5">
+                  <Lock className="w-3.5 h-3.5" />
+                  <span>Account Password</span>
+                </span>
+                <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-emerald-700 dark:text-emerald-400">
+                  <ShieldCheck className="w-3.5 h-3.5" />
+                  <span>Password Set</span>
+                </span>
+              </div>
+            )}
+          </div>
+
+          {/* Row 3: Bind your account with Google */}
+          <div className="pt-3 border-t border-black/[0.06] dark:border-white/[0.08] flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+            <div className="min-w-0">
+              <p className="text-xs font-semibold text-[#1f1f1f] dark:text-[#e3e3e3]">
+                Google Account Sign-In
+              </p>
+              <p className="text-[11px] text-[#444746] dark:text-[#9aa0a6] mt-0.5">
+                {googleLinked
+                  ? 'Linked! You can sign in with 1 click using Google anytime.'
+                  : 'Connect Google so you can access this exact plan & history with 1 click.'}
+              </p>
+              {!googleLinked && isFbIab && isAndroid && typeof window !== 'undefined' && (
+                <a
+                  href={buildAndroidChromeIntentUrl(window.location.href)}
+                  className="inline-flex items-center gap-1 text-[11px] font-semibold text-[#1f1f1f] dark:text-[#e3e3e3] underline mt-1"
+                >
+                  <span>Open in Chrome to bind Google</span>
+                  <ExternalLink className="w-3 h-3" />
+                </a>
+              )}
+            </div>
+
+            {googleLinked ? (
+              <span
+                data-testid="account-google-bound-badge"
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-emerald-500/10 border border-emerald-500/25 text-emerald-700 dark:text-emerald-400 text-xs font-semibold shrink-0 self-start sm:self-auto"
+              >
+                <CheckCircle2 className="w-3.5 h-3.5" />
+                <span>Bound with Google</span>
+              </span>
+            ) : (
+              <button
+                type="button"
+                onClick={handleBindGoogle}
+                disabled={bindingGoogle}
+                data-testid="account-bind-google-btn"
+                className="h-9 px-4 rounded-full font-semibold text-xs text-[#1f1f1f] dark:text-[#e3e3e3] bg-white dark:bg-[#1e1f20] hover:bg-[#e9eef6] dark:hover:bg-[#282a2c] border border-black/[0.1] dark:border-white/[0.12] transition-colors inline-flex items-center justify-center gap-2 shrink-0 disabled:opacity-60 cursor-pointer self-start sm:self-auto"
+              >
+                {bindingGoogle ? (
+                  <span className="w-3.5 h-3.5 border-2 border-[#1f1f1f] dark:border-[#e3e3e3] border-t-transparent rounded-full animate-spin" />
+                ) : (
+                  <svg className="w-3.5 h-3.5 shrink-0" viewBox="0 0 24 24" aria-hidden="true">
+                    <path
+                      fill="#4285F4"
+                      d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"
+                    />
+                    <path
+                      fill="#34A853"
+                      d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"
+                    />
+                    <path
+                      fill="#FBBC05"
+                      d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z"
+                    />
+                    <path
+                      fill="#EA4335"
+                      d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z"
+                    />
+                  </svg>
+                )}
+                <span>Bind your account with Google</span>
+              </button>
+            )}
           </div>
         </div>
       </section>

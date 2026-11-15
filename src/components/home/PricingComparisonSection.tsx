@@ -12,7 +12,7 @@ import {
 } from '../../utils/pricingCalculator.ts';
 
 export const PricingComparisonSection: React.FC = () => {
-  const { user, openAuthModal, openPaymentModal } = useAuth();
+  const { openPaymentModal } = useAuth();
   const [selectedToolIds, setSelectedToolIds] = useState<string[]>([...DEFAULT_SELECTED_TOOL_IDS]);
   const [selectedPlan, setSelectedPlan] = useState<'monthly' | 'yearly'>('monthly');
 
@@ -29,11 +29,7 @@ export const PricingComparisonSection: React.FC = () => {
   };
 
   const handleBuyNow = () => {
-    if (!user) {
-      openAuthModal('register');
-    } else {
-      openPaymentModal(selectedPlan);
-    }
+    openPaymentModal(selectedPlan);
   };
 
   return (

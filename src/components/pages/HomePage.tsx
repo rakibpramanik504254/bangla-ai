@@ -98,7 +98,7 @@ const SAMPLE_BENCHMARKS: PromptSample[] = [
 ];
 
 export const HomePage: React.FC<HomePageProps> = ({ onStartChat }) => {
-  const { user, openAuthModal, openPaymentModal } = useAuth();
+  const { user, openPaymentModal } = useAuth();
   const isSubscribed = user?.isSubscribed || user?.role === 'admin';
 
   const [activeBenchmarkTab, setActiveBenchmarkTab] = useState(0);
@@ -128,9 +128,7 @@ export const HomePage: React.FC<HomePageProps> = ({ onStartChat }) => {
           <div className="pt-2 flex flex-col sm:flex-row items-center justify-center gap-3">
             <button
               onClick={() => {
-                if (!user) {
-                  openAuthModal('register');
-                } else if (!isSubscribed) {
+                if (!user || !isSubscribed) {
                   openPaymentModal('monthly');
                 } else {
                   onStartChat();

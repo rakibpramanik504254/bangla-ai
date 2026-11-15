@@ -51,6 +51,14 @@ import {
   sendMailViaAppsScript,
   validateAppsScriptWebhookUrl
 } from './src/server/mail.ts';
+import {
+  deriveGuestDisplayName,
+  isSyntheticPhoneEmail,
+  isValidBdPhoneNumber,
+  isValidEmailAddress,
+  normalizeBdPhoneNumber,
+  synthesizeGuestEmailFromPhone
+} from './src/utils/expressCheckout.ts';
 
 dotenv.config();
 
@@ -70,6 +78,22 @@ app.use((req, _res, next) => {
 // ==========================================
 // 1. Authentication Endpoints
 // ==========================================
+
+const serializeAuthUser = (user: any, sub: any, resolvedAvatar?: string) => ({
+  id: user.id,
+  email: user.email,
+  name: user.name,
+  phone: user.phone,
+  role: user.role,
+  usage_limit: user.usage_limit,
+  current_usage: user.current_usage,
+  avatar_url: resolvedAvatar !== undefined ? resolvedAvatar : (user.avatar_url || ''),
+  subscription: sub || null,
+  isSubscribed: user.role === 'admin' || isSubscriptionActive(sub),
+  has_password: Boolean(user.password_hash && String(user.password_hash).trim()),
+  google_linked: Boolean(user.firebase_uid && String(user.firebase_uid).trim()),
+  needs_email: isSyntheticPhoneEmail(user.email)
+});
 
 app.post('/api/auth/register', async (req: Request, res: Response) => {
   try {
@@ -115,18 +139,7 @@ app.post('/api/auth/register', async (req: Request, res: Response) => {
 
     res.status(201).json({
       token,
-      user: {
-        id: newUser.id,
-        email: newUser.email,
-        name: newUser.name,
-        phone: newUser.phone,
-        role: newUser.role,
-        usage_limit: newUser.usage_limit,
-        current_usage: newUser.current_usage,
-        avatar_url: newUser.avatar_url || '',
-        subscription: sub || null,
-        isSubscribed: isSubscriptionActive(sub)
-      }
+      user: serializeAuthUser(newUser, sub)
     });
   } catch (err: any) {
     res.status(500).json({ error: 'Registration failed: ' + err.message });
@@ -135,15 +148,18 @@ app.post('/api/auth/register', async (req: Request, res: Response) => {
 
 app.post('/api/auth/login', async (req: Request, res: Response) => {
   try {
-    const { email, password } = req.body;
-    if (!email || !password) {
-      res.status(400).json({ error: 'Please provide both email and password.' });
+    const { email, identifier, password } = req.body;
+    const rawIdentifier = String(identifier || email || '').trim();
+    if (!rawIdentifier || !password) {
+      res.status(400).json({ error: 'Please provide both email or mobile number and password.' });
       return;
     }
 
-    const user = await db.getUserByEmail(email);
+    const user = rawIdentifier.includes('@')
+      ? await db.getUserByEmail(rawIdentifier)
+      : await db.getUserByPhone(rawIdentifier);
     if (!user) {
-      res.status(401).json({ error: 'Invalid email or password.' });
+      res.status(401).json({ error: 'Invalid credentials or password.' });
       return;
     }
 
@@ -153,7 +169,7 @@ app.post('/api/auth/login', async (req: Request, res: Response) => {
     }
 
     if (!verifyPassword(password, user.password_hash)) {
-      res.status(401).json({ error: 'Invalid email or password.' });
+      res.status(401).json({ error: 'Invalid credentials or password.' });
       return;
     }
 
@@ -162,21 +178,151 @@ app.post('/api/auth/login', async (req: Request, res: Response) => {
 
     res.json({
       token,
-      user: {
-        id: user.id,
-        email: user.email,
-        name: user.name,
-        phone: user.phone,
-        role: user.role,
-        usage_limit: user.usage_limit,
-        current_usage: user.current_usage,
-        avatar_url: user.avatar_url || '',
-        subscription: sub || null,
-        isSubscribed: user.role === 'admin' || isSubscriptionActive(sub)
-      }
+      user: serializeAuthUser(user, sub)
     });
   } catch (err: any) {
     res.status(500).json({ error: 'Login error: ' + err.message });
+  }
+});
+
+app.post('/api/auth/set-password', authenticate, async (req: AuthenticatedRequest, res: Response) => {
+  try {
+    const { newPassword } = req.body || {};
+    if (typeof newPassword !== 'string' || newPassword.length < 6) {
+      res.status(400).json({ error: 'Password must be at least 6 characters.' });
+      return;
+    }
+    await db.updateUser(req.user!.id, {
+      password_hash: hashPassword(newPassword)
+    });
+    res.json({ success: true, message: 'Password saved! You can use it anytime to sign in.' });
+  } catch (err: any) {
+    res.status(500).json({ error: 'Failed to save password: ' + err.message });
+  }
+});
+
+app.post('/api/auth/profile', authenticate, async (req: AuthenticatedRequest, res: Response) => {
+  try {
+    const currentUser = req.user!;
+    const rawEmail = typeof req.body?.email === 'string' ? req.body.email.trim().toLowerCase() : '';
+    const rawName = typeof req.body?.name === 'string' ? req.body.name.trim() : '';
+
+    if (!rawEmail && !rawName) {
+      res.status(400).json({ error: 'Please provide an email address or name to update.' });
+      return;
+    }
+
+    const updates: Record<string, any> = {};
+    let addedNewRealEmail = false;
+
+    if (rawEmail) {
+      if (!isValidEmailAddress(rawEmail) || isSyntheticPhoneEmail(rawEmail)) {
+        res.status(400).json({ error: 'Please enter a valid email address.' });
+        return;
+      }
+      const existingByEmail = await db.getUserByEmail(rawEmail);
+      if (existingByEmail && existingByEmail.id !== currentUser.id) {
+        res.status(400).json({ error: 'This email address is already linked to another Bangla AI account.' });
+        return;
+      }
+      if (rawEmail !== currentUser.email.toLowerCase()) {
+        updates.email = rawEmail;
+        if (isSyntheticPhoneEmail(currentUser.email)) {
+          addedNewRealEmail = true;
+        }
+      }
+    }
+
+    if (rawName) {
+      updates.name = rawName;
+    }
+
+    const updatedUser =
+      Object.keys(updates).length > 0
+        ? (await db.updateUser(currentUser.id, updates)) || currentUser
+        : currentUser;
+
+    if (addedNewRealEmail) {
+      const settings = await db.getSettings();
+      void sendMailSafe(
+        settings,
+        buildWelcomeEmail({
+          to: updatedUser.email,
+          name: updatedUser.name,
+          usageLimit: updatedUser.usage_limit,
+          supportEmail: settings.support_email || DEFAULT_SUPPORT_EMAIL
+        })
+      );
+    }
+
+    const sub = await db.getSubscriptionByUserId(updatedUser.id);
+    res.json({
+      success: true,
+      message: 'Account email updated successfully.',
+      user: serializeAuthUser(updatedUser, sub)
+    });
+  } catch (err: any) {
+    res.status(500).json({ error: 'Failed to update profile: ' + err.message });
+  }
+});
+
+app.post('/api/auth/bind-google', authenticate, async (req: AuthenticatedRequest, res: Response) => {
+  try {
+    const currentUser = req.user!;
+    const { email, name, photoURL, picture, avatar_url, avatar, user_metadata, uid } = req.body || {};
+
+    if (!uid || !email) {
+      res.status(400).json({ error: 'Valid Google account credentials are required.' });
+      return;
+    }
+
+    const existingByUid = await db.getUserByFirebaseUid(String(uid));
+    if (existingByUid && existingByUid.id !== currentUser.id) {
+      res.status(400).json({
+        error: 'This Google account is already linked to another Bangla AI account.'
+      });
+      return;
+    }
+
+    const googleEmail = String(email).trim().toLowerCase();
+    const incomingAvatar = resolveUserAvatarUrl({
+      photoURL,
+      picture,
+      avatar_url,
+      avatar,
+      user_metadata
+    });
+
+    const updates: Record<string, any> = {
+      firebase_uid: String(uid)
+    };
+
+    if (incomingAvatar && !currentUser.avatar_url) {
+      updates.avatar_url = incomingAvatar;
+    }
+
+    if (name && (!currentUser.name || currentUser.name.startsWith('Customer ') || currentUser.name === 'Bangla AI Customer')) {
+      updates.name = String(name).trim();
+    }
+
+    // Upgrade synthetic phone-only email to the verified Google email if available
+    if (isSyntheticPhoneEmail(currentUser.email)) {
+      const existingByEmail = await db.getUserByEmail(googleEmail);
+      if (!existingByEmail || existingByEmail.id === currentUser.id) {
+        updates.email = googleEmail;
+      }
+    }
+
+    const updatedUser = (await db.updateUser(currentUser.id, updates)) || currentUser;
+    const sub = await db.getSubscriptionByUserId(updatedUser.id);
+
+    res.json({
+      success: true,
+      message: 'Your account is now bound with Google!',
+      user: serializeAuthUser(updatedUser, sub, updatedUser.avatar_url || incomingAvatar || '')
+    });
+  } catch (err: any) {
+    res.status(500).json({ error: 'Failed to bind Google account: ' + err.message });
   }
 });
 
@@ -214,18 +360,7 @@ app.post('/api/auth/google', async (req: Request, res: Response) => {
 
     res.json({
       token,
-      user: {
-        id: user.id,
-        email: user.email,
-        name: user.name,
-        phone: user.phone,
-        role: user.role,
-        usage_limit: user.usage_limit,
-        current_usage: user.current_usage,
-        avatar_url: resolvedAvatar,
-        subscription: sub || null,
-        isSubscribed: user.role === 'admin' || isSubscriptionActive(sub)
-      }
+      user: serializeAuthUser(user, sub, resolvedAvatar)
     });
   } catch (err: any) {
     res.status(500).json({ error: 'Google authentication error: ' + err.message });
@@ -240,15 +375,8 @@ app.get('/api/auth/me', authenticate, async (req: AuthenticatedRequest, res: Res
     const usageStats = calculateUsageStats(usageLimit, user.current_usage || 0);
 
     res.json({
-      id: user.id,
-      email: user.email,
-      name: user.name,
-      phone: user.phone,
-      role: user.role,
-      avatar_url: user.avatar_url || '',
-      usage: usageStats,
-      subscription: sub || null,
-      isSubscribed: user.role === 'admin' || isSubscriptionActive(sub)
+      ...serializeAuthUser(user, sub),
+      usage: usageStats
     });
   } catch (err: any) {
     res.status(500).json({ error: 'Failed to load profile: ' + err.message });
@@ -417,6 +545,54 @@ app.get('/api/payment/settings', async (_req: Request, res: Response) => {
   }
 });
 
+const dispatchPaymentSubmittedEmails = async (params: {
+  customerEmail?: string | null;
+  customerName: string;
+  planId: 'monthly' | 'yearly';
+  gateway: 'bkash' | 'nagad' | 'rocket';
+  amount: number;
+  trxId: string;
+  senderNumber: string;
+}) => {
+  const settings = await db.getSettings();
+  const mailConfig = resolveMailRuntimeConfig(settings);
+  const planDetails = PLANS[params.planId];
+  const hasRealCustomerEmail = Boolean(params.customerEmail && !isSyntheticPhoneEmail(params.customerEmail));
+
+  if (hasRealCustomerEmail && params.customerEmail) {
+    void sendMailSafe(
+      settings,
+      buildPaymentSubmittedUserEmail({
+        to: params.customerEmail,
+        name: params.customerName || 'Customer',
+        planName: planDetails.name,
+        amountBdt: params.amount,
+        gateway: params.gateway,
+        trxId: params.trxId,
+        senderNumber: params.senderNumber,
+        supportEmail: mailConfig.supportEmail
+      })
+    );
+  }
+
+  if (mailConfig.notifyAdminOnPayment && mailConfig.supportEmail) {
+    void sendMailSafe(
+      settings,
+      buildPaymentSubmittedAdminEmail({
+        to: mailConfig.supportEmail,
+        userName: params.customerName || 'Customer',
+        userEmail: hasRealCustomerEmail && params.customerEmail ? params.customerEmail : `${params.senderNumber} (Phone Express)`,
+        planName: planDetails.name,
+        amountBdt: params.amount,
+        gateway: params.gateway,
+        trxId: params.trxId,
+        senderNumber: params.senderNumber,
+        supportEmail: mailConfig.supportEmail
+      })
+    );
+  }
+};
+
 // Common handler for both /api/payments/verify and /api/subscription/checkout
 const handlePaymentSubmission = async (req: AuthenticatedRequest, res: Response) => {
   try {
@@ -435,7 +611,7 @@ const handlePaymentSubmission = async (req: AuthenticatedRequest, res: Response)
       return;
     }
 
-    const cleanSender = (senderNumber || req.user!.phone || '').trim().replace(/[^0-9]/g, '');
+    const cleanSender = normalizeBdPhoneNumber(senderNumber || req.user!.phone || '');
     if (cleanSender.length < 11) {
       res.status(400).json({ error: 'Valid 11-digit Bangladeshi mobile number is required.' });
       return;
@@ -449,42 +625,15 @@ const handlePaymentSubmission = async (req: AuthenticatedRequest, res: Response)
       senderNumber: cleanSender
     });
 
-    const settings = await db.getSettings();
-    const mailConfig = resolveMailRuntimeConfig(settings);
-    const planDetails = PLANS[selectedPlan];
-
-    if (req.user?.email) {
-      void sendMailSafe(
-        settings,
-        buildPaymentSubmittedUserEmail({
-          to: req.user.email,
-          name: req.user.name || 'Customer',
-          planName: planDetails.name,
-          amountBdt: payment.amount,
-          gateway: selectedGateway,
-          trxId: payment.trx_id,
-          senderNumber: cleanSender,
-          supportEmail: mailConfig.supportEmail
-        })
-      );
-    }
-
-    if (mailConfig.notifyAdminOnPayment && mailConfig.supportEmail) {
-      void sendMailSafe(
-        settings,
-        buildPaymentSubmittedAdminEmail({
-          to: mailConfig.supportEmail,
-          userName: req.user?.name || 'Customer',
-          userEmail: req.user?.email || '',
-          planName: planDetails.name,
-          amountBdt: payment.amount,
-          gateway: selectedGateway,
-          trxId: payment.trx_id,
-          senderNumber: cleanSender,
-          supportEmail: mailConfig.supportEmail
-        })
-      );
-    }
+    await dispatchPaymentSubmittedEmails({
+      customerEmail: req.user?.email,
+      customerName: req.user?.name || 'Customer',
+      planId: selectedPlan,
+      gateway: selectedGateway,
+      amount: payment.amount,
+      trxId: payment.trx_id,
+      senderNumber: cleanSender
+    });
 
     res.json({
       success: true,
@@ -496,6 +645,126 @@ const handlePaymentSubmission = async (req: AuthenticatedRequest, res: Response)
     res.status(400).json({ error: err.message || 'Payment submission failed.' });
   }
 };
+
+// Express Guest Checkout (No Sign-Up Wall for Facebook Ads Traffic)
+app.post('/api/payments/express', async (req: Request, res: Response) => {
+  try {
+    const { planId, gateway, paymentMethod, trxId, senderNumber, email, name } = req.body || {};
+    const selectedPlan = planId === 'yearly' ? 'yearly' : 'monthly';
+    const selectedGateway = ((gateway || paymentMethod || 'bkash') as string).toLowerCase() as 'bkash' | 'nagad' | 'rocket';
+
+    if (!['bkash', 'nagad', 'rocket'].includes(selectedGateway)) {
+      res.status(400).json({ error: 'Valid MFS gateway (bKash, Nagad, or Rocket) is required.' });
+      return;
+    }
+
+    const cleanSender = normalizeBdPhoneNumber(senderNumber);
+    if (!isValidBdPhoneNumber(cleanSender)) {
+      res.status(400).json({ error: 'Please enter a valid 11-digit Bangladeshi mobile number (e.g. 017XXXXXXXX).' });
+      return;
+    }
+
+    const cleanTrx = String(trxId || '').trim();
+    if (!cleanTrx || cleanTrx.length < 6) {
+      res.status(400).json({ error: 'Valid SMS Transaction ID (TrxID) is required.' });
+      return;
+    }
+
+    const rawEmail = typeof email === 'string' ? email.trim().toLowerCase() : '';
+    if (rawEmail && !isValidEmailAddress(rawEmail)) {
+      res.status(400).json({ error: 'Please enter a valid email address or leave it blank.' });
+      return;
+    }
+
+    let targetUser = rawEmail
+      ? (await db.getUserByEmail(rawEmail)) || (await db.getUserByPhone(cleanSender))
+      : await db.getUserByPhone(cleanSender);
+
+    let autoAuthenticated = false;
+    let issuedToken: string | undefined;
+
+    if (targetUser) {
+      if (targetUser.status === 'suspended') {
+        res.status(403).json({ error: 'This account is suspended. Please contact support.' });
+        return;
+      }
+      if (!targetUser.phone) {
+        await db.updateUser(targetUser.id, { phone: cleanSender });
+      }
+    } else {
+      const resolvedEmail = rawEmail || synthesizeGuestEmailFromPhone(cleanSender);
+      const displayName = deriveGuestDisplayName({ name, email: resolvedEmail, phone: cleanSender });
+
+      targetUser = await db.createUser({
+        email: resolvedEmail,
+        password: '',
+        name: displayName,
+        phone: cleanSender,
+        role: 'user'
+      });
+
+      issuedToken = generateToken(targetUser);
+      autoAuthenticated = true;
+
+      if (rawEmail) {
+        const settings = await db.getSettings();
+        void sendMailSafe(
+          settings,
+          buildWelcomeEmail({
+            to: rawEmail,
+            name: displayName,
+            usageLimit: targetUser.usage_limit,
+            supportEmail: settings.support_email || DEFAULT_SUPPORT_EMAIL
+          })
+        );
+      }
+    }
+
+    const payment = await db.createPendingPayment({
+      userId: targetUser.id,
+      planId: selectedPlan,
+      gateway: selectedGateway,
+      trxId: cleanTrx,
+      senderNumber: cleanSender
+    });
+
+    await dispatchPaymentSubmittedEmails({
+      customerEmail: targetUser.email,
+      customerName: targetUser.name || 'Customer',
+      planId: selectedPlan,
+      gateway: selectedGateway,
+      amount: payment.amount,
+      trxId: payment.trx_id,
+      senderNumber: cleanSender
+    });
+
+    if (autoAuthenticated && issuedToken) {
+      const sub = await db.getSubscriptionByUserId(targetUser.id);
+      res.status(201).json({
+        success: true,
+        status: 'pending',
+        autoAuthenticated: true,
+        accountExists: false,
+        token: issuedToken,
+        user: serializeAuthUser(targetUser, sub),
+        message: `Order submitted & account created! Transaction ID (${payment.trx_id}) is awaiting admin verification.`,
+        payment
+      });
+      return;
+    }
+
+    res.json({
+      success: true,
+      status: 'pending',
+      autoAuthenticated: false,
+      accountExists: true,
+      message: `Payment submitted (${payment.trx_id})! Since an account already exists for this email/number, please sign in anytime to track activation.`,
+      payment
+    });
+  } catch (err: any) {
+    res.status(400).json({ error: err.message || 'Express checkout failed.' });
+  }
+});
 
 app.post('/api/payments/verify', authenticate, handlePaymentSubmission);
 app.post('/api/subscription/checkout', authenticate, handlePaymentSubmission);
@@ -1566,9 +1835,9 @@ app.post('/api/admin/payments/:id/approve', requireAdmin, async (req: Authentica
     // Trigger Meta Conversions API Purchase Event
     const pixelFired = await sendMetaConversionsPurchase(result.payment, settings);
 
-    // Send subscription activation receipt email to customer
+    // Send subscription activation receipt email to customer (skip synthetic phone-only placeholders)
     const customer = await db.getUserById(result.payment.user_id);
-    if (customer?.email) {
+    if (customer?.email && !isSyntheticPhoneEmail(customer.email)) {
       const planKey = result.payment.plan_id === 'yearly' ? 'yearly' : 'monthly';
       void sendMailSafe(
         settings,
@@ -1606,7 +1875,7 @@ app.post('/api/admin/payments/:id/reject', requireAdmin, async (req: Authenticat
     const settings = await db.getSettings();
     const customer = await db.getUserById(rejected.user_id);
 
-    if (customer?.email) {
+    if (customer?.email && !isSyntheticPhoneEmail(customer.email)) {
       const planKey = rejected.plan_id === 'yearly' ? 'yearly' : 'monthly';
       void sendMailSafe(
         settings,

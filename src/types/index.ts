@@ -20,6 +20,9 @@ export interface User {
   created_at?: string;
   subscription?: Subscription | null;
   isSubscribed: boolean;
+  has_password?: boolean;
+  google_linked?: boolean;
+  needs_email?: boolean;
 }
 
 export interface Subscription {

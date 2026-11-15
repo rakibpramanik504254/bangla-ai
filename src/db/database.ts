@@ -207,6 +207,7 @@ export function hashPassword(password: string): string {
 }
 
 export function verifyPassword(password: string, hash: string): boolean {
+  if (!password || !hash) return false;
   return hashPassword(password) === hash;
 }
 
@@ -1191,6 +1192,29 @@ export class Database {
     return res.rows[0] ? mapUserRow(res.rows[0]) : undefined;
   }
 
+  public async getUserByPhone(phone: string): Promise<User | undefined> {
+    await this.ensureReady();
+    const digits = String(phone || '').replace(/[^0-9]/g, '');
+    const normalized = digits.startsWith('8801') && digits.length === 13 ? digits.slice(2) : digits;
+    if (!normalized || normalized.length < 11) return undefined;
+
+    if (!this.pool) {
+      return this.memory!.users.find(u => {
+        const uDigits = String(u.phone || '').replace(/[^0-9]/g, '');
+        const uNorm = uDigits.startsWith('8801') && uDigits.length === 13 ? uDigits.slice(2) : uDigits;
+        return uNorm === normalized;
+      });
+    }
+
+    const res = await this.pool.query(
+      `SELECT * FROM users
+       WHERE regexp_replace(COALESCE(phone, ''), '[^0-9]', '', 'g') IN ($1, $2)
+       LIMIT 1`,
+      [normalized, `88${normalized}`]
+    );
+    return res.rows[0] ? mapUserRow(res.rows[0]) : undefined;
+  }
+
   public async getUserById(id: string): Promise<User | undefined> {
     await this.ensureReady();
     if (!this.pool) {
@@ -1372,7 +1396,7 @@ export class Database {
     const newUser: User = {
       id: `usr_${crypto.randomUUID().slice(0, 8)}`,
       email: userData.email.toLowerCase().trim(),
-      password_hash: hashPassword(userData.password),
+      password_hash: userData.password ? hashPassword(userData.password) : '',
       name: userData.name,
       phone: userData.phone || '',
       role: userData.role || 'user',
