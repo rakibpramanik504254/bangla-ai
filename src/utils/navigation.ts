@@ -9,7 +9,50 @@ export type AppView =
   | 'about'
   | 'privacy'
   | 'terms'
+  | 'refund'
+  | 'contact'
   | 'security';
+
+const VIEW_PATH_MAP: Record<AppView, string> = {
+  home: '/',
+  chat: '/',
+  account: '/',
+  admin: '/',
+  about: '/about',
+  privacy: '/privacy-policy',
+  terms: '/terms',
+  refund: '/refund-policy',
+  contact: '/contact',
+  security: '/security',
+};
+
+export function resolveViewFromPathname(pathname: string): AppView {
+  const normalized = (pathname || '/').toLowerCase().replace(/\/+$/, '') || '/';
+  switch (normalized) {
+    case '/privacy-policy':
+    case '/privacy':
+      return 'privacy';
+    case '/terms':
+    case '/terms-and-conditions':
+      return 'terms';
+    case '/refund-policy':
+    case '/refund':
+      return 'refund';
+    case '/contact':
+    case '/contact-us':
+      return 'contact';
+    case '/about':
+      return 'about';
+    case '/security':
+      return 'security';
+    default:
+      return 'home';
+  }
+}
+
+export function getPathnameForView(view: AppView): string {
+  return VIEW_PATH_MAP[view] || '/';
+}
 
 export interface NavItem {
   id: 'overview' | 'chat' | 'admin' | 'pricing' | 'faq';

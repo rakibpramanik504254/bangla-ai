@@ -100,36 +100,76 @@ export const Footer: React.FC<FooterProps> = ({ setCurrentView }) => {
             </h4>
             <ul className="space-y-2 text-xs">
               <li>
-                <button
-                  onClick={() => handleNav('about')}
+                <a
+                  href="/about"
+                  onClick={(e) => {
+                    e.preventDefault();
+                    handleNav('about');
+                  }}
                   className="hover:text-[#1f1f1f] dark:hover:text-[#e3e3e3] transition-colors cursor-pointer"
                 >
                   About Us
-                </button>
+                </a>
               </li>
               <li>
-                <button
-                  onClick={() => handleNav('privacy')}
+                <a
+                  href="/privacy-policy"
+                  onClick={(e) => {
+                    e.preventDefault();
+                    handleNav('privacy');
+                  }}
                   className="hover:text-[#1f1f1f] dark:hover:text-[#e3e3e3] transition-colors cursor-pointer"
                 >
                   Privacy Policy
-                </button>
+                </a>
               </li>
               <li>
-                <button
-                  onClick={() => handleNav('terms')}
+                <a
+                  href="/terms"
+                  onClick={(e) => {
+                    e.preventDefault();
+                    handleNav('terms');
+                  }}
                   className="hover:text-[#1f1f1f] dark:hover:text-[#e3e3e3] transition-colors cursor-pointer"
                 >
-                  Terms of Service
-                </button>
+                  Terms &amp; Conditions
+                </a>
               </li>
               <li>
-                <button
-                  onClick={() => handleNav('security')}
+                <a
+                  href="/refund-policy"
+                  onClick={(e) => {
+                    e.preventDefault();
+                    handleNav('refund');
+                  }}
+                  className="hover:text-[#1f1f1f] dark:hover:text-[#e3e3e3] transition-colors cursor-pointer"
+                >
+                  Refund Policy
+                </a>
+              </li>
+              <li>
+                <a
+                  href="/contact"
+                  onClick={(e) => {
+                    e.preventDefault();
+                    handleNav('contact');
+                  }}
+                  className="hover:text-[#1f1f1f] dark:hover:text-[#e3e3e3] transition-colors cursor-pointer"
+                >
+                  Contact Us
+                </a>
+              </li>
+              <li>
+                <a
+                  href="/security"
+                  onClick={(e) => {
+                    e.preventDefault();
+                    handleNav('security');
+                  }}
                   className="hover:text-[#1f1f1f] dark:hover:text-[#e3e3e3] transition-colors cursor-pointer"
                 >
                   Security Standards
-                </button>
+                </a>
               </li>
             </ul>
           </div>

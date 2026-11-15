@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { AuthProvider, useAuth } from './context/AuthContext.tsx';
 import { Navbar } from './components/Navbar.tsx';
 import { Footer } from './components/Footer.tsx';
@@ -6,6 +6,8 @@ import { HomePage } from './components/pages/HomePage.tsx';
 import { AboutPage } from './components/pages/AboutPage.tsx';
 import { PrivacyPolicyPage } from './components/pages/PrivacyPolicyPage.tsx';
 import { TermsPage } from './components/pages/TermsPage.tsx';
+import { RefundPolicyPage } from './components/pages/RefundPolicyPage.tsx';
+import { ContactPage } from './components/pages/ContactPage.tsx';
 import { SecurityPage } from './components/pages/SecurityPage.tsx';
 import { AccountPage } from './components/pages/AccountPage.tsx';
 import { ChatInterface } from './components/chat/ChatInterface.tsx';
@@ -17,10 +19,35 @@ import { WhatsAppSupportWidget } from './components/common/WhatsAppSupportWidget
 import { AppInstallProvider } from './context/AppInstallContext.tsx';
 import { InstallGuideModal } from './components/common/InstallGuideModal.tsx';
 import { initMetaPixel, trackMetaPageView } from './utils/metaPixel.ts';
-import { AppView, getPostLoginDestination } from './utils/navigation.ts';
+import {
+  AppView,
+  getPathnameForView,
+  getPostLoginDestination,
+  resolveViewFromPathname,
+} from './utils/navigation.ts';
 
 function MainApp() {
-  const [currentView, setCurrentView] = useState<AppView>('home');
+  const [currentView, setCurrentView] = useState<AppView>(() =>
+    resolveViewFromPathname(typeof window !== 'undefined' ? window.location.pathname : '/')
+  );
+
+  const navigateToView = useCallback((view: AppView) => {
+    setCurrentView(view);
+    if (typeof window !== 'undefined') {
+      const targetPath = getPathnameForView(view);
+      if (window.location.pathname !== targetPath) {
+        window.history.pushState({ view }, '', targetPath);
+      }
+    }
+  }, []);
+
+  useEffect(() => {
+    const handlePopState = () => {
+      setCurrentView(resolveViewFromPathname(window.location.pathname));
+    };
+    window.addEventListener('popstate', handlePopState);
+    return () => window.removeEventListener('popstate', handlePopState);
+  }, []);
   const {
     user,
     loading,
@@ -56,11 +83,11 @@ function MainApp() {
     if (loading) return;
     if (!user && (currentView === 'chat' || currentView === 'account' || currentView === 'admin')) {
       closeAccountModal();
-      setCurrentView('home');
+      navigateToView('home');
     } else if (user && user.role !== 'admin' && currentView === 'admin') {
-      setCurrentView('home');
+      navigateToView('home');
     }
-  }, [loading, user, currentView, closeAccountModal]);
+  }, [loading, user, currentView, closeAccountModal, navigateToView]);
 
   const isChatView = currentView === 'chat';
 
@@ -70,26 +97,38 @@ function MainApp() {
         isChatView ? 'h-[100dvh] overflow-hidden' : 'min-h-screen overflow-x-clip'
       } w-full max-w-full flex flex-col bg-white dark:bg-[#131314] text-[#1f1f1f] dark:text-[#e3e3e3] transition-colors`}
     >
-      {!isChatView && <Navbar currentView={currentView} setCurrentView={setCurrentView} />}
+      {!isChatView && <Navbar currentView={currentView} setCurrentView={navigateToView} />}
 
       <div className={`flex-1 min-w-0 ${isChatView ? 'min-h-0 flex flex-col overflow-hidden' : ''}`}>
-        {currentView === 'home' && <HomePage onStartChat={() => setCurrentView('chat')} />}
+        {currentView === 'home' && <HomePage onStartChat={() => navigateToView('chat')} />}
         {currentView === 'about' && <AboutPage />}
         {currentView === 'privacy' && <PrivacyPolicyPage />}
         {currentView === 'terms' && <TermsPage />}
+        {currentView === 'refund' && (
+          <RefundPolicyPage
+            onBackHome={() => navigateToView('home')}
+            onNavigateContact={() => navigateToView('contact')}
+          />
+        )}
+        {currentView === 'contact' && (
+          <ContactPage
+            onBackHome={() => navigateToView('home')}
+            onNavigateView={navigateToView}
+          />
+        )}
         {currentView === 'security' && <SecurityPage />}
         {currentView === 'account' && <AccountPage />}
         {currentView === 'chat' && (
           <ChatInterface
-            onNavigateHome={() => setCurrentView('home')}
+            onNavigateHome={() => navigateToView('home')}
             onNavigateAccount={() => openAccountModal()}
-            onNavigateAdmin={() => setCurrentView('admin')}
+            onNavigateAdmin={() => navigateToView('admin')}
           />
         )}
         {currentView === 'admin' && <AdminPanel />}
       </div>
 
-      {!isChatView && <Footer setCurrentView={setCurrentView} />}
+      {!isChatView && <Footer setCurrentView={navigateToView} />}
 
       {/* Floating WhatsApp Live Chat (Non-subscribers only) */}
       <WhatsAppSupportWidget />
@@ -99,22 +138,22 @@ function MainApp() {
         isOpen={isAuthModalOpen}
         onClose={closeAuthModal}
         onAuthSuccess={(authenticatedUser) => {
-          setCurrentView(getPostLoginDestination(authenticatedUser));
+          navigateToView(getPostLoginDestination(authenticatedUser));
           window.scrollTo({ top: 0 });
         }}
       />
       <AccountBillingModal
         isOpen={isAccountModalOpen}
         onClose={closeAccountModal}
-        onNavigateChat={() => setCurrentView('chat')}
-        onNavigateHome={() => setCurrentView('home')}
-        onNavigateAdmin={() => setCurrentView('admin')}
+        onNavigateChat={() => navigateToView('chat')}
+        onNavigateHome={() => navigateToView('home')}
+        onNavigateAdmin={() => navigateToView('admin')}
       />
       <PaymentModal
         isOpen={isPaymentModalOpen}
         onClose={closePaymentModal}
         defaultPlan={paymentPlan}
-        onSuccessRedirectToChat={() => setCurrentView('chat')}
+        onSuccessRedirectToChat={() => navigateToView('chat')}
       />
       <InstallGuideModal />
     </div>

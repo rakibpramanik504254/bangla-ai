@@ -6,6 +6,8 @@ import {
   getAccountRoleLabel,
   getSubscriptionSummary,
   normalizePaymentStatus,
+  resolveViewFromPathname,
+  getPathnameForView,
 } from './navigation.ts';
 import type { User } from '../types/index.ts';
 
@@ -102,4 +104,22 @@ test('normalizePaymentStatus maps completed/pending/rejected to clean Approved/P
     label: 'Rejected',
     variant: 'rejected',
   });
+});
+
+test('resolveViewFromPathname and getPathnameForView handle compliance URLs cleanly', () => {
+  assert.equal(resolveViewFromPathname('/privacy-policy'), 'privacy');
+  assert.equal(resolveViewFromPathname('/privacy-policy/'), 'privacy');
+  assert.equal(resolveViewFromPathname('/terms'), 'terms');
+  assert.equal(resolveViewFromPathname('/refund-policy'), 'refund');
+  assert.equal(resolveViewFromPathname('/contact'), 'contact');
+  assert.equal(resolveViewFromPathname('/about'), 'about');
+  assert.equal(resolveViewFromPathname('/security'), 'security');
+  assert.equal(resolveViewFromPathname('/'), 'home');
+  assert.equal(resolveViewFromPathname('/unknown-path'), 'home');
+
+  assert.equal(getPathnameForView('privacy'), '/privacy-policy');
+  assert.equal(getPathnameForView('terms'), '/terms');
+  assert.equal(getPathnameForView('refund'), '/refund-policy');
+  assert.equal(getPathnameForView('contact'), '/contact');
+  assert.equal(getPathnameForView('home'), '/');
 });
