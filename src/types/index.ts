@@ -121,6 +121,7 @@ export interface AiModel {
   max_output_tokens: number;
   sort_order: number;
   openrouter_model_id?: string;
+  created_at?: string;
 }
 
 export interface AiProvider {
@@ -163,4 +164,7 @@ export interface PublicSettings {
   facebook_pixel_id?: string;
   facebook_pixel_enabled?: boolean;
   facebook_page_url?: string;
+  gsc_verification_code?: string;
+  ga4_measurement_id?: string;
+  ga4_enabled?: boolean;
 }

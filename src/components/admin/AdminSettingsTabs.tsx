@@ -1,7 +1,9 @@
 import React from 'react';
 import { Activity, Save, Smartphone } from 'lucide-react';
 import { EmailSettingsCard } from './EmailSettingsCard.tsx';
+import { PageSeoControllerCard } from './PageSeoControllerCard.tsx';
 import { SeoSettingsCard } from './SeoSettingsCard.tsx';
+import { TechnicalSeoCard } from './TechnicalSeoCard.tsx';
 
 interface MfsGatewaysTabProps {
   globalSettings: any;
@@ -345,6 +347,7 @@ interface SeoAndSupportTabProps {
   savingSettings: boolean;
   setFeedback: (msg: string | null) => void;
   onSaveSeoAndSupport: (e: React.FormEvent) => void;
+  onSaveTechnicalSeo: (e: React.FormEvent) => void;
 }
 
 export const SeoAndSupportTab: React.FC<SeoAndSupportTabProps> = ({
@@ -353,16 +356,27 @@ export const SeoAndSupportTab: React.FC<SeoAndSupportTabProps> = ({
   setGlobalSettings,
   savingSettings,
   setFeedback,
-  onSaveSeoAndSupport
+  onSaveSeoAndSupport,
+  onSaveTechnicalSeo
 }) => {
   return (
-    <form onSubmit={onSaveSeoAndSupport} className="max-w-3xl space-y-5 text-xs">
-      <SeoSettingsCard
-        token={token}
+    <div className="max-w-5xl space-y-5 text-xs">
+      <PageSeoControllerCard token={token} setFeedback={setFeedback} />
+
+      <TechnicalSeoCard
         globalSettings={globalSettings}
         setGlobalSettings={setGlobalSettings}
-        setFeedback={setFeedback}
+        savingSettings={savingSettings}
+        onSaveTechnicalSeo={onSaveTechnicalSeo}
       />
+
+      <form onSubmit={onSaveSeoAndSupport} className="space-y-5">
+        <SeoSettingsCard
+          token={token}
+          globalSettings={globalSettings}
+          setGlobalSettings={setGlobalSettings}
+          setFeedback={setFeedback}
+        />
 
       <div className="bg-white dark:bg-[#1e1f20] p-5 sm:p-6 rounded-2xl border border-black/[0.08] dark:border-white/[0.08] space-y-4">
         <div className="pb-2 border-b border-black/[0.06] dark:border-white/[0.06]">
@@ -446,6 +460,7 @@ export const SeoAndSupportTab: React.FC<SeoAndSupportTabProps> = ({
           </button>
         </div>
       </div>
-    </form>
+      </form>
+    </div>
   );
 };

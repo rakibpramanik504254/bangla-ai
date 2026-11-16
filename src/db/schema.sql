@@ -163,3 +163,25 @@ CREATE TABLE IF NOT EXISTS admin_finance_ledger (
 );
 
 CREATE INDEX IF NOT EXISTS idx_admin_finance_ledger_date ON admin_finance_ledger (entry_date DESC, created_at DESC);
+
+CREATE TABLE IF NOT EXISTS page_seo_configs (
+    slug TEXT PRIMARY KEY,
+    page_label TEXT NOT NULL DEFAULT '',
+    meta_title TEXT NOT NULL DEFAULT '',
+    meta_description TEXT NOT NULL DEFAULT '',
+    focus_keyword TEXT NOT NULL DEFAULT '',
+    og_image_url TEXT NOT NULL DEFAULT '/og-banner.png',
+    twitter_card TEXT NOT NULL DEFAULT 'summary_large_image' CHECK (twitter_card IN ('summary_large_image', 'summary')),
+    twitter_title TEXT NOT NULL DEFAULT '',
+    twitter_description TEXT NOT NULL DEFAULT '',
+    twitter_handle TEXT NOT NULL DEFAULT '@banglaaipro',
+    canonical_override TEXT NOT NULL DEFAULT '',
+    no_index BOOLEAN NOT NULL DEFAULT FALSE,
+    no_follow BOOLEAN NOT NULL DEFAULT FALSE,
+    faq_schema_enabled BOOLEAN NOT NULL DEFAULT FALSE,
+    faq_items JSONB NOT NULL DEFAULT '[]'::jsonb,
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+CREATE INDEX IF NOT EXISTS idx_page_seo_configs_updated_at ON page_seo_configs (updated_at DESC);
+

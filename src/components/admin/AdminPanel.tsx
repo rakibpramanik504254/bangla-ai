@@ -44,6 +44,10 @@ import {
   EmailSystemTab,
   SeoAndSupportTab
 } from './AdminSettingsTabs.tsx';
+import {
+  validateGa4MeasurementId,
+  validateGscVerificationCode
+} from '../../utils/technicalSeo.ts';
 
 interface AdminUser {
   id: string;
@@ -575,6 +579,34 @@ export const AdminPanel: React.FC = () => {
         facebook_page_url: globalSettings.facebook_page_url || ''
       },
       'SEO metadata & public support contacts saved successfully.'
+    );
+  };
+
+  const handleSaveTechnicalSeo = (e: React.FormEvent) => {
+    e.preventDefault();
+    const gscCheck = validateGscVerificationCode(globalSettings.gsc_verification_code || '');
+    if (!gscCheck.valid) {
+      setFeedback(`Error: ${gscCheck.error}`);
+      return;
+    }
+    const ga4Check = validateGa4MeasurementId(globalSettings.ga4_measurement_id || '');
+    if (!ga4Check.valid) {
+      setFeedback(`Error: ${ga4Check.error}`);
+      return;
+    }
+    if (globalSettings.ga4_enabled && !ga4Check.measurementId) {
+      setFeedback('Error: Enter a valid GA4 Measurement ID (G-XXXXXXXXXX) before enabling GA4.');
+      return;
+    }
+
+    saveSettingsSection(
+      {
+        gsc_verification_code: gscCheck.code,
+        ga4_measurement_id: ga4Check.measurementId,
+        ga4_enabled: Boolean(globalSettings.ga4_enabled && ga4Check.measurementId),
+        robots_txt_extra: String(globalSettings.robots_txt_extra || '')
+      },
+      'Technical SEO Engine settings (GSC, GA4 & Robots.txt) saved and live!'
     );
   };
 
@@ -1891,6 +1923,7 @@ export const AdminPanel: React.FC = () => {
               savingSettings={savingSettings}
               setFeedback={setFeedback}
               onSaveSeoAndSupport={handleSaveSeoAndSupport}
+              onSaveTechnicalSeo={handleSaveTechnicalSeo}
             />
           )}
         </main>

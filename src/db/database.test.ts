@@ -16,6 +16,7 @@ interface MockState {
   messages: Map<string, any>;
   aiModels: Map<string, any>;
   financeLedger: Map<string, any>;
+  pageSeoConfigs: Map<string, any>;
 }
 
 function createMockPool(): { pool: PoolLike; state: MockState } {
@@ -30,7 +31,8 @@ function createMockPool(): { pool: PoolLike; state: MockState } {
     chats: new Map(),
     messages: new Map(),
     aiModels: new Map(),
-    financeLedger: new Map()
+    financeLedger: new Map(),
+    pageSeoConfigs: new Map()
   };
 
   const executeQuery = async (text: string, params: unknown[] = []) => {
@@ -267,6 +269,46 @@ function createMockPool(): { pool: PoolLike; state: MockState } {
       const count = state.financeLedger.size;
       state.financeLedger.clear();
       return { rows: [], rowCount: count };
+    }
+
+    if (sql.startsWith('INSERT INTO page_seo_configs')) {
+      const row = {
+        slug: String(params[0]),
+        page_label: params[1],
+        meta_title: params[2],
+        meta_description: params[3],
+        focus_keyword: params[4],
+        og_image_url: params[5],
+        twitter_card: params[6],
+        twitter_title: params[7],
+        twitter_description: params[8],
+        twitter_handle: params[9],
+        canonical_override: params[10],
+        no_index: params[11],
+        no_follow: params[12],
+        faq_schema_enabled: params[13],
+        faq_items: params[14],
+        updated_at: params[15]
+      };
+      if (sql.includes('DO UPDATE SET') || !state.pageSeoConfigs.has(row.slug)) {
+        state.pageSeoConfigs.set(row.slug, row);
+      }
+      return { rows: [row], rowCount: 1 };
+    }
+
+    if (sql.startsWith('SELECT * FROM page_seo_configs WHERE slug = $1')) {
+      const found = state.pageSeoConfigs.get(String(params[0]));
+      return { rows: found ? [found] : [], rowCount: found ? 1 : 0 };
+    }
+
+    if (sql === 'SELECT * FROM page_seo_configs') {
+      const rows = Array.from(state.pageSeoConfigs.values());
+      return { rows, rowCount: rows.length };
+    }
+
+    if (sql.startsWith('DELETE FROM page_seo_configs WHERE slug = $1')) {
+      const deleted = state.pageSeoConfigs.delete(String(params[0]));
+      return { rows: [], rowCount: deleted ? 1 : 0 };
     }
 
     if (sql.startsWith('INSERT INTO ai_models')) {
@@ -616,5 +658,74 @@ describe('Database PostgreSQL Persistence', () => {
     const afterPaidOn = await database.listModels(false);
     assert.ok(afterPaidOn.filter(isPaidAiModel).every(m => m.is_enabled === true));
     assert.ok(afterPaidOn.filter(isFreeAiModel).every(m => m.is_enabled === true));
+  });
+
+  it('auto-creates page_seo_configs table, seeds presets, and persists upserts, resets, and deletes', async () => {
+    const { pool, state } = createMockPool();
+    const database = new Database({ pool, env: {} });
+    await database.init();
+
+    assert.ok(state.ddlExecuted.some(s => s.includes('CREATE TABLE IF NOT EXISTS page_seo_configs')));
+    const seeded = await database.listPageSeoConfigs();
+    assert.ok(seeded.length >= 7);
+    assert.equal(seeded[0].slug, '/');
+
+    const saved = await database.upsertPageSeoConfig({
+      slug: '/bangla-chatgpt',
+      pageLabel: 'Bangla Chatgpt',
+      metaTitle: 'Bangla ChatGPT Workspace — Bangla-AI.pro',
+      metaDescription: 'Use ChatGPT in Bangla with bKash payment.',
+      focusKeyword: 'bangla ai',
+      ogImageUrl: '/og-banner.png',
+      twitterCard: 'summary_large_image',
+      twitterTitle: '',
+      twitterDescription: '',
+      twitterHandle: '@banglaaipro',
+      canonicalOverride: 'https://bangla-ai.pro/bangla-chatgpt',
+      noIndex: true,
+      noFollow: false,
+      faqSchemaEnabled: true,
+      faqItems: [{ id: 'f1', question: 'Works in Bangla?', answer: 'Yes, natively.' }],
+      updatedAt: new Date().toISOString()
+    });
+    assert.equal(saved.slug, '/bangla-chatgpt');
+    assert.equal(saved.noIndex, true);
+    assert.equal(saved.faqItems.length, 1);
+
+    const fetched = await database.getPageSeoConfigBySlug('/bangla-chatgpt');
+    assert.ok(fetched);
+    assert.equal(fetched.metaTitle, 'Bangla ChatGPT Workspace — Bangla-AI.pro');
+
+    // Customize /about and reset back to preset
+    await database.upsertPageSeoConfig({
+      ...seeded[1],
+      metaTitle: 'Temporary Modified Title'
+    });
+    const resetAbout = await database.resetPageSeoConfig('/about');
+    assert.ok(resetAbout);
+    assert.notEqual(resetAbout.metaTitle, 'Temporary Modified Title');
+
+    const deleted = await database.deletePageSeoConfig('/bangla-chatgpt');
+    assert.equal(deleted, true);
+    assert.equal(await database.getPageSeoConfigBySlug('/bangla-chatgpt'), undefined);
+  });
+
+  it('supports per-page SEO CRUD & reset in volatile in-memory mode as well', async () => {
+    const database = new Database({ pool: null, env: {} });
+    await database.init();
+
+    const list = await database.listPageSeoConfigs();
+    assert.equal(list[0].slug, '/');
+
+    await database.upsertPageSeoConfig({
+      ...list[0],
+      metaTitle: 'Updated Home Meta Title'
+    });
+    const updatedHome = await database.getPageSeoConfigBySlug('/');
+    assert.equal(updatedHome?.metaTitle, 'Updated Home Meta Title');
+
+    const resetHome = await database.resetPageSeoConfig('/');
+    assert.ok(resetHome);
+    assert.notEqual(resetHome.metaTitle, 'Updated Home Meta Title');
   });
 });

@@ -27,6 +27,12 @@ import {
   resolveViewFromPathname,
 } from './utils/navigation.ts';
 import { resetScrollPosition } from './utils/scroll.ts';
+import { useDynamicSeoHead } from './hooks/useDynamicSeoHead.ts';
+import {
+  initGa4Analytics,
+  syncGscMetaTagInDocument,
+  trackGa4PageView,
+} from './utils/technicalSeo.ts';
 
 function MainApp() {
   const [currentView, setCurrentView] = useState<AppView>(() =>
@@ -76,22 +82,33 @@ function MainApp() {
     closeAccountModal,
   } = useAuth();
 
-  // Initialize Meta Pixel from backend public settings
+  // Initialize Meta Pixel, GSC verification meta tag, and Google Analytics 4 from backend public settings
   useEffect(() => {
     fetch('/api/settings/public')
       .then((res) => (res.ok ? res.json() : null))
       .then((data) => {
-        if (data?.facebook_pixel_enabled && data?.facebook_pixel_id) {
+        if (!data) return;
+        if (data.facebook_pixel_enabled && data.facebook_pixel_id) {
           initMetaPixel(data.facebook_pixel_id);
         }
+        if (typeof document !== 'undefined') {
+          syncGscMetaTagInDocument(document, data.gsc_verification_code || '');
+        }
+        if (data.ga4_enabled && data.ga4_measurement_id) {
+          initGa4Analytics(data.ga4_measurement_id);
+        }
       })
-      .catch((err) => console.warn('Could not load public pixel settings:', err));
+      .catch((err) => console.warn('Could not load public tracking settings:', err));
   }, []);
 
-  // Track page views on view switch
+  // Dynamically inject route-specific Meta, OG, Twitter, Canonical & FAQ Schema into <head>
+  useDynamicSeoHead(currentView, currentPathname);
+
+  // Track page views on view/route switch
   useEffect(() => {
     trackMetaPageView();
-  }, [currentView]);
+    trackGa4PageView(currentPathname, typeof document !== 'undefined' ? document.title : undefined);
+  }, [currentView, currentPathname]);
 
   // Guard protected views when logged out or non-admin
   useEffect(() => {

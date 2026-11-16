@@ -36,6 +36,23 @@ import {
   resolveSeoMetadata
 } from './src/utils/seo.ts';
 import {
+  isBuiltInSeoSlug,
+  normalizePageSlug,
+  resolvePageSeoForSlug,
+  sanitizePageSeoInput
+} from './src/utils/seoController.ts';
+import { injectDynamicPageSeoIntoHtml } from './src/utils/seoHead.ts';
+import {
+  buildRobotsTxt,
+  buildSitemapXml,
+  collectSitemapEntries,
+  injectTechnicalSeoIntoHtml,
+  resolvePageOrModelSeo,
+  sanitizeRobotsTxtExtra,
+  validateGa4MeasurementId,
+  validateGscVerificationCode
+} from './src/utils/technicalSeo.ts';
+import {
   buildPaymentApprovedEmail,
   buildPaymentRejectedEmail,
   buildPaymentSubmittedAdminEmail,
@@ -500,7 +517,10 @@ app.get('/api/settings/public', async (_req: Request, res: Response) => {
       support_email: settings.support_email || 'ourbangla.ai@gmail.com',
       facebook_page_url: settings.facebook_page_url || 'https://www.facebook.com/profile.php?id=61596472081766',
       facebook_pixel_id: settings.facebook_pixel_id || '',
-      facebook_pixel_enabled: !!settings.facebook_pixel_enabled
+      facebook_pixel_enabled: !!settings.facebook_pixel_enabled,
+      gsc_verification_code: settings.gsc_verification_code || '',
+      ga4_measurement_id: settings.ga4_measurement_id || '',
+      ga4_enabled: Boolean(settings.ga4_enabled && settings.ga4_measurement_id)
     });
   } catch (err: any) {
     res.status(500).json({ error: 'Failed to load public settings: ' + err.message });
@@ -532,6 +552,53 @@ app.get('/api/seo/og-banner', async (_req: Request, res: Response) => {
   }
 });
 
+// Dynamic Public SEO Lookup by route/slug (consumed by Step 3 frontend head injector)
+app.get('/api/seo/page', async (req: Request, res: Response) => {
+  try {
+    const rawSlug = typeof req.query.slug === 'string' ? req.query.slug : '/';
+    const [configs, models] = await Promise.all([db.listPageSeoConfigs(), db.listModels(true)]);
+    const lookup = resolvePageOrModelSeo(configs, models, rawSlug, process.env.PUBLIC_SITE_URL);
+    res.setHeader('Cache-Control', 'public, max-age=60');
+    res.json(lookup);
+  } catch (err: any) {
+    res.status(500).json({ error: 'Failed to load SEO configuration: ' + err.message });
+  }
+});
+
+// Step 4: Dynamic Sitemap XML (automatically reflects Page SEO routes + Enabled AI Models)
+app.get('/sitemap.xml', async (_req: Request, res: Response) => {
+  try {
+    const [pageConfigs, models] = await Promise.all([db.listPageSeoConfigs(), db.listModels(true)]);
+    const entries = collectSitemapEntries({
+      pageConfigs,
+      models,
+      origin: process.env.PUBLIC_SITE_URL
+    });
+    const xml = buildSitemapXml(entries);
+    res.setHeader('Content-Type', 'application/xml; charset=utf-8');
+    res.setHeader('Cache-Control', 'public, max-age=300');
+    res.status(200).send(xml);
+  } catch (err: any) {
+    res.status(500).setHeader('Content-Type', 'text/plain; charset=utf-8').send('Failed to generate sitemap: ' + err.message);
+  }
+});
+
+// Step 4: Customized Robots.txt (disallows private/app routes + appends Admin directives + declares Sitemap)
+app.get('/robots.txt', async (_req: Request, res: Response) => {
+  try {
+    const settings = await db.getSettings();
+    const robotsTxt = buildRobotsTxt({
+      origin: process.env.PUBLIC_SITE_URL,
+      extraRules: settings.robots_txt_extra
+    });
+    res.setHeader('Content-Type', 'text/plain; charset=utf-8');
+    res.setHeader('Cache-Control', 'public, max-age=300');
+    res.status(200).send(robotsTxt);
+  } catch (err: any) {
+    res.status(500).setHeader('Content-Type', 'text/plain; charset=utf-8').send('Failed to generate robots.txt: ' + err.message);
+  }
+});
+
 app.get('/api/payment/settings', async (_req: Request, res: Response) => {
   try {
     const settings = await db.getSettings();
@@ -546,7 +613,10 @@ app.get('/api/payment/settings', async (_req: Request, res: Response) => {
       support_email: settings.support_email || 'ourbangla.ai@gmail.com',
       facebook_page_url: settings.facebook_page_url || 'https://www.facebook.com/profile.php?id=61596472081766',
       facebook_pixel_id: settings.facebook_pixel_id || '',
-      facebook_pixel_enabled: !!settings.facebook_pixel_enabled
+      facebook_pixel_enabled: !!settings.facebook_pixel_enabled,
+      gsc_verification_code: settings.gsc_verification_code || '',
+      ga4_measurement_id: settings.ga4_measurement_id || '',
+      ga4_enabled: Boolean(settings.ga4_enabled && settings.ga4_measurement_id)
     });
   } catch (err: any) {
     res.status(500).json({ error: 'Failed to load payment settings: ' + err.message });
@@ -1520,6 +1590,94 @@ app.post('/api/admin/seo/upload-banner', requireAdmin, async (req: Authenticated
   }
 });
 
+// Per-Page Dynamic SEO Management Endpoints
+app.get('/api/admin/seo/pages', requireAdmin, async (_req: AuthenticatedRequest, res: Response) => {
+  try {
+    const pages = await db.listPageSeoConfigs();
+    res.json({ pages });
+  } catch (err: any) {
+    res.status(500).json({ error: 'Failed to load page SEO configurations: ' + err.message });
+  }
+});
+
+app.put('/api/admin/seo/pages', requireAdmin, async (req: AuthenticatedRequest, res: Response) => {
+  try {
+    const sanitized = sanitizePageSeoInput(req.body);
+    if (!sanitized.ok) {
+      res.status(400).json({ error: sanitized.error });
+      return;
+    }
+
+    const saved = await db.upsertPageSeoConfig(sanitized.config);
+    const pages = await db.listPageSeoConfigs();
+    res.json({
+      success: true,
+      config: saved,
+      pages
+    });
+  } catch (err: any) {
+    res.status(500).json({ error: 'Failed to save page SEO configuration: ' + err.message });
+  }
+});
+
+app.post('/api/admin/seo/pages/reset', requireAdmin, async (req: AuthenticatedRequest, res: Response) => {
+  try {
+    const rawSlug = typeof req.body?.slug === 'string' ? req.body.slug : '/';
+    const normalizedSlug = normalizePageSlug(rawSlug);
+    const resetConfig = await db.resetPageSeoConfig(normalizedSlug);
+    if (!resetConfig) {
+      res.status(404).json({ error: `SEO configuration for "${normalizedSlug}" not found.` });
+      return;
+    }
+    const pages = await db.listPageSeoConfigs();
+    res.json({
+      success: true,
+      config: resetConfig,
+      pages
+    });
+  } catch (err: any) {
+    res.status(500).json({ error: 'Failed to reset page SEO configuration: ' + err.message });
+  }
+});
+
+app.delete('/api/admin/seo/pages', requireAdmin, async (req: AuthenticatedRequest, res: Response) => {
+  try {
+    const rawSlug =
+      typeof req.query.slug === 'string'
+        ? req.query.slug
+        : typeof req.body?.slug === 'string'
+          ? req.body.slug
+          : '';
+    if (!rawSlug.trim()) {
+      res.status(400).json({ error: 'Route slug is required to delete an SEO configuration.' });
+      return;
+    }
+
+    const normalizedSlug = normalizePageSlug(rawSlug);
+    if (isBuiltInSeoSlug(normalizedSlug)) {
+      res.status(400).json({
+        error: `Built-in route "${normalizedSlug}" cannot be deleted. Use Reset Page instead.`
+      });
+      return;
+    }
+
+    const deleted = await db.deletePageSeoConfig(normalizedSlug);
+    if (!deleted) {
+      res.status(404).json({ error: `Custom route "${normalizedSlug}" was not found.` });
+      return;
+    }
+
+    const pages = await db.listPageSeoConfigs();
+    res.json({
+      success: true,
+      deletedSlug: normalizedSlug,
+      pages
+    });
+  } catch (err: any) {
+    res.status(500).json({ error: 'Failed to delete custom SEO route: ' + err.message });
+  }
+});
+
 const sanitizeAdminSettingsResponse = (settings: any, openrouter: any) => {
   const {
     seo_og_image_data: rawUploadedBanner,
@@ -1552,7 +1710,11 @@ const sanitizeAdminSettingsResponse = (settings: any, openrouter: any) => {
     mail_secret_configured: Boolean(
       (typeof rawMailWebhookSecret === 'string' && rawMailWebhookSecret.trim()) ||
         (process.env.MAIL_WEBHOOK_SECRET || '').trim()
-    )
+    ),
+    gsc_verification_code: safeSettings.gsc_verification_code || '',
+    ga4_measurement_id: safeSettings.ga4_measurement_id || '',
+    ga4_enabled: Boolean(safeSettings.ga4_enabled),
+    robots_txt_extra: safeSettings.robots_txt_extra || ''
   };
 };
 
@@ -1598,6 +1760,35 @@ app.put('/api/admin/settings', requireAdmin, async (req: AuthenticatedRequest, r
       if (!nextUrl.startsWith('/api/seo/og-banner')) {
         settingsUpdates.seo_og_image_data = '';
       }
+    }
+
+    if (settingsUpdates.gsc_verification_code !== undefined) {
+      const gscCheck = validateGscVerificationCode(settingsUpdates.gsc_verification_code);
+      if (!gscCheck.valid) {
+        res.status(400).json({ error: gscCheck.error });
+        return;
+      }
+      settingsUpdates.gsc_verification_code = gscCheck.code;
+    }
+
+    if (settingsUpdates.ga4_measurement_id !== undefined) {
+      const ga4Check = validateGa4MeasurementId(settingsUpdates.ga4_measurement_id);
+      if (!ga4Check.valid) {
+        res.status(400).json({ error: ga4Check.error });
+        return;
+      }
+      settingsUpdates.ga4_measurement_id = ga4Check.measurementId;
+      if (!ga4Check.measurementId && settingsUpdates.ga4_enabled === undefined) {
+        settingsUpdates.ga4_enabled = false;
+      }
+    }
+
+    if (settingsUpdates.ga4_enabled !== undefined) {
+      settingsUpdates.ga4_enabled = Boolean(settingsUpdates.ga4_enabled);
+    }
+
+    if (settingsUpdates.robots_txt_extra !== undefined) {
+      settingsUpdates.robots_txt_extra = sanitizeRobotsTxtExtra(settingsUpdates.robots_txt_extra);
     }
 
     if (clear_mail_webhook_url === true) {
@@ -1995,11 +2186,20 @@ app.post('/api/admin/pixel/test', requireAdmin, async (_req: AuthenticatedReques
 // 6. Vite Middleware Integration
 // ==========================================
 
-async function renderHtmlWithSeo(rawHtml: string): Promise<string> {
+async function renderHtmlWithSeo(rawHtml: string, requestPath: string = '/'): Promise<string> {
   try {
-    const settings = await db.getSettings();
-    const meta = resolveSeoMetadata(settings, process.env.PUBLIC_SITE_URL);
-    return injectSeoMetaIntoHtml(rawHtml, meta);
+    const [configs, models, settings] = await Promise.all([
+      db.listPageSeoConfigs(),
+      db.listModels(true),
+      db.getSettings()
+    ]);
+    const lookup = resolvePageOrModelSeo(configs, models, requestPath, process.env.PUBLIC_SITE_URL);
+    const withPageSeo = injectDynamicPageSeoIntoHtml(rawHtml, lookup.resolved);
+    return injectTechnicalSeoIntoHtml(withPageSeo, {
+      gscVerificationCode: settings.gsc_verification_code,
+      ga4MeasurementId: settings.ga4_measurement_id,
+      ga4Enabled: settings.ga4_enabled
+    });
   } catch (err) {
     console.error('[SEO] Failed to resolve PostgreSQL SEO settings for HTML injection:', err);
     return injectSeoMetaIntoHtml(rawHtml, resolveSeoMetadata(null, process.env.PUBLIC_SITE_URL));
@@ -2013,11 +2213,11 @@ async function startServer() {
 
   if (process.env.NODE_ENV === 'production' && fs.existsSync(distPath)) {
     app.use(express.static(distPath, { index: false }));
-    app.get('*', async (_req, res) => {
+    app.get('*', async (req, res) => {
       try {
         const indexPath = path.resolve(distPath, 'index.html');
         const rawHtml = fs.readFileSync(indexPath, 'utf-8');
-        const html = await renderHtmlWithSeo(rawHtml);
+        const html = await renderHtmlWithSeo(rawHtml, req.path);
         res.status(200).setHeader('Content-Type', 'text/html; charset=utf-8').send(html);
       } catch (err: any) {
         res.status(500).send('Failed to render application HTML: ' + err.message);
@@ -2044,7 +2244,7 @@ async function startServer() {
         const indexPath = path.resolve(process.cwd(), 'index.html');
         const rawHtml = fs.readFileSync(indexPath, 'utf-8');
         const transformed = await vite.transformIndexHtml(req.originalUrl, rawHtml);
-        const html = await renderHtmlWithSeo(transformed);
+        const html = await renderHtmlWithSeo(transformed, req.path);
         res.status(200).setHeader('Content-Type', 'text/html; charset=utf-8').send(html);
       } catch (err: any) {
         vite.ssrFixStacktrace?.(err);

@@ -16,6 +16,15 @@ import {
   DEFAULT_SEO_TITLE
 } from '../utils/seo.ts';
 import { isFreeAiModel, isPaidAiModel } from '../utils/modelTier.ts';
+import {
+  DEFAULT_PAGE_SEO_PRESETS,
+  derivePageLabelFromSlug,
+  getDefaultPresetForSlug,
+  normalizePageSlug,
+  sortPageSeoConfigs,
+  type FaqSchemaItem,
+  type PageSeoConfig,
+} from '../utils/seoController.ts';
 
 export interface User {
   id: string;
@@ -166,6 +175,10 @@ export interface SystemSettings {
   mail_webhook_url?: string;
   mail_webhook_secret?: string;
   mail_notify_admin_on_payment?: boolean;
+  gsc_verification_code?: string;
+  ga4_measurement_id?: string;
+  ga4_enabled?: boolean;
+  robots_txt_extra?: string;
 }
 
 interface ProviderKeySettingEntry {
@@ -187,6 +200,7 @@ interface MemoryDatabaseData {
   settings: SystemSettings;
   provider_api_keys: Record<string, ProviderKeySettingEntry>;
   finance_ledger: FinanceLedgerEntry[];
+  page_seo_configs: PageSeoConfig[];
 }
 
 export interface QueryExecutor {
@@ -254,7 +268,11 @@ function createDefaultSystemSettings(): SystemSettings {
     mail_enabled: true,
     mail_webhook_url: '',
     mail_webhook_secret: '',
-    mail_notify_admin_on_payment: true
+    mail_notify_admin_on_payment: true,
+    gsc_verification_code: '',
+    ga4_measurement_id: '',
+    ga4_enabled: false,
+    robots_txt_extra: ''
   };
 }
 
@@ -681,6 +699,12 @@ function createInitialSeedData(env: Record<string, string | undefined> = process
     };
   }
 
+  const page_seo_configs: PageSeoConfig[] = DEFAULT_PAGE_SEO_PRESETS.map(preset => ({
+    ...preset,
+    faqItems: preset.faqItems.map(item => ({ ...item })),
+    updatedAt: now
+  }));
+
   return {
     users,
     subscriptions,
@@ -692,7 +716,8 @@ function createInitialSeedData(env: Record<string, string | undefined> = process
     usage_records,
     settings,
     provider_api_keys,
-    finance_ledger: []
+    finance_ledger: [],
+    page_seo_configs
   };
 }
 
@@ -884,6 +909,53 @@ function mapFinanceLedgerRow(row: any): FinanceLedgerEntry {
     date: String(row.entry_date),
     deletedAt: toNullableISO(row.deleted_at),
     createdAt: toISO(row.created_at),
+    updatedAt: toISO(row.updated_at)
+  };
+}
+
+function mapPageSeoRow(row: any): PageSeoConfig {
+  let faqItems: FaqSchemaItem[] = [];
+  if (Array.isArray(row.faq_items)) {
+    faqItems = row.faq_items
+      .filter((item: any) => item && typeof item === 'object')
+      .map((item: any, idx: number) => ({
+        id: String(item.id || `faq-${idx + 1}`),
+        question: String(item.question || ''),
+        answer: String(item.answer || '')
+      }));
+  } else if (typeof row.faq_items === 'string') {
+    try {
+      const parsed = JSON.parse(row.faq_items);
+      if (Array.isArray(parsed)) {
+        faqItems = parsed
+          .filter((item: any) => item && typeof item === 'object')
+          .map((item: any, idx: number) => ({
+            id: String(item.id || `faq-${idx + 1}`),
+            question: String(item.question || ''),
+            answer: String(item.answer || '')
+          }));
+      }
+    } catch {
+      faqItems = [];
+    }
+  }
+
+  return {
+    slug: normalizePageSlug(String(row.slug || '/')),
+    pageLabel: String(row.page_label || derivePageLabelFromSlug(String(row.slug || '/'))),
+    metaTitle: String(row.meta_title || ''),
+    metaDescription: String(row.meta_description || ''),
+    focusKeyword: String(row.focus_keyword || ''),
+    ogImageUrl: String(row.og_image_url || DEFAULT_OG_IMAGE_PATH),
+    twitterCard: row.twitter_card === 'summary' ? 'summary' : 'summary_large_image',
+    twitterTitle: String(row.twitter_title || ''),
+    twitterDescription: String(row.twitter_description || ''),
+    twitterHandle: String(row.twitter_handle || '@banglaaipro'),
+    canonicalOverride: String(row.canonical_override || ''),
+    noIndex: Boolean(row.no_index),
+    noFollow: Boolean(row.no_follow),
+    faqSchemaEnabled: Boolean(row.faq_schema_enabled),
+    faqItems,
     updatedAt: toISO(row.updated_at)
   };
 }
@@ -1135,6 +1207,36 @@ export class Database {
        ON CONFLICT (setting_key) DO NOTHING`,
       ['provider_api_keys', JSON.stringify(seed.provider_api_keys)]
     );
+
+    // 5. Idempotently seed default per-page SEO configurations
+    for (const seoPreset of seed.page_seo_configs) {
+      await this.pool.query(
+        `INSERT INTO page_seo_configs (
+          slug, page_label, meta_title, meta_description, focus_keyword, og_image_url,
+          twitter_card, twitter_title, twitter_description, twitter_handle, canonical_override,
+          no_index, no_follow, faq_schema_enabled, faq_items, updated_at
+        ) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16)
+        ON CONFLICT (slug) DO NOTHING`,
+        [
+          seoPreset.slug,
+          seoPreset.pageLabel,
+          seoPreset.metaTitle,
+          seoPreset.metaDescription,
+          seoPreset.focusKeyword,
+          seoPreset.ogImageUrl,
+          seoPreset.twitterCard,
+          seoPreset.twitterTitle,
+          seoPreset.twitterDescription,
+          seoPreset.twitterHandle,
+          seoPreset.canonicalOverride,
+          seoPreset.noIndex,
+          seoPreset.noFollow,
+          seoPreset.faqSchemaEnabled,
+          JSON.stringify(seoPreset.faqItems),
+          seoPreset.updatedAt || new Date().toISOString()
+        ]
+      );
+    }
   }
 
   private async readProviderKeySettings(executor?: QueryExecutor): Promise<Record<string, ProviderKeySettingEntry>> {
@@ -2867,6 +2969,155 @@ export class Database {
     }
     const res = await this.pool.query(`DELETE FROM admin_finance_ledger`);
     return res.rowCount ?? 0;
+  }
+
+  // --- Per-Page Dynamic SEO Configurations ---
+  public async listPageSeoConfigs(): Promise<PageSeoConfig[]> {
+    await this.ensureReady();
+    if (!this.pool) {
+      return sortPageSeoConfigs(
+        this.memory!.page_seo_configs.map(cfg => ({
+          ...cfg,
+          faqItems: cfg.faqItems.map(item => ({ ...item }))
+        }))
+      );
+    }
+
+    const res = await this.pool.query(`SELECT * FROM page_seo_configs`);
+    return sortPageSeoConfigs(res.rows.map(mapPageSeoRow));
+  }
+
+  public async getPageSeoConfigBySlug(slug: string): Promise<PageSeoConfig | undefined> {
+    await this.ensureReady();
+    const normalized = normalizePageSlug(slug);
+    if (!this.pool) {
+      const found = this.memory!.page_seo_configs.find(c => c.slug === normalized);
+      return found
+        ? { ...found, faqItems: found.faqItems.map(item => ({ ...item })) }
+        : undefined;
+    }
+
+    const res = await this.pool.query(
+      `SELECT * FROM page_seo_configs WHERE slug = $1 LIMIT 1`,
+      [normalized]
+    );
+    return res.rows[0] ? mapPageSeoRow(res.rows[0]) : undefined;
+  }
+
+  public async upsertPageSeoConfig(config: PageSeoConfig): Promise<PageSeoConfig> {
+    await this.ensureReady();
+    const normalized = normalizePageSlug(config.slug);
+    const now = config.updatedAt || new Date().toISOString();
+    const record: PageSeoConfig = {
+      ...config,
+      slug: normalized,
+      faqItems: config.faqItems.map(item => ({ ...item })),
+      updatedAt: now
+    };
+
+    if (!this.pool) {
+      const idx = this.memory!.page_seo_configs.findIndex(c => c.slug === normalized);
+      if (idx >= 0) {
+        this.memory!.page_seo_configs[idx] = record;
+      } else {
+        this.memory!.page_seo_configs.push(record);
+      }
+      return { ...record, faqItems: record.faqItems.map(item => ({ ...item })) };
+    }
+
+    const res = await this.pool.query(
+      `INSERT INTO page_seo_configs (
+        slug, page_label, meta_title, meta_description, focus_keyword, og_image_url,
+        twitter_card, twitter_title, twitter_description, twitter_handle, canonical_override,
+        no_index, no_follow, faq_schema_enabled, faq_items, updated_at
+      ) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16)
+      ON CONFLICT (slug) DO UPDATE SET
+        page_label = EXCLUDED.page_label,
+        meta_title = EXCLUDED.meta_title,
+        meta_description = EXCLUDED.meta_description,
+        focus_keyword = EXCLUDED.focus_keyword,
+        og_image_url = EXCLUDED.og_image_url,
+        twitter_card = EXCLUDED.twitter_card,
+        twitter_title = EXCLUDED.twitter_title,
+        twitter_description = EXCLUDED.twitter_description,
+        twitter_handle = EXCLUDED.twitter_handle,
+        canonical_override = EXCLUDED.canonical_override,
+        no_index = EXCLUDED.no_index,
+        no_follow = EXCLUDED.no_follow,
+        faq_schema_enabled = EXCLUDED.faq_schema_enabled,
+        faq_items = EXCLUDED.faq_items,
+        updated_at = EXCLUDED.updated_at
+      RETURNING *`,
+      [
+        record.slug,
+        record.pageLabel,
+        record.metaTitle,
+        record.metaDescription,
+        record.focusKeyword,
+        record.ogImageUrl,
+        record.twitterCard,
+        record.twitterTitle,
+        record.twitterDescription,
+        record.twitterHandle,
+        record.canonicalOverride,
+        record.noIndex,
+        record.noFollow,
+        record.faqSchemaEnabled,
+        JSON.stringify(record.faqItems),
+        now
+      ]
+    );
+    return mapPageSeoRow(res.rows[0]);
+  }
+
+  public async deletePageSeoConfig(slug: string): Promise<boolean> {
+    await this.ensureReady();
+    const normalized = normalizePageSlug(slug);
+    if (!this.pool) {
+      const prev = this.memory!.page_seo_configs.length;
+      this.memory!.page_seo_configs = this.memory!.page_seo_configs.filter(
+        c => c.slug !== normalized
+      );
+      return this.memory!.page_seo_configs.length < prev;
+    }
+
+    const res = await this.pool.query(
+      `DELETE FROM page_seo_configs WHERE slug = $1`,
+      [normalized]
+    );
+    return (res.rowCount ?? 0) > 0;
+  }
+
+  public async resetPageSeoConfig(slug: string): Promise<PageSeoConfig | undefined> {
+    await this.ensureReady();
+    const normalized = normalizePageSlug(slug);
+    const preset = getDefaultPresetForSlug(normalized);
+    if (preset) {
+      return this.upsertPageSeoConfig({
+        ...preset,
+        updatedAt: new Date().toISOString()
+      });
+    }
+    const existing = await this.getPageSeoConfigBySlug(normalized);
+    if (!existing) return undefined;
+    return this.upsertPageSeoConfig({
+      slug: normalized,
+      pageLabel: existing.pageLabel || derivePageLabelFromSlug(normalized),
+      metaTitle: '',
+      metaDescription: '',
+      focusKeyword: 'bangla ai',
+      ogImageUrl: DEFAULT_OG_IMAGE_PATH,
+      twitterCard: 'summary_large_image',
+      twitterTitle: '',
+      twitterDescription: '',
+      twitterHandle: '@banglaaipro',
+      canonicalOverride: '',
+      noIndex: false,
+      noFollow: false,
+      faqSchemaEnabled: false,
+      faqItems: [],
+      updatedAt: new Date().toISOString()
+    });
   }
 }
 
