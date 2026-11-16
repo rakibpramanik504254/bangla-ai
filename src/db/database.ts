@@ -15,6 +15,7 @@ import {
   DEFAULT_SEO_DESCRIPTION,
   DEFAULT_SEO_TITLE
 } from '../utils/seo.ts';
+import { isFreeAiModel, isPaidAiModel } from '../utils/modelTier.ts';
 
 export interface User {
   id: string;
@@ -2543,7 +2544,7 @@ export class Database {
     if (!this.pool) {
       let count = 0;
       for (const m of this.memory!.ai_models) {
-        if (m.is_free || m.badge === 'free' || m.model_name.endsWith(':free') || m.model_name === 'openrouter/free') {
+        if (isFreeAiModel(m)) {
           m.is_enabled = enabled;
           count++;
         }
@@ -2555,6 +2556,31 @@ export class Database {
       `UPDATE ai_models
        SET is_enabled = $1
        WHERE is_free = TRUE OR badge = 'free' OR model_name LIKE '%:free' OR model_name = 'openrouter/free'`,
+      [enabled]
+    );
+    return res.rowCount ?? 0;
+  }
+
+  public async bulkTogglePaidModels(enabled: boolean): Promise<number> {
+    await this.ensureReady();
+    if (!this.pool) {
+      let count = 0;
+      for (const m of this.memory!.ai_models) {
+        if (isPaidAiModel(m)) {
+          m.is_enabled = enabled;
+          count++;
+        }
+      }
+      return count;
+    }
+
+    const res = await this.pool.query(
+      `UPDATE ai_models
+       SET is_enabled = $1
+       WHERE COALESCE(is_free, FALSE) = FALSE
+         AND COALESCE(badge, '') <> 'free'
+         AND model_name NOT LIKE '%:free'
+         AND model_name <> 'openrouter/free'`,
       [enabled]
     );
     return res.rowCount ?? 0;

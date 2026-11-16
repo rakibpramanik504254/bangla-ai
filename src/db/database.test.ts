@@ -2,6 +2,7 @@ import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
 import { Database, type PoolLike, type QueryExecutor } from './database.ts';
 import { createFinanceEntry } from '../utils/financeLedger.ts';
+import { isFreeAiModel, isPaidAiModel } from '../utils/modelTier.ts';
 
 interface MockState {
   ddlExecuted: string[];
@@ -373,6 +374,30 @@ function createMockPool(): { pool: PoolLike; state: MockState } {
       return { rows: [], rowCount: count };
     }
 
+    if (sql.startsWith('UPDATE ai_models SET is_enabled = $1 WHERE is_free = TRUE')) {
+      const enabled = Boolean(params[0]);
+      let count = 0;
+      for (const [id, existing] of state.aiModels.entries()) {
+        if (isFreeAiModel(existing)) {
+          state.aiModels.set(id, { ...existing, is_enabled: enabled });
+          count++;
+        }
+      }
+      return { rows: [], rowCount: count };
+    }
+
+    if (sql.startsWith('UPDATE ai_models SET is_enabled = $1 WHERE COALESCE(is_free, FALSE) = FALSE')) {
+      const enabled = Boolean(params[0]);
+      let count = 0;
+      for (const [id, existing] of state.aiModels.entries()) {
+        if (isPaidAiModel(existing)) {
+          state.aiModels.set(id, { ...existing, is_enabled: enabled });
+          count++;
+        }
+      }
+      return { rows: [], rowCount: count };
+    }
+
     return { rows: [], rowCount: 0 };
   };
 
@@ -555,5 +580,41 @@ describe('Database PostgreSQL Persistence', () => {
     assert.equal(reloaded.seo_og_image_url, '/api/seo/og-banner?v=12345');
     assert.equal(reloaded.seo_og_image_data, 'data:image/png;base64,iVBORw0KGgo=');
     assert.ok(state.adminSettings.has('system_settings'));
+  });
+
+  it('toggles all paid (flagship) models ON and OFF without altering OpenRouter free models', async () => {
+    const { pool } = createMockPool();
+    const database = new Database({ pool, env: {} });
+    await database.init();
+
+    const initial = await database.listModels(false);
+    const initialPaid = initial.filter(isPaidAiModel);
+    const initialFree = initial.filter(isFreeAiModel);
+    assert.ok(initialPaid.length > 0);
+    assert.ok(initialFree.length > 0);
+    assert.ok(initialPaid.every(m => m.is_enabled === true));
+    assert.ok(initialFree.every(m => m.is_enabled === false));
+
+    // Turn all paid models OFF
+    const disabledCount = await database.bulkTogglePaidModels(false);
+    assert.equal(disabledCount, initialPaid.length);
+
+    const afterPaidOff = await database.listModels(false);
+    assert.ok(afterPaidOff.filter(isPaidAiModel).every(m => m.is_enabled === false));
+    assert.ok(afterPaidOff.filter(isFreeAiModel).every(m => m.is_enabled === false));
+
+    // Turn free models ON independently, verify paid models stay OFF
+    const freeEnabledCount = await database.bulkToggleFreeModels(true);
+    assert.equal(freeEnabledCount, initialFree.length);
+    const afterFreeOn = await database.listModels(false);
+    assert.ok(afterFreeOn.filter(isPaidAiModel).every(m => m.is_enabled === false));
+    assert.ok(afterFreeOn.filter(isFreeAiModel).every(m => m.is_enabled === true));
+
+    // Turn all paid models back ON, verify free models remain untouched (ON)
+    const reEnabledCount = await database.bulkTogglePaidModels(true);
+    assert.equal(reEnabledCount, initialPaid.length);
+    const afterPaidOn = await database.listModels(false);
+    assert.ok(afterPaidOn.filter(isPaidAiModel).every(m => m.is_enabled === true));
+    assert.ok(afterPaidOn.filter(isFreeAiModel).every(m => m.is_enabled === true));
   });
 });

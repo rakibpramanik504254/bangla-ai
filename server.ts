@@ -1481,6 +1481,22 @@ app.post('/api/admin/models/free/toggle-all', requireAdmin, async (req: Authenti
   }
 });
 
+app.post('/api/admin/models/paid/toggle-all', requireAdmin, async (req: AuthenticatedRequest, res: Response) => {
+  try {
+    const enabled = Boolean(req.body?.is_enabled);
+    const updatedCount = await db.bulkTogglePaidModels(enabled);
+    res.json({
+      success: true,
+      updatedCount,
+      is_enabled: enabled,
+      models: await db.listModels(false),
+      message: `${updatedCount} Paid flagship AI model(s) turned ${enabled ? 'ON' : 'OFF'} for Workspace.`
+    });
+  } catch (err: any) {
+    res.status(500).json({ error: 'Failed to toggle paid models: ' + err.message });
+  }
+});
+
 app.post('/api/admin/seo/upload-banner', requireAdmin, async (req: AuthenticatedRequest, res: Response) => {
   try {
     const dataUrl = typeof req.body?.dataUrl === 'string' ? req.body.dataUrl : '';

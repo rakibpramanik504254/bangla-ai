@@ -96,7 +96,7 @@ export const SeoSettingsCard: React.FC<SeoSettingsCardProps> = ({
   };
 
   return (
-    <div className="p-4 sm:p-5 rounded-2xl border border-black/[0.08] dark:border-white/[0.08] bg-[#f0f4f9] dark:bg-[#131314] space-y-4">
+    <div className="p-5 sm:p-6 rounded-2xl border border-black/[0.08] dark:border-white/[0.08] bg-white dark:bg-[#1e1f20] space-y-4">
       <div className="flex flex-wrap items-center justify-between gap-2">
         <div className="flex items-center gap-2 min-w-0">
           <Globe className="w-4 h-4 text-[#1f1f1f] dark:text-[#e3e3e3] shrink-0" />
@@ -107,7 +107,7 @@ export const SeoSettingsCard: React.FC<SeoSettingsCardProps> = ({
         <button
           type="button"
           onClick={handleResetSeoDefaults}
-          className="h-7 px-3 rounded-full border border-black/[0.1] dark:border-white/[0.12] bg-white dark:bg-[#1e1f20] hover:bg-[#e9eef6] dark:hover:bg-[#282a2c] text-[11px] font-medium text-[#444746] dark:text-[#c4c7c5] flex items-center gap-1 cursor-pointer transition-colors"
+          className="h-7 px-3 rounded-full border border-black/[0.1] dark:border-white/[0.12] bg-[#f0f4f9] dark:bg-[#131314] hover:bg-[#e9eef6] dark:hover:bg-[#282a2c] text-[11px] font-medium text-[#444746] dark:text-[#c4c7c5] flex items-center gap-1 cursor-pointer transition-colors"
         >
           <RotateCcw className="w-3 h-3" />
           <span>Reset Defaults</span>
@@ -138,7 +138,7 @@ export const SeoSettingsCard: React.FC<SeoSettingsCardProps> = ({
             setGlobalSettings({ ...globalSettings, seo_title: e.target.value })
           }
           placeholder={DEFAULT_SEO_TITLE}
-          className="w-full px-3.5 py-2.5 rounded-xl border border-black/[0.08] dark:border-white/[0.08] bg-white dark:bg-[#1e1f20] text-[#1f1f1f] dark:text-[#e3e3e3] text-xs focus:outline-none focus:border-[#1f1f1f] dark:focus:border-[#e3e3e3]"
+          className="w-full px-3.5 py-2.5 rounded-xl border border-black/[0.08] dark:border-white/[0.08] bg-[#f0f4f9] dark:bg-[#131314] text-[#1f1f1f] dark:text-[#e3e3e3] text-xs focus:outline-none focus:border-[#1f1f1f] dark:focus:border-[#e3e3e3]"
         />
       </div>
 
@@ -162,7 +162,7 @@ export const SeoSettingsCard: React.FC<SeoSettingsCardProps> = ({
             setGlobalSettings({ ...globalSettings, seo_description: e.target.value })
           }
           placeholder={DEFAULT_SEO_DESCRIPTION}
-          className="w-full px-3.5 py-2.5 rounded-xl border border-black/[0.08] dark:border-white/[0.08] bg-white dark:bg-[#1e1f20] text-[#1f1f1f] dark:text-[#e3e3e3] text-xs leading-relaxed focus:outline-none focus:border-[#1f1f1f] dark:focus:border-[#e3e3e3] resize-y"
+          className="w-full px-3.5 py-2.5 rounded-xl border border-black/[0.08] dark:border-white/[0.08] bg-[#f0f4f9] dark:bg-[#131314] text-[#1f1f1f] dark:text-[#e3e3e3] text-xs leading-relaxed focus:outline-none focus:border-[#1f1f1f] dark:focus:border-[#e3e3e3] resize-y"
         />
       </div>
 
@@ -187,7 +187,7 @@ export const SeoSettingsCard: React.FC<SeoSettingsCardProps> = ({
               type="button"
               disabled={uploadingBanner}
               onClick={() => fileInputRef.current?.click()}
-              className="h-7 px-3 rounded-full border border-black/[0.1] dark:border-white/[0.12] bg-white dark:bg-[#1e1f20] hover:bg-[#e9eef6] dark:hover:bg-[#282a2c] text-[11px] font-semibold text-[#1f1f1f] dark:text-[#e3e3e3] flex items-center gap-1.5 cursor-pointer disabled:opacity-50 transition-colors"
+              className="h-7 px-3 rounded-full border border-black/[0.1] dark:border-white/[0.12] bg-[#f0f4f9] dark:bg-[#131314] hover:bg-[#e9eef6] dark:hover:bg-[#282a2c] text-[11px] font-semibold text-[#1f1f1f] dark:text-[#e3e3e3] flex items-center gap-1.5 cursor-pointer disabled:opacity-50 transition-colors"
             >
               <Upload className="w-3 h-3" />
               <span>{uploadingBanner ? 'Uploading...' : 'Upload Image'}</span>
@@ -203,7 +203,7 @@ export const SeoSettingsCard: React.FC<SeoSettingsCardProps> = ({
             setGlobalSettings({ ...globalSettings, seo_og_image_url: e.target.value });
           }}
           placeholder="/og-banner.png or https://..."
-          className="w-full px-3.5 py-2.5 rounded-xl border border-black/[0.08] dark:border-white/[0.08] bg-white dark:bg-[#1e1f20] text-[#1f1f1f] dark:text-[#e3e3e3] font-mono text-xs focus:outline-none focus:border-[#1f1f1f] dark:focus:border-[#e3e3e3]"
+          className="w-full px-3.5 py-2.5 rounded-xl border border-black/[0.08] dark:border-white/[0.08] bg-[#f0f4f9] dark:bg-[#131314] text-[#1f1f1f] dark:text-[#e3e3e3] font-mono text-xs focus:outline-none focus:border-[#1f1f1f] dark:focus:border-[#e3e3e3]"
         />
         <span className="text-[10px] text-[#444746] dark:text-[#9aa0a6] block mt-1">
           Defaults to <span className="font-mono">/og-banner.png</span>. Paste a full <span className="font-mono">https://</span> URL or upload a PNG/JPG (stored in PostgreSQL).

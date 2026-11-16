@@ -18,6 +18,7 @@ import {
   resolveEffectiveModelDescription,
   isModelCustomized
 } from '../../utils/modelBrandIcons.ts';
+import { isFreeAiModel } from '../../utils/modelTier.ts';
 import { BrandLogoIcon } from '../chat/BrandLogoIcon.tsx';
 import { WorkspaceModelIcon } from '../chat/WorkspaceModelIcon.tsx';
 
@@ -38,6 +39,7 @@ export const ModelsCatalogTab: React.FC<ModelsCatalogTabProps> = ({
 }) => {
   const [modelFilter, setModelFilter] = useState<'all' | 'flagship' | 'free'>('all');
   const [syncingFreeModels, setSyncingFreeModels] = useState(false);
+  const [bulkTogglingTier, setBulkTogglingTier] = useState<'paid' | 'free' | null>(null);
 
   const [editingModelId, setEditingModelId] = useState<string | null>(null);
   const [editingModelName, setEditingModelName] = useState('');
@@ -81,17 +83,12 @@ export const ModelsCatalogTab: React.FC<ModelsCatalogTabProps> = ({
     }
   };
 
-  const isFreeModel = (m: AiModel) =>
-    Boolean(
-      m.is_free ||
-        m.badge === 'free' ||
-        m.model_name.endsWith(':free') ||
-        m.model_name === 'openrouter/free'
-    );
+  const isFreeModel = (m: AiModel) => isFreeAiModel(m);
 
   const freeModelsList = models.filter(isFreeModel);
   const freeOnCount = freeModelsList.filter(m => m.is_enabled).length;
   const flagshipModelsList = models.filter(m => !isFreeModel(m));
+  const paidOnCount = flagshipModelsList.filter(m => m.is_enabled).length;
   const customizedCount = models.filter(m => isModelCustomized(m)).length;
 
   const visibleModels =
@@ -304,6 +301,7 @@ export const ModelsCatalogTab: React.FC<ModelsCatalogTabProps> = ({
 
   const handleBulkToggleFreeModels = async (enableAll: boolean) => {
     if (!token) return;
+    setBulkTogglingTier('free');
     try {
       const res = await fetch('/api/admin/models/free/toggle-all', {
         method: 'POST',
@@ -330,6 +328,42 @@ export const ModelsCatalogTab: React.FC<ModelsCatalogTabProps> = ({
       }
     } catch (err: any) {
       setFeedback(`Error: ${err.message || 'Failed to update OpenRouter free models.'}`);
+    } finally {
+      setBulkTogglingTier(null);
+    }
+  };
+
+  const handleBulkTogglePaidModels = async (enableAll: boolean) => {
+    if (!token) return;
+    setBulkTogglingTier('paid');
+    try {
+      const res = await fetch('/api/admin/models/paid/toggle-all', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`
+        },
+        body: JSON.stringify({ is_enabled: enableAll })
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        setFeedback(`Error: ${data.error || 'Failed to update paid AI models.'}`);
+      } else {
+        if (Array.isArray(data.models)) {
+          setModels(data.models);
+        } else {
+          await onRefreshModels();
+        }
+        broadcastModelsUpdated();
+        setFeedback(
+          data.message ||
+            `All Paid AI models turned ${enableAll ? 'ON' : 'OFF'}.`
+        );
+      }
+    } catch (err: any) {
+      setFeedback(`Error: ${err.message || 'Failed to update paid AI models.'}`);
+    } finally {
+      setBulkTogglingTier(null);
     }
   };
 
@@ -387,80 +421,120 @@ export const ModelsCatalogTab: React.FC<ModelsCatalogTabProps> = ({
 
   return (
     <div className="space-y-4">
-      {/* Models Toolbar & Filter Controls */}
-      <div className="bg-white dark:bg-[#1e1f20] p-4 rounded-2xl border border-black/[0.08] dark:border-white/[0.08] flex flex-col lg:flex-row lg:items-center justify-between gap-3 text-xs">
-        <div className="flex flex-wrap items-center gap-1.5">
-          <button
-            type="button"
-            onClick={() => setModelFilter('all')}
-            className={`h-8 px-3 rounded-full font-medium cursor-pointer transition-colors ${
-              modelFilter === 'all'
-                ? 'bg-[#e9eef6] text-[#1f1f1f] dark:bg-[#282a2c] dark:text-[#e3e3e3] font-semibold'
-                : 'bg-[#f0f4f9] dark:bg-[#131314] text-[#444746] dark:text-[#9aa0a6]'
-            }`}
-          >
-            All Models ({models.length})
-          </button>
-          <button
-            type="button"
-            onClick={() => setModelFilter('flagship')}
-            className={`h-8 px-3 rounded-full font-medium cursor-pointer transition-colors ${
-              modelFilter === 'flagship'
-                ? 'bg-[#e9eef6] text-[#1f1f1f] dark:bg-[#282a2c] dark:text-[#e3e3e3] font-semibold'
-                : 'bg-[#f0f4f9] dark:bg-[#131314] text-[#444746] dark:text-[#9aa0a6]'
-            }`}
-          >
-            Flagship ({flagshipModelsList.length})
-          </button>
-          <button
-            type="button"
-            onClick={() => setModelFilter('free')}
-            className={`h-8 px-3 rounded-full font-medium cursor-pointer transition-colors ${
-              modelFilter === 'free'
-                ? 'bg-[#e9eef6] text-[#1f1f1f] dark:bg-[#282a2c] dark:text-[#e3e3e3] font-semibold'
-                : 'bg-[#f0f4f9] dark:bg-[#131314] text-[#444746] dark:text-[#9aa0a6]'
-            }`}
-          >
-            OpenRouter Free ({freeOnCount}/{freeModelsList.length} ON)
-          </button>
-        </div>
+      {/* Models Toolbar & Bulk Tier Controls */}
+      <div className="bg-white dark:bg-[#1e1f20] p-4 rounded-2xl border border-black/[0.08] dark:border-white/[0.08] space-y-3 text-xs">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5">
+          <div className="flex flex-wrap items-center gap-1.5">
+            <button
+              type="button"
+              data-testid="models-filter-all"
+              onClick={() => setModelFilter('all')}
+              className={`h-8 px-3 rounded-full font-medium cursor-pointer transition-colors tabular-nums ${
+                modelFilter === 'all'
+                  ? 'bg-[#e9eef6] text-[#1f1f1f] dark:bg-[#282a2c] dark:text-[#e3e3e3] font-semibold'
+                  : 'bg-[#f0f4f9] dark:bg-[#131314] text-[#444746] dark:text-[#9aa0a6]'
+              }`}
+            >
+              All Models ({models.length})
+            </button>
+            <button
+              type="button"
+              data-testid="models-filter-paid"
+              onClick={() => setModelFilter('flagship')}
+              className={`h-8 px-3 rounded-full font-medium cursor-pointer transition-colors tabular-nums ${
+                modelFilter === 'flagship'
+                  ? 'bg-[#e9eef6] text-[#1f1f1f] dark:bg-[#282a2c] dark:text-[#e3e3e3] font-semibold'
+                  : 'bg-[#f0f4f9] dark:bg-[#131314] text-[#444746] dark:text-[#9aa0a6]'
+              }`}
+            >
+              Paid Flagship ({paidOnCount}/{flagshipModelsList.length} ON)
+            </button>
+            <button
+              type="button"
+              data-testid="models-filter-free"
+              onClick={() => setModelFilter('free')}
+              className={`h-8 px-3 rounded-full font-medium cursor-pointer transition-colors tabular-nums ${
+                modelFilter === 'free'
+                  ? 'bg-[#e9eef6] text-[#1f1f1f] dark:bg-[#282a2c] dark:text-[#e3e3e3] font-semibold'
+                  : 'bg-[#f0f4f9] dark:bg-[#131314] text-[#444746] dark:text-[#9aa0a6]'
+              }`}
+            >
+              OpenRouter Free ({freeOnCount}/{freeModelsList.length} ON)
+            </button>
+          </div>
 
-        <div className="flex flex-wrap items-center gap-2">
-          <button
-            type="button"
-            disabled={syncingFreeModels}
-            onClick={handleSyncFreeModels}
-            className="h-8 px-3.5 rounded-full border border-black/[0.1] dark:border-white/[0.12] hover:bg-[#f0f4f9] dark:hover:bg-[#282a2c] font-semibold flex items-center gap-1.5 cursor-pointer disabled:opacity-50 transition-colors whitespace-nowrap"
-          >
-            <RefreshCw className={`w-3.5 h-3.5 ${syncingFreeModels ? 'animate-spin' : ''}`} />
-            <span>{syncingFreeModels ? 'Syncing...' : 'Sync Free Models'}</span>
-          </button>
-          <button
-            type="button"
-            onClick={() => handleBulkToggleFreeModels(true)}
-            className="h-8 px-3 rounded-full bg-emerald-600 hover:bg-emerald-700 text-white font-semibold cursor-pointer whitespace-nowrap"
-          >
-            Turn All Free ON
-          </button>
-          <button
-            type="button"
-            onClick={() => handleBulkToggleFreeModels(false)}
-            className="h-8 px-3 rounded-full border border-black/[0.1] dark:border-white/[0.12] text-[#444746] dark:text-[#9aa0a6] hover:text-red-600 font-semibold cursor-pointer whitespace-nowrap"
-          >
-            Turn All Free OFF
-          </button>
           <button
             type="button"
             onClick={() => setConfirmResetAllOpen(true)}
             disabled={resettingAll}
-            className="h-8 px-3 rounded-full border border-black/[0.1] dark:border-white/[0.12] hover:bg-red-50 dark:hover:bg-red-950/30 hover:border-red-300 dark:hover:border-red-800/60 text-[#444746] dark:text-[#c4c7c5] hover:text-red-600 dark:hover:text-red-400 font-semibold flex items-center gap-1.5 cursor-pointer transition-colors whitespace-nowrap disabled:opacity-50"
+            className="self-start sm:self-auto h-8 px-3 rounded-full border border-black/[0.1] dark:border-white/[0.12] hover:bg-red-50 dark:hover:bg-red-950/30 hover:border-red-300 dark:hover:border-red-800/60 text-[#444746] dark:text-[#c4c7c5] hover:text-red-600 dark:hover:text-red-400 font-semibold flex items-center gap-1.5 cursor-pointer transition-colors whitespace-nowrap disabled:opacity-50"
           >
             <RotateCcw className="w-3.5 h-3.5" />
             <span>
-              Reset All Customizations
+              Reset Customizations
               {customizedCount > 0 ? ` (${customizedCount})` : ''}
             </span>
           </button>
+        </div>
+
+        {/* Clean Two-Group Bulk Switch Bar: Paid Models vs Free Models */}
+        <div className="pt-3 border-t border-black/[0.06] dark:border-white/[0.06] flex flex-col lg:flex-row lg:items-center justify-between gap-2.5">
+          <div className="flex flex-wrap items-center gap-2">
+            <span className="text-[11px] font-semibold text-[#1f1f1f] dark:text-[#e3e3e3] mr-0.5">
+              Paid AI Models:
+            </span>
+            <button
+              type="button"
+              data-testid="bulk-paid-on-btn"
+              disabled={bulkTogglingTier !== null}
+              onClick={() => handleBulkTogglePaidModels(true)}
+              className="h-8 px-3 rounded-full bg-[#1f1f1f] hover:bg-[#1f1f1f]/90 dark:bg-[#e3e3e3] dark:hover:bg-[#e3e3e3]/90 text-white dark:text-[#131314] font-semibold cursor-pointer whitespace-nowrap disabled:opacity-50 transition-colors"
+            >
+              {bulkTogglingTier === 'paid' ? 'Updating...' : 'Turn All Paid ON'}
+            </button>
+            <button
+              type="button"
+              data-testid="bulk-paid-off-btn"
+              disabled={bulkTogglingTier !== null}
+              onClick={() => handleBulkTogglePaidModels(false)}
+              className="h-8 px-3 rounded-full border border-black/[0.12] dark:border-white/[0.14] text-[#444746] dark:text-[#c4c7c5] hover:text-red-600 dark:hover:text-red-400 hover:border-red-300 dark:hover:border-red-800/60 font-semibold cursor-pointer whitespace-nowrap disabled:opacity-50 transition-colors"
+            >
+              Turn All Paid OFF
+            </button>
+          </div>
+
+          <div className="flex flex-wrap items-center gap-2">
+            <span className="text-[11px] font-semibold text-[#444746] dark:text-[#9aa0a6] mr-0.5">
+              OpenRouter Free:
+            </span>
+            <button
+              type="button"
+              disabled={syncingFreeModels}
+              onClick={handleSyncFreeModels}
+              className="h-8 px-3 rounded-full border border-black/[0.1] dark:border-white/[0.12] hover:bg-[#f0f4f9] dark:hover:bg-[#282a2c] font-semibold flex items-center gap-1.5 cursor-pointer disabled:opacity-50 transition-colors whitespace-nowrap"
+            >
+              <RefreshCw className={`w-3.5 h-3.5 ${syncingFreeModels ? 'animate-spin' : ''}`} />
+              <span>{syncingFreeModels ? 'Syncing...' : 'Sync Free Models'}</span>
+            </button>
+            <button
+              type="button"
+              data-testid="bulk-free-on-btn"
+              disabled={bulkTogglingTier !== null}
+              onClick={() => handleBulkToggleFreeModels(true)}
+              className="h-8 px-3 rounded-full bg-emerald-600 hover:bg-emerald-700 text-white font-semibold cursor-pointer whitespace-nowrap disabled:opacity-50 transition-colors"
+            >
+              Turn All Free ON
+            </button>
+            <button
+              type="button"
+              data-testid="bulk-free-off-btn"
+              disabled={bulkTogglingTier !== null}
+              onClick={() => handleBulkToggleFreeModels(false)}
+              className="h-8 px-3 rounded-full border border-black/[0.1] dark:border-white/[0.12] text-[#444746] dark:text-[#9aa0a6] hover:text-red-600 font-semibold cursor-pointer whitespace-nowrap disabled:opacity-50 transition-colors"
+            >
+              Turn All Free OFF
+            </button>
+          </div>
         </div>
       </div>
 
