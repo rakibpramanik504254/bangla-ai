@@ -39,16 +39,16 @@ export const AccountBillingModal: React.FC<AccountBillingModalProps> = ({
     >
       <div
         onClick={(e) => e.stopPropagation()}
-        className="w-full max-w-2xl max-h-[92vh] flex flex-col rounded-3xl bg-white dark:bg-[#1e1f20] border border-black/[0.08] dark:border-white/[0.08] shadow-2xl overflow-hidden text-[#1f1f1f] dark:text-[#e3e3e3]"
+        className="w-full max-w-4xl max-h-[90vh] flex flex-col rounded-3xl bg-white dark:bg-[#1e1f20] border border-black/[0.08] dark:border-white/[0.08] shadow-2xl overflow-hidden text-[#1f1f1f] dark:text-[#e3e3e3]"
       >
         {/* Header */}
-        <div className="px-5 sm:px-6 py-4 border-b border-black/[0.08] dark:border-white/[0.08] flex items-center justify-between gap-3 shrink-0">
+        <div className="px-5 sm:px-6 py-4 border-b border-black/[0.08] dark:border-white/[0.08] flex items-center justify-between gap-3 shrink-0 bg-white dark:bg-[#1e1f20]">
           <div className="min-w-0">
             <h2 className="text-base sm:text-lg font-semibold tracking-tight">
               Account &amp; Billing
             </h2>
             <p className="text-xs text-[#444746] dark:text-[#9aa0a6] truncate">
-              Manage your profile, appearance, subscription quota, and payment history
+              Manage your profile, subscription quota, billing history, and security
             </p>
           </div>
           <button
@@ -61,8 +61,8 @@ export const AccountBillingModal: React.FC<AccountBillingModalProps> = ({
           </button>
         </div>
 
-        {/* Unified Scrollable Body */}
-        <div className="flex-1 overflow-y-auto p-5 sm:p-6">
+        {/* Organized Console Scrollable Body */}
+        <div className="flex-1 overflow-y-auto bg-[#f0f4f9]/75 dark:bg-[#131314] p-3.5 sm:p-5">
           <AccountBillingPanel
             compact
             onCloseModal={onClose}

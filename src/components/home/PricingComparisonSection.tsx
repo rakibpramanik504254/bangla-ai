@@ -2,6 +2,8 @@ import React, { useMemo, useState } from 'react';
 import { AlertTriangle, Check } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext.tsx';
 import { formatBDT } from '../../utils/billing.ts';
+import { WatchTutorialButton } from '../common/WatchTutorialButton.tsx';
+import { shouldShowTutorialCta } from '../../utils/tutorial.ts';
 import {
   COMPARISON_AI_TOOLS,
   DEFAULT_SELECTED_TOOL_IDS,
@@ -12,7 +14,12 @@ import {
 } from '../../utils/pricingCalculator.ts';
 
 export const PricingComparisonSection: React.FC = () => {
-  const { openPaymentModal } = useAuth();
+  const { user, loading, token, openPaymentModal } = useAuth();
+  const showTutorial = shouldShowTutorialCta({
+    user,
+    loading,
+    hasStoredToken: Boolean(token),
+  });
   const [selectedToolIds, setSelectedToolIds] = useState<string[]>([...DEFAULT_SELECTED_TOOL_IDS]);
   const [selectedPlan, setSelectedPlan] = useState<'monthly' | 'yearly'>('monthly');
 
@@ -334,6 +341,16 @@ export const PricingComparisonSection: React.FC = () => {
           </div>
         </div>
       </div>
+
+      {showTutorial && (
+        <div className="mt-6 flex justify-center">
+          <WatchTutorialButton
+            variant="outline"
+            size="md"
+            testId="tutorial-btn-pricing"
+          />
+        </div>
+      )}
     </section>
   );
 };

@@ -22,6 +22,8 @@ import { ModelsMarqueeSection } from '../home/ModelsMarqueeSection.tsx';
 import { PricingComparisonSection } from '../home/PricingComparisonSection.tsx';
 import { FaqSection } from '../home/FaqSection.tsx';
 import { CURATED_MODEL_MAP } from '../../utils/foundationModels.ts';
+import { WatchTutorialButton } from '../common/WatchTutorialButton.tsx';
+import { shouldShowTutorialCta } from '../../utils/tutorial.ts';
 
 interface HomePageProps {
   onStartChat: () => void;
@@ -98,8 +100,13 @@ const SAMPLE_BENCHMARKS: PromptSample[] = [
 ];
 
 export const HomePage: React.FC<HomePageProps> = ({ onStartChat }) => {
-  const { user, openPaymentModal } = useAuth();
+  const { user, loading, token, openPaymentModal } = useAuth();
   const isSubscribed = user?.isSubscribed || user?.role === 'admin';
+  const showTutorial = shouldShowTutorialCta({
+    user,
+    loading,
+    hasStoredToken: Boolean(token),
+  });
 
   const [activeBenchmarkTab, setActiveBenchmarkTab] = useState(0);
   const [activeModelTab, setActiveModelTab] = useState(0);
@@ -172,8 +179,28 @@ export const HomePage: React.FC<HomePageProps> = ({ onStartChat }) => {
         </div>
       </section>
 
+      {/* Minimal Tutorial Help Banner (Non-subscribers only) */}
+      {showTutorial && (
+        <section
+          aria-label="Payment and Setup Video Guide"
+          data-testid="tutorial-hero-banner"
+          className="max-w-3xl mx-auto px-4 sm:px-6 !mt-10 sm:!mt-14"
+        >
+          <div className="rounded-2xl bg-[#f0f4f9] dark:bg-[#1e1f20] border border-black/[0.08] dark:border-white/[0.08] px-4 py-3 sm:px-5 sm:py-3 flex flex-col sm:flex-row items-center justify-between gap-3">
+            <p className="text-xs sm:text-sm font-medium text-[#1f1f1f] dark:text-[#e3e3e3] text-center sm:text-left">
+              Confused about the process?
+            </p>
+            <WatchTutorialButton
+              variant="outline"
+              size="sm"
+              testId="tutorial-btn-hero-banner"
+            />
+          </div>
+        </section>
+      )}
+
       {/* Comparison Section: "Why Bangla AI vs Individual Subscriptions" */}
-      <section className="max-w-5xl mx-auto px-4 sm:px-6">
+      <section className={`max-w-5xl mx-auto px-4 sm:px-6 ${showTutorial ? '!mt-10 sm:!mt-14' : ''}`}>
         <div className="text-center mb-10 space-y-2.5">
           <span className="text-[11px] font-mono uppercase tracking-wider text-[#444746] dark:text-[#9aa0a6] block">
             Cost & Value Comparison

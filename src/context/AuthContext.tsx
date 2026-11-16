@@ -2,6 +2,7 @@ import React, { createContext, useContext, useState, useEffect } from 'react';
 import { User } from '../types/index.ts';
 import { auth, signInWithGoogle, signOutFromFirebase } from '../firebase.ts';
 import { resolveUserAvatarUrl } from '../utils/avatar.ts';
+import { hasUserActiveSubscription } from '../utils/tutorial.ts';
 
 interface AuthContextType {
   user: User | null;
@@ -28,6 +29,10 @@ interface AuthContextType {
   isAccountModalOpen: boolean;
   openAccountModal: () => void;
   closeAccountModal: () => void;
+  hasActiveSubscription: boolean;
+  isTutorialModalOpen: boolean;
+  openTutorialModal: () => void;
+  closeTutorialModal: () => void;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -45,6 +50,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [isPaymentModalOpen, setIsPaymentModalOpen] = useState(false);
   const [paymentPlan, setPaymentPlan] = useState<'monthly' | 'yearly'>('monthly');
   const [isAccountModalOpen, setIsAccountModalOpen] = useState(false);
+  const [isTutorialModalOpen, setIsTutorialModalOpen] = useState(false);
 
   useEffect(() => {
     if (theme === 'dark') {
@@ -315,6 +321,16 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setIsAccountModalOpen(false);
   };
 
+  const openTutorialModal = () => {
+    setIsTutorialModalOpen(true);
+  };
+
+  const closeTutorialModal = () => {
+    setIsTutorialModalOpen(false);
+  };
+
+  const hasActiveSubscription = hasUserActiveSubscription(user);
+
   return (
     <AuthContext.Provider
       value={{
@@ -341,7 +357,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         closePaymentModal,
         isAccountModalOpen,
         openAccountModal,
-        closeAccountModal
+        closeAccountModal,
+        hasActiveSubscription,
+        isTutorialModalOpen,
+        openTutorialModal,
+        closeTutorialModal
       }}
     >
       {children}

@@ -21,6 +21,8 @@ import {
   resolveEnabledMfsGateways
 } from '../../utils/expressCheckout.ts';
 import { trackMetaInitiateCheckout, trackMetaAddPaymentInfo } from '../../utils/metaPixel.ts';
+import { WatchTutorialButton } from '../common/WatchTutorialButton.tsx';
+import { shouldShowTutorialCta } from '../../utils/tutorial.ts';
 
 interface PaymentModalProps {
   isOpen: boolean;
@@ -79,7 +81,7 @@ export const PaymentModal: React.FC<PaymentModalProps> = ({
   defaultPlan = 'monthly',
   onSuccessRedirectToChat
 }) => {
-  const { user, token, refreshUser, applySession, openAuthModal } = useAuth();
+  const { user, token, loading: authLoading, refreshUser, applySession, openAuthModal } = useAuth();
   const [selectedPlan, setSelectedPlan] = useState<'monthly' | 'yearly'>(defaultPlan);
   const [gateway, setGateway] = useState<'bkash' | 'nagad' | 'rocket'>('bkash');
   const [senderNumber, setSenderNumber] = useState(user?.phone || '');
@@ -694,6 +696,20 @@ export const PaymentModal: React.FC<PaymentModalProps> = ({
                     </>
                   )}
                 </button>
+
+                {shouldShowTutorialCta({
+                  user,
+                  loading: authLoading,
+                  hasStoredToken: Boolean(token),
+                }) && (
+                  <div className="flex justify-center pt-0.5">
+                    <WatchTutorialButton
+                      variant="ghost"
+                      size="sm"
+                      testId="tutorial-btn-payment"
+                    />
+                  </div>
+                )}
 
                 {!isAuthenticated && (
                   <p className="text-center text-[11px] text-[#444746] dark:text-[#9aa0a6]">

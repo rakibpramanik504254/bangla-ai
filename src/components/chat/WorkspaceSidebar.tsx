@@ -18,6 +18,7 @@ import { partitionWorkspaceChats } from '../../utils/workspaceSidebar.ts';
 import { useAppInstall } from '../../context/AppInstallContext.tsx';
 import { BrandLogo } from '../common/BrandLogo.tsx';
 import { UserAvatar } from '../common/UserAvatar.tsx';
+import { WatchTutorialButton } from '../common/WatchTutorialButton.tsx';
 
 interface WorkspaceSidebarProps {
   sidebarOpen: boolean;
@@ -367,6 +368,23 @@ export const WorkspaceSidebar: React.FC<WorkspaceSidebarProps> = ({
             </>
           )}
         </div>
+
+        {/* Non-subscriber Watch Tutorial CTA pinned cleanly above profile divider */}
+        {!isSubscribed && (
+          <div className="px-2.5 pb-2.5 shrink-0">
+            <WatchTutorialButton
+              variant="outline"
+              size="sm"
+              testId="tutorial-btn-workspace-sidebar"
+              onAfterClick={() => {
+                if (typeof window !== 'undefined' && window.innerWidth < 768) {
+                  onCloseSidebar();
+                }
+              }}
+              className="w-full !h-9 !px-3.5 !bg-white/85 hover:!bg-white dark:!bg-[#282a2c]/80 dark:hover:!bg-[#282a2c] !border-black/[0.08] dark:!border-white/[0.08] text-[#1f1f1f] dark:text-[#e3e3e3] text-xs font-medium justify-center"
+            />
+          </div>
+        )}
 
         {/* Fixed User Profile Footer + Download App Pill */}
         <div className="p-2.5 border-t border-black/[0.08] dark:border-white/[0.08] shrink-0 space-y-2">

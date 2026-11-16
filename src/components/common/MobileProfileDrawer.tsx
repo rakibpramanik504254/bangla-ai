@@ -17,6 +17,7 @@ import { AppView, getAccountRoleLabel } from '../../utils/navigation.ts';
 import { formatUserContactSubtitle } from '../../utils/expressCheckout.ts';
 import { useAppInstall } from '../../context/AppInstallContext.tsx';
 import { UserAvatar } from './UserAvatar.tsx';
+import { WatchTutorialButton } from './WatchTutorialButton.tsx';
 
 interface MobileProfileTriggerButtonProps {
   user: User;
@@ -242,6 +243,12 @@ export const MobileProfileDrawer: React.FC<MobileProfileDrawerProps> = ({
               </button>
             </>
           )}
+
+          <WatchTutorialButton
+            variant="menu-item"
+            testId="tutorial-btn-mobile-drawer"
+            onAfterClick={onClose}
+          />
         </div>
 
         {/* 3. Unified Account Panel */}

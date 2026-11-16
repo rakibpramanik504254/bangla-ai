@@ -17,6 +17,7 @@ import { useAuth } from '../context/AuthContext.tsx';
 import { useAppInstall } from '../context/AppInstallContext.tsx';
 import { BrandLogo } from './common/BrandLogo.tsx';
 import { UserAvatar } from './common/UserAvatar.tsx';
+import { WatchTutorialButton } from './common/WatchTutorialButton.tsx';
 import {
   MobileProfileDrawer,
   MobileProfileTriggerButton,
@@ -425,6 +426,12 @@ export const Navbar: React.FC<NavbarProps> = ({ currentView, setCurrentView }) =
               >
                 FAQ
               </button>
+
+              <WatchTutorialButton
+                variant="menu-item"
+                testId="tutorial-btn-mobile-guest"
+                onAfterClick={() => setMobileDrawerOpen(false)}
+              />
             </nav>
 
             {/* Appearance / Theme Switcher (Synced with Account & Billing global state) */}

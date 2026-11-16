@@ -47,6 +47,7 @@ import {
   type ImageAspectRatio,
 } from '../../utils/imageGeneration.ts';
 import { BrandLogo } from '../common/BrandLogo.tsx';
+import { WatchTutorialButton } from '../common/WatchTutorialButton.tsx';
 import {
   MobileProfileDrawer,
   MobileProfileTriggerButton,
@@ -1180,13 +1181,23 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({
                 <strong>Subscription Required:</strong> Activate a plan to chat with frontier AI models.
               </span>
             </div>
-            <button
-              type="button"
-              onClick={() => openPaymentModal('monthly')}
-              className="h-8 px-4 rounded-full bg-[#1f1f1f] text-white dark:bg-[#e3e3e3] dark:text-[#131314] font-medium text-xs hover:opacity-90 transition-opacity cursor-pointer shrink-0 w-full sm:w-auto"
-            >
-              Subscribe (৳699/mo)
-            </button>
+            <div className="flex items-center gap-2 w-full sm:w-auto shrink-0">
+              <div className="sm:hidden flex-1 flex">
+                <WatchTutorialButton
+                  variant="outline"
+                  size="sm"
+                  testId="tutorial-btn-workspace-banner"
+                  className="w-full"
+                />
+              </div>
+              <button
+                type="button"
+                onClick={() => openPaymentModal('monthly')}
+                className="h-8 px-4 rounded-full bg-[#1f1f1f] text-white dark:bg-[#e3e3e3] dark:text-[#131314] font-medium text-xs hover:opacity-90 transition-opacity cursor-pointer shrink-0 flex-1 sm:flex-initial"
+              >
+                Subscribe (৳699/mo)
+              </button>
+            </div>
           </div>
         )}
 

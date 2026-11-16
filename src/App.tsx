@@ -18,6 +18,7 @@ import { AccountBillingModal } from './components/account/AccountBillingModal.ts
 import { WhatsAppSupportWidget } from './components/common/WhatsAppSupportWidget.tsx';
 import { AppInstallProvider } from './context/AppInstallContext.tsx';
 import { InstallGuideModal } from './components/common/InstallGuideModal.tsx';
+import { TutorialModal } from './components/common/TutorialModal.tsx';
 import { initMetaPixel, trackMetaPageView } from './utils/metaPixel.ts';
 import {
   AppView,
@@ -170,6 +171,7 @@ function MainApp() {
         onSuccessRedirectToChat={() => navigateToView('chat')}
       />
       <InstallGuideModal />
+      <TutorialModal />
     </div>
   );
 }
