@@ -65,7 +65,7 @@ export const WhatsAppSupportWidget: React.FC = () => {
         <div
           role="dialog"
           aria-label="WhatsApp Live Support"
-          className="w-[calc(100vw-2rem)] max-w-[340px] rounded-3xl overflow-hidden bg-white dark:bg-[#1e1f20] border border-black/[0.08] dark:border-white/[0.08] shadow-xl animate-in fade-in slide-in-from-bottom-2 duration-200"
+          className="w-[calc(100vw-2rem)] max-w-[340px] max-h-[calc(100dvh-7rem)] overflow-y-auto rounded-3xl bg-white dark:bg-[#1e1f20] border border-black/[0.08] dark:border-white/[0.08] shadow-xl animate-in fade-in slide-in-from-bottom-2 duration-200"
         >
           {/* Header */}
           <div className="bg-[#075E54] dark:bg-[#1B4338] text-white px-4 py-3.5 flex items-center justify-between gap-3">
@@ -151,19 +151,53 @@ export const WhatsAppSupportWidget: React.FC = () => {
         </div>
       )}
 
-      {/* Floating WhatsApp Trigger Button */}
-      <button
-        type="button"
-        onClick={() => setIsOpen((prev) => !prev)}
-        aria-label={isOpen ? 'Close WhatsApp live chat' : 'Open WhatsApp live chat'}
-        aria-expanded={isOpen}
-        className="group flex items-center justify-center sm:gap-2.5 w-12 h-12 sm:w-auto sm:h-auto sm:px-4 sm:py-3 rounded-full bg-[#25D366] hover:bg-[#20BD5A] text-white shadow-lg shadow-black/15 dark:shadow-black/40 transition-all hover:scale-[1.03] active:scale-[0.98] cursor-pointer"
-      >
-        <WhatsAppLogo className="w-6 h-6 shrink-0" />
-        <span className="hidden sm:inline text-xs font-semibold tracking-tight whitespace-nowrap">
-          {isOpen ? 'Close Chat' : 'Live Support'}
-        </span>
-      </button>
+      {/* Floating WhatsApp Trigger + Contact Us Tooltip */}
+      <div className="relative flex items-center justify-end group">
+        {!isOpen && (
+          <button
+            type="button"
+            onClick={() => setIsOpen(true)}
+            data-testid="whatsapp-contact-tooltip"
+            aria-label="Contact us on WhatsApp"
+            className="
+              absolute right-[calc(100%+10px)] top-1/2 -translate-y-1/2
+              sm:right-0 sm:top-auto sm:bottom-[calc(100%+10px)] sm:translate-y-0
+              px-3 py-1.5 rounded-xl
+              bg-[#1f1f1f] dark:bg-[#282a2c] text-white dark:text-[#e3e3e3]
+              border border-black/10 dark:border-white/15 shadow-md
+              text-xs font-medium tracking-tight whitespace-nowrap shrink-0
+              opacity-100 sm:opacity-0 sm:pointer-events-none sm:group-hover:opacity-100 sm:group-hover:pointer-events-auto sm:group-focus-within:opacity-100
+              transition-opacity duration-150 cursor-pointer
+            "
+          >
+            <span>Contact us</span>
+            {/* Right caret on mobile */}
+            <span
+              aria-hidden="true"
+              className="sm:hidden absolute -right-1 top-1/2 -translate-y-1/2 w-2 h-2 rotate-45 bg-[#1f1f1f] dark:bg-[#282a2c] border-t border-r border-black/10 dark:border-white/15"
+            />
+            {/* Bottom caret on desktop hover */}
+            <span
+              aria-hidden="true"
+              className="hidden sm:block absolute -bottom-1 right-5 w-2 h-2 rotate-45 bg-[#1f1f1f] dark:bg-[#282a2c] border-b border-r border-black/10 dark:border-white/15"
+            />
+          </button>
+        )}
+
+        <button
+          type="button"
+          onClick={() => setIsOpen((prev) => !prev)}
+          data-testid="whatsapp-trigger-btn"
+          aria-label={isOpen ? 'Close WhatsApp live chat' : 'Open WhatsApp live chat'}
+          aria-expanded={isOpen}
+          className="flex items-center justify-center sm:gap-2.5 w-14 h-14 sm:w-auto sm:h-auto sm:px-4 sm:py-3 rounded-full bg-[#25D366] hover:bg-[#20BD5A] text-white shadow-lg shadow-black/20 dark:shadow-black/50 transition-transform duration-150 hover:scale-[1.03] active:scale-[0.97] cursor-pointer"
+        >
+          <WhatsAppLogo className="w-7 h-7 sm:w-6 sm:h-6 shrink-0" />
+          <span className="hidden sm:inline text-xs font-semibold tracking-tight whitespace-nowrap">
+            {isOpen ? 'Close Chat' : 'Live Support'}
+          </span>
+        </button>
+      </div>
     </div>
   );
 };
