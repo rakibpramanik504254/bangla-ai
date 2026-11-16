@@ -155,6 +155,9 @@ export interface PublicSettings {
   bkash_number: string;
   nagad_number: string;
   rocket_number: string;
+  bkash_enabled?: boolean;
+  nagad_enabled?: boolean;
+  rocket_enabled?: boolean;
   support_phone?: string;
   support_email?: string;
   facebook_pixel_id?: string;

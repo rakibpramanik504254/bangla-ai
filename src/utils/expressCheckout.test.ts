@@ -3,14 +3,18 @@ import assert from 'node:assert/strict';
 import {
   buildAndroidChromeIntentUrl,
   deriveGuestDisplayName,
+  formatDisabledMfsGatewayMessage,
   formatUserContactSubtitle,
   getMfsPaymentGuide,
   isAndroidUserAgent,
   isFacebookInAppBrowser,
+  isMfsGatewayEnabled,
   isSyntheticPhoneEmail,
   isValidBdPhoneNumber,
   isValidEmailAddress,
   normalizeBdPhoneNumber,
+  resolveActiveMfsGateway,
+  resolveEnabledMfsGateways,
   synthesizeGuestEmailFromPhone
 } from './expressCheckout.ts';
 
@@ -78,7 +82,8 @@ test('getMfsPaymentGuide returns gateway-specific USSD and 3 clear Send Money st
   assert.equal(bkashGuide.gatewayName, 'bKash');
   assert.equal(bkashGuide.ussdCode, '*247#');
   assert.equal(bkashGuide.steps.length, 3);
-  assert.match(bkashGuide.steps[0], /Send Money.*do not use Cash Out/);
+  assert.equal(bkashGuide.steps[0], 'Open bKash App or dial *247# and select Send Money.');
+  assert.equal(bkashGuide.steps[0].includes('Cash Out'), false);
   assert.match(bkashGuide.steps[1], /01812345678.*৳699/);
   assert.deepEqual(
     bkashGuide.stepSegments.flatMap(s => s.filter(seg => seg.bold).map(seg => seg.text)),
@@ -99,4 +104,28 @@ test('getMfsPaymentGuide returns gateway-specific USSD and 3 clear Send Money st
     merchantNumber: '01912345678',
   });
   assert.equal(rocketGuide.ussdCode, '*322#');
+});
+
+test('MFS gateway availability helpers filter disabled methods and select active fallback cleanly', () => {
+  assert.deepEqual(resolveEnabledMfsGateways(undefined), ['bkash', 'nagad', 'rocket']);
+
+  const withoutBkash = { bkash_enabled: false, nagad_enabled: true, rocket_enabled: true };
+  const enabledWithoutBkash = resolveEnabledMfsGateways(withoutBkash);
+  assert.deepEqual(enabledWithoutBkash, ['nagad', 'rocket']);
+  assert.equal(resolveActiveMfsGateway(enabledWithoutBkash, 'bkash'), 'nagad');
+  assert.equal(resolveActiveMfsGateway(enabledWithoutBkash, 'rocket'), 'rocket');
+  assert.equal(isMfsGatewayEnabled('bkash', withoutBkash), false);
+  assert.equal(isMfsGatewayEnabled('nagad', withoutBkash), true);
+  assert.equal(
+    formatDisabledMfsGatewayMessage('bkash', withoutBkash),
+    'bKash is temporarily unavailable. Please select Nagad or Rocket instead.'
+  );
+
+  const onlyRocket = { bkash_enabled: false, nagad_enabled: false, rocket_enabled: true };
+  assert.deepEqual(resolveEnabledMfsGateways(onlyRocket), ['rocket']);
+  assert.equal(resolveActiveMfsGateway(['rocket'], 'bkash'), 'rocket');
+  assert.equal(
+    formatDisabledMfsGatewayMessage('bkash', onlyRocket),
+    'bKash is temporarily unavailable. Please select Rocket instead.'
+  );
 });

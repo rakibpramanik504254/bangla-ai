@@ -16,7 +16,9 @@ import {
   getMfsPaymentGuide,
   isValidBdPhoneNumber,
   isValidEmailAddress,
-  normalizeBdPhoneNumber
+  normalizeBdPhoneNumber,
+  resolveActiveMfsGateway,
+  resolveEnabledMfsGateways
 } from '../../utils/expressCheckout.ts';
 import { trackMetaInitiateCheckout, trackMetaAddPaymentInfo } from '../../utils/metaPixel.ts';
 
@@ -31,6 +33,9 @@ interface PaymentSettings {
   bkash_number: string;
   nagad_number: string;
   rocket_number: string;
+  bkash_enabled: boolean;
+  nagad_enabled: boolean;
+  rocket_enabled: boolean;
 }
 
 interface SubmittedState {
@@ -94,11 +99,17 @@ export const PaymentModal: React.FC<PaymentModalProps> = ({
   const [paymentSettings, setPaymentSettings] = useState<PaymentSettings>({
     bkash_number: '01812345678',
     nagad_number: '01712345678',
-    rocket_number: '01912345678'
+    rocket_number: '01912345678',
+    bkash_enabled: true,
+    nagad_enabled: true,
+    rocket_enabled: true
   });
+  const [settingsLoaded, setSettingsLoaded] = useState(false);
 
   const plan = PLANS[selectedPlan];
   const isAuthenticated = Boolean(user && token);
+  const enabledGatewayIds = resolveEnabledMfsGateways(paymentSettings);
+  const visibleGateways = MFS_GATEWAYS.filter(item => enabledGatewayIds.includes(item.id));
 
   useEffect(() => {
     if (isOpen) {
@@ -114,23 +125,37 @@ export const PaymentModal: React.FC<PaymentModalProps> = ({
       setQuickPassword('');
       setPasswordSaved(false);
       setPasswordError(null);
+      setSettingsLoaded(false);
 
       trackMetaInitiateCheckout(plan.name, plan.priceBDT);
 
-      fetch('/api/payment/settings')
+      fetch('/api/payment/settings', { cache: 'no-store' })
         .then(res => res.json())
         .then(data => {
           if (data && data.bkash_number) {
-            setPaymentSettings({
+            const nextSettings: PaymentSettings = {
               bkash_number: data.bkash_number,
               nagad_number: data.nagad_number,
-              rocket_number: data.rocket_number
-            });
+              rocket_number: data.rocket_number,
+              bkash_enabled: data.bkash_enabled !== false,
+              nagad_enabled: data.nagad_enabled !== false,
+              rocket_enabled: data.rocket_enabled !== false
+            };
+            setPaymentSettings(nextSettings);
+            const activeIds = resolveEnabledMfsGateways(nextSettings);
+            setGateway(prev => resolveActiveMfsGateway(activeIds, prev));
           }
         })
-        .catch(err => console.error('Failed to load payment numbers:', err));
+        .catch(err => console.error('Failed to load payment numbers:', err))
+        .finally(() => setSettingsLoaded(true));
     }
   }, [isOpen, selectedPlan]);
+
+  useEffect(() => {
+    if (enabledGatewayIds.length > 0 && !enabledGatewayIds.includes(gateway)) {
+      setGateway(resolveActiveMfsGateway(enabledGatewayIds, gateway));
+    }
+  }, [enabledGatewayIds.join(','), gateway]);
 
   useEffect(() => {
     if (user?.phone && !senderNumber) {
@@ -140,7 +165,7 @@ export const PaymentModal: React.FC<PaymentModalProps> = ({
 
   if (!isOpen) return null;
 
-  const activeGateway = MFS_GATEWAYS.find(g => g.id === gateway) || MFS_GATEWAYS[0];
+  const activeGateway = visibleGateways.find(g => g.id === gateway) || visibleGateways[0] || MFS_GATEWAYS[0];
 
   const activeMerchantNumber =
     gateway === 'bkash' ? paymentSettings.bkash_number :
@@ -494,27 +519,44 @@ export const PaymentModal: React.FC<PaymentModalProps> = ({
 
               {/* Compact Gateway Tabs + Clean Merchant Send Money Card */}
               <div className="bg-[#f0f4f9] dark:bg-[#131314] rounded-2xl p-3 border border-black/[0.08] dark:border-white/[0.08] space-y-2.5">
-                <div className="grid grid-cols-3 gap-1.5">
-                  {MFS_GATEWAYS.map(item => (
-                    <button
-                      key={item.id}
-                      type="button"
-                      onClick={() => setGateway(item.id)}
-                      className={`py-1.5 px-2 rounded-xl border flex items-center justify-center gap-1.5 transition-colors cursor-pointer min-w-0 ${
-                        gateway === item.id
-                          ? `${item.activeClass} font-semibold text-[#1f1f1f] dark:text-[#e3e3e3]`
-                          : 'border-black/[0.08] dark:border-white/[0.08] bg-white dark:bg-[#1e1f20] text-[#444746] dark:text-[#9aa0a6] hover:bg-[#e9eef6] dark:hover:bg-[#282a2c]'
-                      }`}
-                    >
-                      <img
-                        src={item.icon}
-                        alt={item.name}
-                        className="w-5 h-5 object-contain rounded shrink-0 bg-white p-0.5"
-                      />
-                      <span className="text-[11px] font-semibold truncate">{item.name}</span>
-                    </button>
-                  ))}
-                </div>
+                {!settingsLoaded ? (
+                  <div className="grid grid-cols-2 gap-1.5">
+                    <div className="h-[34px] rounded-xl bg-white/70 dark:bg-[#1e1f20]/70 animate-pulse" />
+                    <div className="h-[34px] rounded-xl bg-white/70 dark:bg-[#1e1f20]/70 animate-pulse" />
+                  </div>
+                ) : (
+                  <div
+                    data-testid="mfs-gateway-selector"
+                    className={`grid gap-1.5 ${
+                      visibleGateways.length <= 1
+                        ? 'grid-cols-1'
+                        : visibleGateways.length === 2
+                        ? 'grid-cols-2'
+                        : 'grid-cols-3'
+                    }`}
+                  >
+                    {visibleGateways.map(item => (
+                      <button
+                        key={item.id}
+                        type="button"
+                        data-testid={`mfs-gateway-btn-${item.id}`}
+                        onClick={() => setGateway(item.id)}
+                        className={`py-1.5 px-2 rounded-xl border flex items-center justify-center gap-1.5 transition-colors cursor-pointer min-w-0 ${
+                          gateway === item.id
+                            ? `${item.activeClass} font-semibold text-[#1f1f1f] dark:text-[#e3e3e3]`
+                            : 'border-black/[0.08] dark:border-white/[0.08] bg-white dark:bg-[#1e1f20] text-[#444746] dark:text-[#9aa0a6] hover:bg-[#e9eef6] dark:hover:bg-[#282a2c]'
+                        }`}
+                      >
+                        <img
+                          src={item.icon}
+                          alt={item.name}
+                          className="w-5 h-5 object-contain rounded shrink-0 bg-white p-0.5"
+                        />
+                        <span className="text-[11px] font-semibold truncate">{item.name}</span>
+                      </button>
+                    ))}
+                  </div>
+                )}
 
                 <div className="bg-white dark:bg-[#1e1f20] rounded-xl px-3 py-2.5 border border-black/[0.08] dark:border-white/[0.08] flex items-center justify-between gap-2">
                   <div className="min-w-0">

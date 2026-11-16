@@ -39,7 +39,7 @@ interface NavbarProps {
 }
 
 export const Navbar: React.FC<NavbarProps> = ({ currentView, setCurrentView }) => {
-  const { user, theme, setTheme, loginWithGoogle, logout, openAuthModal, openAccountModal } = useAuth();
+  const { user, theme, setTheme, loginWithGoogle, logout, openAuthModal, openAccountModal, openPaymentModal } = useAuth();
   const { isInstalled, triggerInstall } = useAppInstall();
   const [mobileDrawerOpen, setMobileDrawerOpen] = useState(false);
   const [dropdownOpen, setDropdownOpen] = useState(false);
@@ -537,8 +537,9 @@ export const Navbar: React.FC<NavbarProps> = ({ currentView, setCurrentView }) =
                 type="button"
                 onClick={() => {
                   setMobileDrawerOpen(false);
-                  openAuthModal('register');
+                  openPaymentModal('monthly');
                 }}
+                data-testid="mobile-guest-get-started-btn"
                 className="btn-pill-primary w-full h-10 text-xs"
               >
                 Get Started

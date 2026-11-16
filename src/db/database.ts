@@ -148,6 +148,9 @@ export interface SystemSettings {
   bkash_number: string;
   nagad_number: string;
   rocket_number: string;
+  bkash_enabled?: boolean;
+  nagad_enabled?: boolean;
+  rocket_enabled?: boolean;
   announcement?: string;
   facebook_pixel_id?: string;
   facebook_pixel_enabled?: boolean;
@@ -240,6 +243,9 @@ function createDefaultSystemSettings(): SystemSettings {
     bkash_number: '01812345678',
     nagad_number: '01712345678',
     rocket_number: '01912345678',
+    bkash_enabled: true,
+    nagad_enabled: true,
+    rocket_enabled: true,
     announcement: 'Welcome to Bangla AI — The Premier Unified Multi-Model AI Hub.',
     seo_title: DEFAULT_SEO_TITLE,
     seo_description: DEFAULT_SEO_DESCRIPTION,

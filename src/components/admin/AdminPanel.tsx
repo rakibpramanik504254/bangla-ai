@@ -489,6 +489,49 @@ export const AdminPanel: React.FC = () => {
     }
   };
 
+  const handleToggleMfsGateway = async (
+    key: 'bkash_enabled' | 'nagad_enabled' | 'rocket_enabled',
+    label: string
+  ) => {
+    if (!token) return;
+    const currentlyEnabled = globalSettings[key] !== false;
+    const nextValue = !currentlyEnabled;
+
+    const nextBkash = key === 'bkash_enabled' ? nextValue : globalSettings.bkash_enabled !== false;
+    const nextNagad = key === 'nagad_enabled' ? nextValue : globalSettings.nagad_enabled !== false;
+    const nextRocket = key === 'rocket_enabled' ? nextValue : globalSettings.rocket_enabled !== false;
+
+    if (!nextBkash && !nextNagad && !nextRocket) {
+      setFeedback('Error: At least one payment method (bKash, Nagad, or Rocket) must stay enabled.');
+      return;
+    }
+
+    try {
+      const res = await fetch('/api/admin/settings', {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`
+        },
+        body: JSON.stringify({ [key]: nextValue })
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        setFeedback(`Error: ${data.error || `Failed to update ${label} status.`}`);
+        return;
+      }
+      setGlobalSettings(data);
+      setFeedback(
+        nextValue
+          ? `${label} enabled — now visible to customers in Checkout.`
+          : `${label} turned OFF — hidden from Checkout payment methods.`
+      );
+    } catch (err) {
+      console.error(err);
+      setFeedback(`Error: Network error while updating ${label} status.`);
+    }
+  };
+
   const pendingPayments = payments.filter(p => p.status === 'pending');
   const filteredPayments = payments.filter(p => {
     if (paymentFilter !== 'all' && p.status !== paymentFilter) return false;
@@ -747,6 +790,42 @@ export const AdminPanel: React.FC = () => {
             <span className="text-xs text-[#444746] dark:text-[#9aa0a6] font-mono">
               Total Records: {filteredPayments.length}
             </span>
+          </div>
+
+          <div className="bg-white dark:bg-[#1e1f20] px-4 py-3 rounded-2xl border border-black/[0.08] dark:border-white/[0.08] flex flex-wrap items-center justify-between gap-2.5 text-xs">
+            <div className="min-w-0">
+              <span className="font-semibold text-[#1f1f1f] dark:text-[#e3e3e3]">Checkout Payment Methods:</span>
+              <span className="text-[#444746] dark:text-[#9aa0a6] ml-1.5 text-[11px]">
+                Toggle off a gateway when SIM limit is reached to hide it from checkout.
+              </span>
+            </div>
+            <div className="flex flex-wrap items-center gap-1.5">
+              {(
+                [
+                  { key: 'bkash_enabled', label: 'bKash' },
+                  { key: 'nagad_enabled', label: 'Nagad' },
+                  { key: 'rocket_enabled', label: 'Rocket' }
+                ] as const
+              ).map(item => {
+                const active = globalSettings[item.key] !== false;
+                return (
+                  <button
+                    key={item.key}
+                    type="button"
+                    data-testid={`payments-toggle-${item.label.toLowerCase()}`}
+                    onClick={() => handleToggleMfsGateway(item.key, item.label)}
+                    className={`h-7 px-3 rounded-full text-[11px] font-semibold flex items-center gap-1.5 border transition-colors cursor-pointer ${
+                      active
+                        ? 'bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-950/40 dark:text-emerald-400 dark:border-emerald-800'
+                        : 'bg-red-50 text-red-700 border-red-200 dark:bg-red-950/40 dark:text-red-400 dark:border-red-800'
+                    }`}
+                  >
+                    <span className={`w-1.5 h-1.5 rounded-full ${active ? 'bg-emerald-500' : 'bg-red-500'}`} />
+                    <span>{item.label}: {active ? 'ON' : 'OFF'}</span>
+                  </button>
+                );
+              })}
+            </div>
           </div>
 
           <div className="bg-white dark:bg-[#1e1f20] rounded-2xl border border-black/[0.08] dark:border-white/[0.08] overflow-hidden">
@@ -1580,56 +1659,101 @@ export const AdminPanel: React.FC = () => {
             </div>
           </div>
 
-          {/* MFS Payment Numbers Configuration */}
+          {/* MFS Payment Numbers & Availability Configuration */}
           <div className="pt-2 border-t border-black/[0.08] dark:border-white/[0.08] space-y-3.5">
             <div>
               <h4 className="font-semibold text-xs text-[#1f1f1f] dark:text-[#e3e3e3] flex flex-wrap items-center justify-between gap-2">
-                <span>MFS Payment Phone Numbers</span>
+                <span>MFS Payment Methods &amp; Numbers</span>
                 <span className="text-[10px] font-mono text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/40 px-2 py-0.5 rounded-full border border-emerald-200 dark:border-emerald-800 shrink-0">
                   Live in Checkout
                 </span>
               </h4>
               <p className="text-[11px] text-[#444746] dark:text-[#9aa0a6] mt-0.5">
-                These numbers are dynamically displayed to subscribers during checkout with 1-click copy.
+                Turn any method OFF (e.g. if SIM limit is full) to hide it immediately from frontend checkout.
               </p>
             </div>
 
-            <div>
-              <label className="block font-medium mb-1 text-[#1f1f1f] dark:text-[#e3e3e3]">
-                bKash Merchant / Personal Number:
-              </label>
+            <div className="p-3 rounded-xl bg-[#f0f4f9] dark:bg-[#131314] border border-black/[0.06] dark:border-white/[0.06] space-y-2">
+              <div className="flex flex-wrap items-center justify-between gap-2">
+                <label className="font-medium text-[#1f1f1f] dark:text-[#e3e3e3]">
+                  bKash Merchant / Personal Number:
+                </label>
+                <button
+                  type="button"
+                  data-testid="admin-toggle-bkash"
+                  onClick={() => handleToggleMfsGateway('bkash_enabled', 'bKash')}
+                  className={`h-7 px-3 rounded-full text-[11px] font-semibold flex items-center gap-1.5 border transition-colors cursor-pointer ${
+                    globalSettings.bkash_enabled !== false
+                      ? 'bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-950/40 dark:text-emerald-400 dark:border-emerald-800'
+                      : 'bg-red-50 text-red-700 border-red-200 dark:bg-red-950/40 dark:text-red-400 dark:border-red-800'
+                  }`}
+                >
+                  <span className={`w-1.5 h-1.5 rounded-full ${globalSettings.bkash_enabled !== false ? 'bg-emerald-500' : 'bg-red-500'}`} />
+                  <span>{globalSettings.bkash_enabled !== false ? 'Active in Checkout · Turn OFF' : 'Off (Hidden) · Turn ON'}</span>
+                </button>
+              </div>
               <input
                 type="text"
                 value={globalSettings.bkash_number || ''}
                 onChange={e => setGlobalSettings({ ...globalSettings, bkash_number: e.target.value })}
                 placeholder="01812345678"
-                className="w-full px-3.5 py-2.5 rounded-xl border border-black/[0.08] dark:border-white/[0.08] bg-[#f0f4f9] dark:bg-[#131314] text-[#1f1f1f] dark:text-[#e3e3e3] font-mono text-xs focus:outline-none focus:border-[#1f1f1f] dark:focus:border-[#e3e3e3]"
+                className="w-full px-3.5 py-2.5 rounded-xl border border-black/[0.08] dark:border-white/[0.08] bg-white dark:bg-[#1e1f20] text-[#1f1f1f] dark:text-[#e3e3e3] font-mono text-xs focus:outline-none focus:border-[#1f1f1f] dark:focus:border-[#e3e3e3]"
               />
             </div>
 
-            <div>
-              <label className="block font-medium mb-1 text-[#1f1f1f] dark:text-[#e3e3e3]">
-                Nagad Merchant / Personal Number:
-              </label>
+            <div className="p-3 rounded-xl bg-[#f0f4f9] dark:bg-[#131314] border border-black/[0.06] dark:border-white/[0.06] space-y-2">
+              <div className="flex flex-wrap items-center justify-between gap-2">
+                <label className="font-medium text-[#1f1f1f] dark:text-[#e3e3e3]">
+                  Nagad Merchant / Personal Number:
+                </label>
+                <button
+                  type="button"
+                  data-testid="admin-toggle-nagad"
+                  onClick={() => handleToggleMfsGateway('nagad_enabled', 'Nagad')}
+                  className={`h-7 px-3 rounded-full text-[11px] font-semibold flex items-center gap-1.5 border transition-colors cursor-pointer ${
+                    globalSettings.nagad_enabled !== false
+                      ? 'bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-950/40 dark:text-emerald-400 dark:border-emerald-800'
+                      : 'bg-red-50 text-red-700 border-red-200 dark:bg-red-950/40 dark:text-red-400 dark:border-red-800'
+                  }`}
+                >
+                  <span className={`w-1.5 h-1.5 rounded-full ${globalSettings.nagad_enabled !== false ? 'bg-emerald-500' : 'bg-red-500'}`} />
+                  <span>{globalSettings.nagad_enabled !== false ? 'Active in Checkout · Turn OFF' : 'Off (Hidden) · Turn ON'}</span>
+                </button>
+              </div>
               <input
                 type="text"
                 value={globalSettings.nagad_number || ''}
                 onChange={e => setGlobalSettings({ ...globalSettings, nagad_number: e.target.value })}
                 placeholder="01712345678"
-                className="w-full px-3.5 py-2.5 rounded-xl border border-black/[0.08] dark:border-white/[0.08] bg-[#f0f4f9] dark:bg-[#131314] text-[#1f1f1f] dark:text-[#e3e3e3] font-mono text-xs focus:outline-none focus:border-[#1f1f1f] dark:focus:border-[#e3e3e3]"
+                className="w-full px-3.5 py-2.5 rounded-xl border border-black/[0.08] dark:border-white/[0.08] bg-white dark:bg-[#1e1f20] text-[#1f1f1f] dark:text-[#e3e3e3] font-mono text-xs focus:outline-none focus:border-[#1f1f1f] dark:focus:border-[#e3e3e3]"
               />
             </div>
 
-            <div>
-              <label className="block font-medium mb-1 text-[#1f1f1f] dark:text-[#e3e3e3]">
-                Rocket Merchant / Personal Number:
-              </label>
+            <div className="p-3 rounded-xl bg-[#f0f4f9] dark:bg-[#131314] border border-black/[0.06] dark:border-white/[0.06] space-y-2">
+              <div className="flex flex-wrap items-center justify-between gap-2">
+                <label className="font-medium text-[#1f1f1f] dark:text-[#e3e3e3]">
+                  Rocket Merchant / Personal Number:
+                </label>
+                <button
+                  type="button"
+                  data-testid="admin-toggle-rocket"
+                  onClick={() => handleToggleMfsGateway('rocket_enabled', 'Rocket')}
+                  className={`h-7 px-3 rounded-full text-[11px] font-semibold flex items-center gap-1.5 border transition-colors cursor-pointer ${
+                    globalSettings.rocket_enabled !== false
+                      ? 'bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-950/40 dark:text-emerald-400 dark:border-emerald-800'
+                      : 'bg-red-50 text-red-700 border-red-200 dark:bg-red-950/40 dark:text-red-400 dark:border-red-800'
+                  }`}
+                >
+                  <span className={`w-1.5 h-1.5 rounded-full ${globalSettings.rocket_enabled !== false ? 'bg-emerald-500' : 'bg-red-500'}`} />
+                  <span>{globalSettings.rocket_enabled !== false ? 'Active in Checkout · Turn OFF' : 'Off (Hidden) · Turn ON'}</span>
+                </button>
+              </div>
               <input
                 type="text"
                 value={globalSettings.rocket_number || ''}
                 onChange={e => setGlobalSettings({ ...globalSettings, rocket_number: e.target.value })}
                 placeholder="01912345678"
-                className="w-full px-3.5 py-2.5 rounded-xl border border-black/[0.08] dark:border-white/[0.08] bg-[#f0f4f9] dark:bg-[#131314] text-[#1f1f1f] dark:text-[#e3e3e3] font-mono text-xs focus:outline-none focus:border-[#1f1f1f] dark:focus:border-[#e3e3e3]"
+                className="w-full px-3.5 py-2.5 rounded-xl border border-black/[0.08] dark:border-white/[0.08] bg-white dark:bg-[#1e1f20] text-[#1f1f1f] dark:text-[#e3e3e3] font-mono text-xs focus:outline-none focus:border-[#1f1f1f] dark:focus:border-[#e3e3e3]"
               />
             </div>
           </div>

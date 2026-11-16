@@ -114,7 +114,7 @@ export function getMfsPaymentGuide(params: {
     [
       { text: `Open ${info.name} App or dial ${info.ussd} and select ` },
       { text: 'Send Money', bold: true },
-      { text: ' (do not use Cash Out).' },
+      { text: '.' },
     ],
     [
       { text: 'Copy the number above (' },
@@ -137,6 +137,62 @@ export function getMfsPaymentGuide(params: {
     stepSegments,
   };
 }
+
+export type MfsGatewayId = 'bkash' | 'nagad' | 'rocket';
+
+export interface MfsAvailabilitySettings {
+  bkash_enabled?: boolean;
+  nagad_enabled?: boolean;
+  rocket_enabled?: boolean;
+}
+
+const MFS_GATEWAY_LABELS: Record<MfsGatewayId, string> = {
+  bkash: 'bKash',
+  nagad: 'Nagad',
+  rocket: 'Rocket',
+};
+
+export function resolveEnabledMfsGateways(settings?: MfsAvailabilitySettings | null): MfsGatewayId[] {
+  const enabled: MfsGatewayId[] = [];
+  if (settings?.bkash_enabled !== false) enabled.push('bkash');
+  if (settings?.nagad_enabled !== false) enabled.push('nagad');
+  if (settings?.rocket_enabled !== false) enabled.push('rocket');
+  return enabled;
+}
+
+export function resolveActiveMfsGateway(
+  enabledGateways: MfsGatewayId[],
+  preferredGateway?: MfsGatewayId
+): MfsGatewayId {
+  if (preferredGateway && enabledGateways.includes(preferredGateway)) {
+    return preferredGateway;
+  }
+  return enabledGateways[0] || 'nagad';
+}
+
+export function isMfsGatewayEnabled(
+  gateway: MfsGatewayId,
+  settings?: MfsAvailabilitySettings | null
+): boolean {
+  return resolveEnabledMfsGateways(settings).includes(gateway);
+}
+
+export function formatDisabledMfsGatewayMessage(
+  gateway: MfsGatewayId,
+  settings?: MfsAvailabilitySettings | null
+): string {
+  const gatewayLabel = MFS_GATEWAY_LABELS[gateway] || gateway;
+  const enabledNames = resolveEnabledMfsGateways(settings).map(id => MFS_GATEWAY_LABELS[id]);
+  if (enabledNames.length === 0) {
+    return `${gatewayLabel} is temporarily unavailable. Please try again later or contact support.`;
+  }
+  const alternatives =
+    enabledNames.length === 1
+      ? enabledNames[0]
+      : `${enabledNames.slice(0, -1).join(', ')} or ${enabledNames[enabledNames.length - 1]}`;
+  return `${gatewayLabel} is temporarily unavailable. Please select ${alternatives} instead.`;
+}
+
 
 
 

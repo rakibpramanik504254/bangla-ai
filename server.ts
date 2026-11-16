@@ -53,6 +53,8 @@ import {
 } from './src/server/mail.ts';
 import {
   deriveGuestDisplayName,
+  formatDisabledMfsGatewayMessage,
+  isMfsGatewayEnabled,
   isSyntheticPhoneEmail,
   isValidBdPhoneNumber,
   isValidEmailAddress,
@@ -491,6 +493,9 @@ app.get('/api/settings/public', async (_req: Request, res: Response) => {
       bkash_number: settings.bkash_number || '01812345678',
       nagad_number: settings.nagad_number || '01712345678',
       rocket_number: settings.rocket_number || '01912345678',
+      bkash_enabled: settings.bkash_enabled !== false,
+      nagad_enabled: settings.nagad_enabled !== false,
+      rocket_enabled: settings.rocket_enabled !== false,
       support_phone: settings.support_phone || '+880 1622-860128',
       support_email: settings.support_email || 'ourbangla.ai@gmail.com',
       facebook_page_url: settings.facebook_page_url || 'https://www.facebook.com/profile.php?id=61596472081766',
@@ -534,6 +539,9 @@ app.get('/api/payment/settings', async (_req: Request, res: Response) => {
       bkash_number: settings.bkash_number || '01812345678',
       nagad_number: settings.nagad_number || '01712345678',
       rocket_number: settings.rocket_number || '01912345678',
+      bkash_enabled: settings.bkash_enabled !== false,
+      nagad_enabled: settings.nagad_enabled !== false,
+      rocket_enabled: settings.rocket_enabled !== false,
       support_phone: settings.support_phone || '+880 1622-860128',
       support_email: settings.support_email || 'ourbangla.ai@gmail.com',
       facebook_page_url: settings.facebook_page_url || 'https://www.facebook.com/profile.php?id=61596472081766',
@@ -605,6 +613,12 @@ const handlePaymentSubmission = async (req: AuthenticatedRequest, res: Response)
       return;
     }
 
+    const activeSettings = await db.getSettings();
+    if (!isMfsGatewayEnabled(selectedGateway, activeSettings)) {
+      res.status(400).json({ error: formatDisabledMfsGatewayMessage(selectedGateway, activeSettings) });
+      return;
+    }
+
     const cleanTrx = (trxId || '').trim();
     if (!cleanTrx || cleanTrx.length < 6) {
       res.status(400).json({ error: 'Valid SMS Transaction ID (TrxID) is required.' });
@@ -655,6 +669,12 @@ app.post('/api/payments/express', async (req: Request, res: Response) => {
 
     if (!['bkash', 'nagad', 'rocket'].includes(selectedGateway)) {
       res.status(400).json({ error: 'Valid MFS gateway (bKash, Nagad, or Rocket) is required.' });
+      return;
+    }
+
+    const activeSettings = await db.getSettings();
+    if (!isMfsGatewayEnabled(selectedGateway, activeSettings)) {
+      res.status(400).json({ error: formatDisabledMfsGatewayMessage(selectedGateway, activeSettings) });
       return;
     }
 
@@ -1505,6 +1525,9 @@ const sanitizeAdminSettingsResponse = (settings: any, openrouter: any) => {
     openrouter_key_masked: maskSecretKey(openrouter?.api_key),
     openrouter_base_url: openrouter?.base_url || 'https://openrouter.ai/api/v1',
     openrouter_enabled: openrouter ? openrouter.is_active : true,
+    bkash_enabled: safeSettings.bkash_enabled !== false,
+    nagad_enabled: safeSettings.nagad_enabled !== false,
+    rocket_enabled: safeSettings.rocket_enabled !== false,
     mail_enabled: safeSettings.mail_enabled !== false,
     mail_notify_admin_on_payment: safeSettings.mail_notify_admin_on_payment !== false,
     mail_configured: resolvedMail.configured,
@@ -1589,6 +1612,25 @@ app.put('/api/admin/settings', requireAdmin, async (req: AuthenticatedRequest, r
       if (Object.keys(providerUpdates).length > 0) {
         await db.updateProvider('prov_openrouter', providerUpdates);
       }
+    }
+
+    const currentSettings = await db.getSettings();
+    const nextBkashEnabled =
+      typeof settingsUpdates.bkash_enabled === 'boolean'
+        ? settingsUpdates.bkash_enabled
+        : currentSettings.bkash_enabled !== false;
+    const nextNagadEnabled =
+      typeof settingsUpdates.nagad_enabled === 'boolean'
+        ? settingsUpdates.nagad_enabled
+        : currentSettings.nagad_enabled !== false;
+    const nextRocketEnabled =
+      typeof settingsUpdates.rocket_enabled === 'boolean'
+        ? settingsUpdates.rocket_enabled
+        : currentSettings.rocket_enabled !== false;
+
+    if (!nextBkashEnabled && !nextNagadEnabled && !nextRocketEnabled) {
+      res.status(400).json({ error: 'At least one MFS payment method (bKash, Nagad, or Rocket) must remain enabled.' });
+      return;
     }
 
     const updated = await db.updateSettings(settingsUpdates);
