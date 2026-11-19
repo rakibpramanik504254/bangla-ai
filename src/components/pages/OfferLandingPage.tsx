@@ -838,12 +838,12 @@ export const OfferLandingPage: React.FC<OfferLandingPageProps> = ({ onStartChat 
             <div className="flex flex-wrap items-center justify-center sm:justify-start gap-3">
               {/* bKash Brand Badge */}
               <div className="inline-flex items-center gap-2.5 px-4 py-2 rounded-xl bg-white dark:bg-[#131314] border border-[#E2136E]/30">
-                <span
-                  aria-hidden="true"
-                  className="w-7 h-7 rounded-lg bg-[#E2136E] text-white font-bold text-xs flex items-center justify-center [font-family:'Plus_Jakarta_Sans',sans-serif] shrink-0"
-                >
-                  bK
-                </span>
+                <img
+                  src="https://bongotopup.com/wp-content/uploads/2026/01/bkash-icon.png"
+                  alt="bKash"
+                  referrerPolicy="no-referrer"
+                  className="w-7 h-7 object-contain rounded-lg shrink-0 bg-white p-0.5"
+                />
                 <div className="text-left leading-tight">
                   <p className="text-xs font-bold text-[#1f1f1f] dark:text-[#e3e3e3]">
                     বিকাশ (bKash)
@@ -856,15 +856,33 @@ export const OfferLandingPage: React.FC<OfferLandingPageProps> = ({ onStartChat 
 
               {/* Nagad Brand Badge */}
               <div className="inline-flex items-center gap-2.5 px-4 py-2 rounded-xl bg-white dark:bg-[#131314] border border-[#F7941D]/35">
-                <span
-                  aria-hidden="true"
-                  className="w-7 h-7 rounded-lg bg-[#F7941D] text-white font-bold text-xs flex items-center justify-center [font-family:'Plus_Jakarta_Sans',sans-serif] shrink-0"
-                >
-                  N
-                </span>
+                <img
+                  src="https://bongotopup.com/wp-content/uploads/2026/01/nagad-icon1.png"
+                  alt="Nagad"
+                  referrerPolicy="no-referrer"
+                  className="w-7 h-7 object-contain rounded-lg shrink-0 bg-white p-0.5"
+                />
                 <div className="text-left leading-tight">
                   <p className="text-xs font-bold text-[#1f1f1f] dark:text-[#e3e3e3]">
                     নগদ (Nagad)
+                  </p>
+                  <p className="text-[10px] text-[#444746] dark:text-[#9aa0a6]">
+                    Send Money · TrxID
+                  </p>
+                </div>
+              </div>
+
+              {/* Rocket Brand Badge */}
+              <div className="inline-flex items-center gap-2.5 px-4 py-2 rounded-xl bg-white dark:bg-[#131314] border border-[#8C3494]/35">
+                <img
+                  src="https://bongotopup.com/wp-content/uploads/2026/01/rocket-icon-removebg-preview.png"
+                  alt="Rocket"
+                  referrerPolicy="no-referrer"
+                  className="w-7 h-7 object-contain rounded-lg shrink-0 bg-white p-0.5"
+                />
+                <div className="text-left leading-tight">
+                  <p className="text-xs font-bold text-[#1f1f1f] dark:text-[#e3e3e3]">
+                    রকেট (Rocket)
                   </p>
                   <p className="text-[10px] text-[#444746] dark:text-[#9aa0a6]">
                     Send Money · TrxID

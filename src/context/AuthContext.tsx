@@ -305,22 +305,15 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setIsAuthModalOpen(false);
   };
 
-  const openCheckout = (plan: 'monthly' | 'yearly' = 'monthly') => {
+  const openPaymentModal = (plan: 'monthly' | 'yearly' = 'monthly') => {
     const targetPlan: 'monthly' | 'yearly' = plan === 'yearly' ? 'yearly' : 'monthly';
     setPaymentPlan(targetPlan);
-    setIsPaymentModalOpen(false);
     setIsAccountModalOpen(false);
-    if (typeof window !== 'undefined') {
-      window.dispatchEvent(
-        new CustomEvent('bangla-ai:navigate-checkout', {
-          detail: { plan: targetPlan },
-        })
-      );
-    }
+    setIsPaymentModalOpen(true);
   };
 
-  const openPaymentModal = (plan: 'monthly' | 'yearly' = 'monthly') => {
-    openCheckout(plan);
+  const openCheckout = (plan: 'monthly' | 'yearly' = 'monthly') => {
+    openPaymentModal(plan);
   };
 
   const closePaymentModal = () => {

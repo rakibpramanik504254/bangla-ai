@@ -552,9 +552,10 @@ export const PaymentModal: React.FC<PaymentModalProps> = ({
                         <img
                           src={item.icon}
                           alt={item.name}
-                          className="w-5 h-5 object-contain rounded shrink-0 bg-white p-0.5"
+                          referrerPolicy="no-referrer"
+                          className="w-6 h-6 object-contain rounded shrink-0 bg-white p-0.5"
                         />
-                        <span className="text-[11px] font-semibold truncate">{item.name}</span>
+                        <span className="text-xs font-semibold truncate">{item.name}</span>
                       </button>
                     ))}
                   </div>

@@ -15,6 +15,7 @@ import { CheckoutPage } from './components/pages/CheckoutPage.tsx';
 import { ChatInterface } from './components/chat/ChatInterface.tsx';
 import { AdminPanel } from './components/admin/AdminPanel.tsx';
 import { AuthModal } from './components/auth/AuthModal.tsx';
+import { PaymentModal } from './components/billing/PaymentModal.tsx';
 import { AccountBillingModal } from './components/account/AccountBillingModal.tsx';
 import { WhatsAppSupportWidget } from './components/common/WhatsAppSupportWidget.tsx';
 import { AppInstallProvider } from './context/AppInstallContext.tsx';
@@ -134,6 +135,9 @@ function MainApp() {
     loading,
     isAuthModalOpen,
     closeAuthModal,
+    isPaymentModalOpen,
+    paymentPlan,
+    closePaymentModal,
     isAccountModalOpen,
     openAccountModal,
     closeAccountModal,
@@ -249,6 +253,12 @@ function MainApp() {
           navigateToView(getPostLoginDestination(authenticatedUser));
           window.scrollTo({ top: 0 });
         }}
+      />
+      <PaymentModal
+        isOpen={isPaymentModalOpen}
+        onClose={closePaymentModal}
+        defaultPlan={paymentPlan}
+        onSuccessRedirectToChat={() => navigateToView('chat')}
       />
       <AccountBillingModal
         isOpen={isAccountModalOpen}

@@ -60,8 +60,7 @@ const MFS_GATEWAYS: readonly {
   name: string;
   bangla: string;
   ussd: string;
-  emblem: string;
-  emblemBg: string;
+  icon: string;
   activeClass: string;
 }[] = [
   {
@@ -69,8 +68,7 @@ const MFS_GATEWAYS: readonly {
     name: 'bKash',
     bangla: 'বিকাশ',
     ussd: '*247#',
-    emblem: 'bK',
-    emblemBg: 'bg-[#E2136E]',
+    icon: 'https://bongotopup.com/wp-content/uploads/2026/01/bkash-icon.png',
     activeClass:
       'border-[#E2136E] ring-1 ring-[#E2136E]/35 bg-[#E2136E]/[0.06] dark:bg-[#E2136E]/[0.14]',
   },
@@ -79,8 +77,7 @@ const MFS_GATEWAYS: readonly {
     name: 'Nagad',
     bangla: 'নগদ',
     ussd: '*167#',
-    emblem: 'N',
-    emblemBg: 'bg-[#F7941D]',
+    icon: 'https://bongotopup.com/wp-content/uploads/2026/01/nagad-icon1.png',
     activeClass:
       'border-[#F7941D] ring-1 ring-[#F7941D]/35 bg-[#F7941D]/[0.06] dark:bg-[#F7941D]/[0.14]',
   },
@@ -89,8 +86,7 @@ const MFS_GATEWAYS: readonly {
     name: 'Rocket',
     bangla: 'রকেট',
     ussd: '*322#',
-    emblem: 'R',
-    emblemBg: 'bg-[#8C3494]',
+    icon: 'https://bongotopup.com/wp-content/uploads/2026/01/rocket-icon-removebg-preview.png',
     activeClass:
       'border-[#8C3494] ring-1 ring-[#8C3494]/35 bg-[#8C3494]/[0.06] dark:bg-[#8C3494]/[0.14]',
   },
@@ -746,12 +742,12 @@ export const CheckoutPage: React.FC<CheckoutPageProps> = ({
                                 : 'border-black/[0.08] dark:border-white/[0.08] bg-white dark:bg-[#131314] text-[#444746] dark:text-[#9aa0a6] hover:border-black/20 dark:hover:border-white/20'
                             }`}
                           >
-                            <span
-                              aria-hidden="true"
-                              className={`w-7 h-7 rounded-lg ${item.emblemBg} text-white text-xs font-bold flex items-center justify-center shrink-0 [font-family:'Plus_Jakarta_Sans',sans-serif]`}
-                            >
-                              {item.emblem}
-                            </span>
+                            <img
+                              src={item.icon}
+                              alt={item.name}
+                              referrerPolicy="no-referrer"
+                              className="w-7 h-7 object-contain rounded-lg shrink-0 bg-white p-0.5"
+                            />
                             <div className="text-left leading-tight min-w-0">
                               <span className="block text-xs sm:text-sm font-bold truncate">
                                 {item.name}
