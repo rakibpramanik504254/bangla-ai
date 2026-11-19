@@ -14,7 +14,7 @@ import {
 } from '../../utils/pricingCalculator.ts';
 
 export const PricingComparisonSection: React.FC = () => {
-  const { user, loading, token, openPaymentModal } = useAuth();
+  const { user, loading, token, openCheckout } = useAuth();
   const showTutorial = shouldShowTutorialCta({
     user,
     loading,
@@ -36,7 +36,7 @@ export const PricingComparisonSection: React.FC = () => {
   };
 
   const handleBuyNow = () => {
-    openPaymentModal(selectedPlan);
+    openCheckout(selectedPlan);
   };
 
   return (

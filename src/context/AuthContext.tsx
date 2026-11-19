@@ -24,6 +24,7 @@ interface AuthContextType {
   closeAuthModal: () => void;
   isPaymentModalOpen: boolean;
   paymentPlan: 'monthly' | 'yearly';
+  openCheckout: (plan?: 'monthly' | 'yearly') => void;
   openPaymentModal: (plan?: 'monthly' | 'yearly') => void;
   closePaymentModal: () => void;
   isAccountModalOpen: boolean;
@@ -304,9 +305,22 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setIsAuthModalOpen(false);
   };
 
+  const openCheckout = (plan: 'monthly' | 'yearly' = 'monthly') => {
+    const targetPlan: 'monthly' | 'yearly' = plan === 'yearly' ? 'yearly' : 'monthly';
+    setPaymentPlan(targetPlan);
+    setIsPaymentModalOpen(false);
+    setIsAccountModalOpen(false);
+    if (typeof window !== 'undefined') {
+      window.dispatchEvent(
+        new CustomEvent('bangla-ai:navigate-checkout', {
+          detail: { plan: targetPlan },
+        })
+      );
+    }
+  };
+
   const openPaymentModal = (plan: 'monthly' | 'yearly' = 'monthly') => {
-    setPaymentPlan(plan);
-    setIsPaymentModalOpen(true);
+    openCheckout(plan);
   };
 
   const closePaymentModal = () => {
@@ -353,6 +367,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         closeAuthModal,
         isPaymentModalOpen,
         paymentPlan,
+        openCheckout,
         openPaymentModal,
         closePaymentModal,
         isAccountModalOpen,

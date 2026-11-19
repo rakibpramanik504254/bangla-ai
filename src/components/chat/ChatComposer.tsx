@@ -11,7 +11,6 @@ import {
   Image as ImageIcon,
   ImagePlus,
   Video as VideoIcon,
-  MessageSquare,
   Loader2,
   ChevronDown,
   Check,
@@ -309,69 +308,6 @@ export const ChatComposer: React.FC<ChatComposerProps> = ({
   return (
     <div className="px-3 sm:px-6 pt-1.5 pb-3 sm:pb-4 bg-white dark:bg-[#131314] shrink-0 w-full max-w-full">
       <div className="max-w-[780px] mx-auto w-full min-w-0">
-        {/* Clean 3-Way Studio Mode Switcher */}
-        {onChangeStudioMode && (
-          <div className="flex items-center justify-center mb-2">
-            <div
-              role="tablist"
-              aria-label="Workspace studio mode"
-              data-testid="studio-mode-switcher"
-              className="inline-flex items-center gap-1 p-1 rounded-full bg-[#f0f4f9] dark:bg-[#1e1f20] border border-black/[0.08] dark:border-white/[0.08] max-w-full overflow-x-auto"
-            >
-              <button
-                type="button"
-                role="tab"
-                aria-selected={studioMode === 'chat'}
-                onMouseDown={(e) => e.preventDefault()}
-                onClick={() => handleSelectStudioMode('chat')}
-                data-testid="mode-switch-chat"
-                className={`h-7 px-3 rounded-full text-[12px] font-medium inline-flex items-center gap-1.5 transition-colors cursor-pointer whitespace-nowrap shrink-0 ${
-                  studioMode === 'chat'
-                    ? 'bg-[#1f1f1f] text-white dark:bg-[#e3e3e3] dark:text-[#131314] shadow-xs'
-                    : 'text-[#444746] dark:text-[#c4c7c5] hover:text-[#1f1f1f] dark:hover:text-[#e3e3e3]'
-                }`}
-              >
-                <MessageSquare className="w-3.5 h-3.5 shrink-0" />
-                <span>Chat</span>
-              </button>
-
-              <button
-                type="button"
-                role="tab"
-                aria-selected={studioMode === 'image'}
-                onMouseDown={(e) => e.preventDefault()}
-                onClick={() => handleSelectStudioMode('image')}
-                data-testid="mode-switch-image"
-                className={`h-7 px-3 rounded-full text-[12px] font-medium inline-flex items-center gap-1.5 transition-colors cursor-pointer whitespace-nowrap shrink-0 ${
-                  studioMode === 'image'
-                    ? 'bg-[#1f1f1f] text-white dark:bg-[#e3e3e3] dark:text-[#131314] shadow-xs'
-                    : 'text-[#444746] dark:text-[#c4c7c5] hover:text-[#1f1f1f] dark:hover:text-[#e3e3e3]'
-                }`}
-              >
-                <ImagePlus className="w-3.5 h-3.5 shrink-0" />
-                <span>Image Gen</span>
-              </button>
-
-              <button
-                type="button"
-                role="tab"
-                aria-selected={studioMode === 'video'}
-                onMouseDown={(e) => e.preventDefault()}
-                onClick={() => handleSelectStudioMode('video')}
-                data-testid="mode-switch-video"
-                className={`h-7 px-3 rounded-full text-[12px] font-medium inline-flex items-center gap-1.5 transition-colors cursor-pointer whitespace-nowrap shrink-0 ${
-                  studioMode === 'video'
-                    ? 'bg-[#1f1f1f] text-white dark:bg-[#e3e3e3] dark:text-[#131314] shadow-xs'
-                    : 'text-[#444746] dark:text-[#c4c7c5] hover:text-[#1f1f1f] dark:hover:text-[#e3e3e3]'
-                }`}
-              >
-                <VideoIcon className="w-3.5 h-3.5 shrink-0" />
-                <span>Video Gen</span>
-              </button>
-            </div>
-          </div>
-        )}
-
         {attachmentError && (
           <div
             role="alert"

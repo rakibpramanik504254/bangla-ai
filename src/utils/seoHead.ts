@@ -14,7 +14,14 @@ import {
 } from './seoController.ts';
 
 export const FAQ_JSON_LD_SCRIPT_ID = 'bangla-ai-faq-ld-json';
-export const NON_INDEXABLE_APP_SLUGS = new Set(['/workspace', '/account', '/admin', '/offer', '/promo']);
+export const NON_INDEXABLE_APP_SLUGS = new Set([
+  '/workspace',
+  '/account',
+  '/admin',
+  '/offer',
+  '/promo',
+  '/checkout',
+]);
 
 export function resolveActiveSeoSlug(view: AppView, pathname: string = '/'): string {
   switch (view) {
@@ -32,6 +39,8 @@ export function resolveActiveSeoSlug(view: AppView, pathname: string = '/'): str
       return '/security';
     case 'offer':
       return '/offer';
+    case 'checkout':
+      return '/checkout';
     case 'chat':
       return '/workspace';
     case 'account':
@@ -53,6 +62,23 @@ export function applyAppViewFallbackOverrides(
 ): ResolvedDynamicPageSeo {
   if (matchedExact) return resolved;
 
+  if (view === 'checkout') {
+    const title = 'নিরাপদ চেকআউট — Bangla-AI.pro';
+    const description =
+      'বিকাশ, নগদ বা রকেটের মাধ্যমে নিরাপদে আপনার Bangla AI প্রো সাবস্ক্রিপশন সক্রিয় করুন।';
+    return {
+      ...resolved,
+      title,
+      description,
+      ogTitle: title,
+      ogDescription: description,
+      twitterTitle: title,
+      twitterDescription: description,
+      robots: 'noindex, nofollow',
+      noIndex: true,
+      noFollow: true,
+    };
+  }
   if (view === 'offer') {
     const title = 'মাত্র ৬৯৯৳/মাসে ১০+ প্রিমিয়াম AI — Bangla-AI.pro স্পেশাল অফার';
     const description =

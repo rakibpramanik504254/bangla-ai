@@ -81,7 +81,7 @@ export const AccountBillingPanel: React.FC<AccountBillingPanelProps> = ({
     token,
     refreshUser,
     bindGoogleAccount,
-    openPaymentModal,
+    openCheckout,
     theme,
     setTheme,
     logout,
@@ -712,7 +712,7 @@ export const AccountBillingPanel: React.FC<AccountBillingPanelProps> = ({
                     type="button"
                     onClick={() => {
                       onCloseModal?.();
-                      openPaymentModal('monthly');
+                      openCheckout('monthly');
                     }}
                     className="h-9 px-5 rounded-full bg-[#1f1f1f] hover:bg-[#1f1f1f]/90 dark:bg-[#e3e3e3] dark:hover:bg-[#e3e3e3]/90 text-white dark:text-[#131314] text-xs font-semibold inline-flex items-center justify-center gap-1.5 transition-colors whitespace-nowrap shrink-0 cursor-pointer"
                   >
@@ -908,7 +908,7 @@ export const AccountBillingPanel: React.FC<AccountBillingPanelProps> = ({
                       type="button"
                       onClick={() => {
                         onCloseModal?.();
-                        openPaymentModal('monthly');
+                        openCheckout('monthly');
                       }}
                       className="h-9 px-5 rounded-full bg-[#1f1f1f] hover:bg-[#1f1f1f]/90 dark:bg-[#e3e3e3] dark:hover:bg-[#e3e3e3]/90 text-white dark:text-[#131314] text-xs font-semibold inline-flex items-center justify-center gap-1.5 transition-colors whitespace-nowrap shrink-0 cursor-pointer"
                     >
@@ -979,7 +979,7 @@ export const AccountBillingPanel: React.FC<AccountBillingPanelProps> = ({
                         type="button"
                         onClick={() => {
                           onCloseModal?.();
-                          openPaymentModal('monthly');
+                          openCheckout('monthly');
                         }}
                         className="h-8 px-4 rounded-full bg-[#1f1f1f] dark:bg-[#e3e3e3] text-white dark:text-[#131314] text-xs font-semibold inline-flex items-center gap-1.5 cursor-pointer"
                       >

@@ -176,7 +176,7 @@ const OFFER_FAQS = [
 ];
 
 export const OfferLandingPage: React.FC<OfferLandingPageProps> = ({ onStartChat }) => {
-  const { user, openPaymentModal, openTutorialModal } = useAuth();
+  const { user, openCheckout, openTutorialModal } = useAuth();
   const isSubscribed = Boolean(user?.isSubscribed || user?.role === 'admin');
   const [openFaqIndex, setOpenFaqIndex] = useState<number | null>(0);
   const [inlineVideoPlaying, setInlineVideoPlaying] = useState(false);
@@ -186,7 +186,7 @@ export const OfferLandingPage: React.FC<OfferLandingPageProps> = ({ onStartChat 
       onStartChat();
       return;
     }
-    openPaymentModal(plan);
+    openCheckout(plan);
   };
 
   const scrollToTop = () => {

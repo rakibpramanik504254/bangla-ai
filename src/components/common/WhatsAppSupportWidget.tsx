@@ -31,10 +31,12 @@ export const WhatsAppLogo: React.FC<{ className?: string }> = ({ className = 'w-
 
 interface WhatsAppSupportWidgetProps {
   liftForMobileBar?: boolean;
+  compactOnMobile?: boolean;
 }
 
 export const WhatsAppSupportWidget: React.FC<WhatsAppSupportWidgetProps> = ({
   liftForMobileBar = false,
+  compactOnMobile = false,
 }) => {
   const { user, token, loading } = useAuth();
   const [isOpen, setIsOpen] = useState(false);
@@ -167,7 +169,8 @@ export const WhatsAppSupportWidget: React.FC<WhatsAppSupportWidgetProps> = ({
             onClick={() => setIsOpen(true)}
             data-testid="whatsapp-contact-tooltip"
             aria-label="Contact us on WhatsApp"
-            className="
+            className={`
+              ${compactOnMobile ? 'hidden sm:block' : ''}
               absolute right-[calc(100%+10px)] top-1/2 -translate-y-1/2
               sm:right-0 sm:top-auto sm:bottom-[calc(100%+10px)] sm:translate-y-0
               px-3 py-1.5 rounded-xl
@@ -176,7 +179,7 @@ export const WhatsAppSupportWidget: React.FC<WhatsAppSupportWidgetProps> = ({
               text-xs font-medium tracking-tight whitespace-nowrap shrink-0
               opacity-100 sm:opacity-0 sm:pointer-events-none sm:group-hover:opacity-100 sm:group-hover:pointer-events-auto sm:group-focus-within:opacity-100
               transition-opacity duration-150 cursor-pointer
-            "
+            `}
           >
             <span>Contact us</span>
             {/* Right caret on mobile */}
@@ -198,9 +201,11 @@ export const WhatsAppSupportWidget: React.FC<WhatsAppSupportWidgetProps> = ({
           data-testid="whatsapp-trigger-btn"
           aria-label={isOpen ? 'Close WhatsApp live chat' : 'Open WhatsApp live chat'}
           aria-expanded={isOpen}
-          className="flex items-center justify-center sm:gap-2.5 w-14 h-14 sm:w-auto sm:h-auto sm:px-4 sm:py-3 rounded-full bg-[#25D366] hover:bg-[#20BD5A] text-white shadow-lg shadow-black/20 dark:shadow-black/50 transition-transform duration-150 hover:scale-[1.03] active:scale-[0.97] cursor-pointer"
+          className={`flex items-center justify-center sm:gap-2.5 ${
+            compactOnMobile ? 'w-11 h-11' : 'w-14 h-14'
+          } sm:w-auto sm:h-auto sm:px-4 sm:py-3 rounded-full bg-[#25D366] hover:bg-[#20BD5A] text-white shadow-lg shadow-black/20 dark:shadow-black/50 transition-transform duration-150 hover:scale-[1.03] active:scale-[0.97] cursor-pointer`}
         >
-          <WhatsAppLogo className="w-7 h-7 sm:w-6 sm:h-6 shrink-0" />
+          <WhatsAppLogo className={`${compactOnMobile ? 'w-5.5 h-5.5' : 'w-7 h-7'} sm:w-6 sm:h-6 shrink-0`} />
           <span className="hidden sm:inline text-xs font-semibold tracking-tight whitespace-nowrap">
             {isOpen ? 'Close Chat' : 'Live Support'}
           </span>

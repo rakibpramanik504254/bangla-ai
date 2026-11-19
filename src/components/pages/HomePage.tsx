@@ -100,7 +100,7 @@ const SAMPLE_BENCHMARKS: PromptSample[] = [
 ];
 
 export const HomePage: React.FC<HomePageProps> = ({ onStartChat }) => {
-  const { user, loading, token, openPaymentModal } = useAuth();
+  const { user, loading, token, openCheckout } = useAuth();
   const isSubscribed = user?.isSubscribed || user?.role === 'admin';
   const showTutorial = shouldShowTutorialCta({
     user,
@@ -136,7 +136,7 @@ export const HomePage: React.FC<HomePageProps> = ({ onStartChat }) => {
             <button
               onClick={() => {
                 if (!user || !isSubscribed) {
-                  openPaymentModal('monthly');
+                  openCheckout('monthly');
                 } else {
                   onStartChat();
                 }

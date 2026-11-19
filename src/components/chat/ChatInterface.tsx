@@ -1495,30 +1495,8 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({
             </div>
           </div>
 
-          {/* Right: Subtle Utility Actions (Memory, Export, Quota, Mobile New Chat) */}
+          {/* Right: Subtle Utility Actions (Export, Quota, Mobile New Chat) */}
           <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
-            {user && (
-              <button
-                type="button"
-                onClick={() => setMemoryModalOpen(true)}
-                data-testid="workspace-memory-btn"
-                aria-label={`Open Memory manager (${memories.length} saved)`}
-                title="Persistent Memory across chats"
-                className="h-8 w-8 sm:w-auto sm:px-3 rounded-full hover:bg-[#f0f4f9] dark:hover:bg-[#1e1f20] border border-black/[0.08] dark:border-white/[0.08] text-[12px] font-medium text-[#444746] dark:text-[#c4c7c5] hover:text-[#1f1f1f] dark:hover:text-[#e3e3e3] flex items-center justify-center gap-1.5 transition-colors cursor-pointer whitespace-nowrap shrink-0 relative"
-              >
-                <Brain className="w-3.5 h-3.5 shrink-0" />
-                <span className="hidden sm:inline">Memory</span>
-                {memories.length > 0 && (
-                  <span
-                    data-testid="header-memory-count"
-                    className="hidden sm:inline-flex items-center justify-center min-w-[18px] h-[18px] px-1 rounded-full bg-[#1f1f1f] text-white dark:bg-[#e3e3e3] dark:text-[#131314] text-[10px] font-mono tabular-nums"
-                  >
-                    {memories.length}
-                  </span>
-                )}
-              </button>
-            )}
-
             {messages.length > 0 && (
               <button
                 type="button"

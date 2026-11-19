@@ -12,7 +12,10 @@ export type AppView =
   | 'refund'
   | 'contact'
   | 'security'
-  | 'offer';
+  | 'offer'
+  | 'checkout';
+
+export type CheckoutPlanId = 'monthly' | 'yearly';
 
 const VIEW_PATH_MAP: Record<AppView, string> = {
   home: '/',
@@ -26,6 +29,7 @@ const VIEW_PATH_MAP: Record<AppView, string> = {
   contact: '/contact',
   security: '/security',
   offer: '/offer',
+  checkout: '/checkout',
 };
 
 export function resolveViewFromPathname(pathname: string): AppView {
@@ -50,6 +54,8 @@ export function resolveViewFromPathname(pathname: string): AppView {
     case '/offer':
     case '/promo':
       return 'offer';
+    case '/checkout':
+      return 'checkout';
     default:
       return 'home';
   }
@@ -57,6 +63,22 @@ export function resolveViewFromPathname(pathname: string): AppView {
 
 export function getPathnameForView(view: AppView): string {
   return VIEW_PATH_MAP[view] || '/';
+}
+
+export function resolveCheckoutPlanFromSearch(search?: string): CheckoutPlanId {
+  if (!search) return 'monthly';
+  try {
+    const params = new URLSearchParams(search.startsWith('?') ? search : `?${search}`);
+    const plan = (params.get('plan') || '').trim().toLowerCase();
+    return plan === 'yearly' ? 'yearly' : 'monthly';
+  } catch {
+    return 'monthly';
+  }
+}
+
+export function buildCheckoutUrl(plan: CheckoutPlanId = 'monthly'): string {
+  const safePlan: CheckoutPlanId = plan === 'yearly' ? 'yearly' : 'monthly';
+  return `/checkout?plan=${safePlan}`;
 }
 
 export interface NavItem {

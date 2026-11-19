@@ -13,6 +13,7 @@ interface WatchTutorialButtonProps {
   className?: string;
   testId?: string;
   onAfterClick?: () => void;
+  alwaysShow?: boolean;
 }
 
 const VARIANT_CLASSES: Record<WatchTutorialVariant, Record<WatchTutorialSize, string>> = {
@@ -41,14 +42,17 @@ export const WatchTutorialButton: React.FC<WatchTutorialButtonProps> = ({
   className = '',
   testId,
   onAfterClick,
+  alwaysShow = false,
 }) => {
   const { user, loading, token, openTutorialModal } = useAuth();
 
-  const visible = shouldShowTutorialCta({
-    user,
-    loading,
-    hasStoredToken: Boolean(token),
-  });
+  const visible =
+    alwaysShow ||
+    shouldShowTutorialCta({
+      user,
+      loading,
+      hasStoredToken: Boolean(token),
+    });
 
   if (!visible) {
     return null;

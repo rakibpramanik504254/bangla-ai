@@ -8,6 +8,8 @@ import {
   normalizePaymentStatus,
   resolveViewFromPathname,
   getPathnameForView,
+  resolveCheckoutPlanFromSearch,
+  buildCheckoutUrl,
 } from './navigation.ts';
 import type { User } from '../types/index.ts';
 
@@ -117,6 +119,8 @@ test('resolveViewFromPathname and getPathnameForView handle compliance URLs clea
   assert.equal(resolveViewFromPathname('/offer'), 'offer');
   assert.equal(resolveViewFromPathname('/offer/'), 'offer');
   assert.equal(resolveViewFromPathname('/promo'), 'offer');
+  assert.equal(resolveViewFromPathname('/checkout'), 'checkout');
+  assert.equal(resolveViewFromPathname('/checkout/'), 'checkout');
   assert.equal(resolveViewFromPathname('/'), 'home');
   assert.equal(resolveViewFromPathname('/unknown-path'), 'home');
 
@@ -125,5 +129,17 @@ test('resolveViewFromPathname and getPathnameForView handle compliance URLs clea
   assert.equal(getPathnameForView('refund'), '/refund-policy');
   assert.equal(getPathnameForView('contact'), '/contact');
   assert.equal(getPathnameForView('offer'), '/offer');
+  assert.equal(getPathnameForView('checkout'), '/checkout');
   assert.equal(getPathnameForView('home'), '/');
+});
+
+test('resolveCheckoutPlanFromSearch and buildCheckoutUrl handle monthly/yearly query params cleanly', () => {
+  assert.equal(resolveCheckoutPlanFromSearch('?plan=yearly'), 'yearly');
+  assert.equal(resolveCheckoutPlanFromSearch('?plan=YEARLY'), 'yearly');
+  assert.equal(resolveCheckoutPlanFromSearch('?plan=monthly'), 'monthly');
+  assert.equal(resolveCheckoutPlanFromSearch(''), 'monthly');
+  assert.equal(resolveCheckoutPlanFromSearch('?plan=invalid'), 'monthly');
+
+  assert.equal(buildCheckoutUrl('monthly'), '/checkout?plan=monthly');
+  assert.equal(buildCheckoutUrl('yearly'), '/checkout?plan=yearly');
 });

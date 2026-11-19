@@ -8,9 +8,13 @@ import { resetScrollPosition } from '../utils/scroll.ts';
 
 interface FooterProps {
   setCurrentView: (view: AppView) => void;
+  extraMobileBottomPadding?: boolean;
 }
 
-export const Footer: React.FC<FooterProps> = ({ setCurrentView }) => {
+export const Footer: React.FC<FooterProps> = ({
+  setCurrentView,
+  extraMobileBottomPadding = false,
+}) => {
   const { user, openAuthModal, openAccountModal } = useAuth();
   const { isInstalled, triggerInstall } = useAppInstall();
   const handleNav = (view: AppView) => {
@@ -18,7 +22,11 @@ export const Footer: React.FC<FooterProps> = ({ setCurrentView }) => {
     setCurrentView(view);
   };
   return (
-    <footer className="border-t border-black/[0.08] dark:border-white/[0.08] bg-[#f0f4f9]/45 dark:bg-[#131314] text-[#444746] dark:text-[#9aa0a6] text-xs transition-colors">
+    <footer
+      className={`border-t border-black/[0.08] dark:border-white/[0.08] bg-[#f0f4f9]/45 dark:bg-[#131314] text-[#444746] dark:text-[#9aa0a6] text-xs transition-colors ${
+        extraMobileBottomPadding ? 'pb-24 md:pb-0' : ''
+      }`}
+    >
       <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-14">
         <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
           {/* Brand */}
