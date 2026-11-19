@@ -18,7 +18,6 @@ import { AuthModal } from './components/auth/AuthModal.tsx';
 import { PaymentModal } from './components/billing/PaymentModal.tsx';
 import { AccountBillingModal } from './components/account/AccountBillingModal.tsx';
 import { WhatsAppSupportWidget } from './components/common/WhatsAppSupportWidget.tsx';
-import { TawkToWidget } from './components/common/TawkToWidget.tsx';
 import { AppInstallProvider } from './context/AppInstallContext.tsx';
 import { InstallGuideModal } from './components/common/InstallGuideModal.tsx';
 import { TutorialModal } from './components/common/TutorialModal.tsx';
@@ -236,9 +235,8 @@ function MainApp() {
 
       {!hideStandardChrome && <Footer setCurrentView={navigateToView} />}
 
-      {/* Floating Live Support Widgets (Non-subscribers only) */}
+      {/* Floating WhatsApp Live Chat (Non-subscribers only) */}
       <WhatsAppSupportWidget liftForMobileBar={isOfferView} compactOnMobile={isCheckoutView} />
-      <TawkToWidget />
 
       {/* Global Modals */}
       <AuthModal
