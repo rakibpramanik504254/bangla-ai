@@ -16,10 +16,22 @@ import {
   ThumbsDown,
   FileText,
   FileCode2,
+  FileSpreadsheet,
   UploadCloud,
+  Presentation,
+  Loader2,
+  Brain,
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext.tsx';
-import { Chat, Message, AiModel, ChatAttachment } from '../../types/index.ts';
+import {
+  Chat,
+  Message,
+  AiModel,
+  ChatAttachment,
+  UserMemory,
+  UserMemoryCategory,
+  WorkspaceStudioMode,
+} from '../../types/index.ts';
 import { createSseLineParser, parseChatStreamPayload } from '../../utils/sse.ts';
 import {
   parseMarkdownBlocks,
@@ -30,22 +42,43 @@ import { WorkspaceCodeBlock } from './WorkspaceCodeBlock.tsx';
 import { ChatComposer } from './ChatComposer.tsx';
 import { WorkspaceSidebar } from './WorkspaceSidebar.tsx';
 import { WorkspaceSettingsModal } from './WorkspaceSettingsModal.tsx';
+import { WorkspaceMemoryModal } from './WorkspaceMemoryModal.tsx';
 import { WorkspaceModelIcon } from './WorkspaceModelIcon.tsx';
 import {
   GeneratedImageCard,
   GeneratingImageSkeleton,
 } from './GeneratedImageCard.tsx';
 import {
+  GeneratedVideoCard,
+  GeneratingVideoSkeleton,
+} from './GeneratedVideoCard.tsx';
+import {
   resolveEffectiveModelName,
   resolveEffectiveModelDescription,
 } from '../../utils/modelBrandIcons.ts';
-import { formatFileSize } from '../../utils/chatAttachments.ts';
+import {
+  formatAttachmentBadgeMeta,
+  getAttachmentFileCategory,
+  readFileAsBase64,
+  type ParsedDocumentResponse,
+} from '../../utils/chatAttachments.ts';
+import { detectExportableDocument } from '../../utils/documentExport.ts';
+import {
+  exportResponseToPdf,
+  exportResponseToPptx,
+} from '../../utils/documentExportClient.ts';
 import { copyTextSafely } from '../../utils/clipboard.ts';
 import { formatCompactTokens } from '../../utils/workspaceSidebar.ts';
 import {
   isGeneratedImageAttachment,
   type ImageAspectRatio,
 } from '../../utils/imageGeneration.ts';
+import {
+  isGeneratedVideoAttachment,
+  type VideoAspectRatio,
+  type VideoDuration,
+  type VideoResolution,
+} from '../../utils/videoGeneration.ts';
 import { BrandLogo } from '../common/BrandLogo.tsx';
 import { WatchTutorialButton } from '../common/WatchTutorialButton.tsx';
 import {
@@ -254,23 +287,37 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({
   );
   const [modelDropdownOpen, setModelDropdownOpen] = useState(false);
   const [settingsModalOpen, setSettingsModalOpen] = useState(false);
+  const [memoryModalOpen, setMemoryModalOpen] = useState(false);
+  const [memories, setMemories] = useState<UserMemory[]>([]);
+  const [memoriesLoading, setMemoriesLoading] = useState(false);
+  const [savedMemoryNotice, setSavedMemoryNotice] = useState<string | null>(null);
   const [profileDrawerOpen, setProfileDrawerOpen] = useState(false);
 
   const [copiedMessageId, setCopiedMessageId] = useState<string | null>(null);
   const [speakingMessageId, setSpeakingMessageId] = useState<string | null>(null);
   const [messageFeedback, setMessageFeedback] = useState<Record<string, 'up' | 'down'>>({});
+  const [exportingDoc, setExportingDoc] = useState<{ msgId: string; format: 'pdf' | 'pptx' } | null>(null);
+  const [exportedDoc, setExportedDoc] = useState<{ msgId: string; format: 'pdf' | 'pptx' } | null>(null);
 
-  const [imageMode, setImageMode] = useState(false);
+  const [studioMode, setStudioMode] = useState<WorkspaceStudioMode>('chat');
   const [imageAspectRatio, setImageAspectRatio] = useState<ImageAspectRatio>('1:1');
   const [isGeneratingImage, setIsGeneratingImage] = useState(false);
   const [generatingPromptPreview, setGeneratingPromptPreview] = useState('');
   const [regeneratingMessageId, setRegeneratingMessageId] = useState<string | null>(null);
+
+  const [videoAspectRatio, setVideoAspectRatio] = useState<VideoAspectRatio>('16:9');
+  const [videoDuration, setVideoDuration] = useState<VideoDuration>('5s');
+  const [videoResolution, setVideoResolution] = useState<VideoResolution>('720p');
+  const [isGeneratingVideo, setIsGeneratingVideo] = useState(false);
+  const [generatingVideoPromptPreview, setGeneratingVideoPromptPreview] = useState('');
+  const [regeneratingVideoMessageId, setRegeneratingVideoMessageId] = useState<string | null>(null);
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
   const abortControllerRef = useRef<AbortController | null>(null);
   const workspaceDragCounterRef = useRef(0);
   const headerModelMenuRef = useRef<HTMLDivElement>(null);
+  const memoryNoticeTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const isSubscribed = Boolean(user?.isSubscribed || user?.role === 'admin');
 
@@ -344,8 +391,32 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({
     }
   };
 
+  const fetchMemories = async () => {
+    if (!token) {
+      setMemories([]);
+      return;
+    }
+    setMemoriesLoading(true);
+    try {
+      const res = await fetch('/api/memories', {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (res.ok) {
+        const data = await res.json();
+        if (Array.isArray(data?.memories)) {
+          setMemories(data.memories);
+        }
+      }
+    } catch (err) {
+      console.error('Failed to load memories:', err);
+    } finally {
+      setMemoriesLoading(false);
+    }
+  };
+
   useEffect(() => {
     fetchChats();
+    fetchMemories();
   }, [token]);
 
   useEffect(() => {
@@ -368,16 +439,76 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-  }, [messages, streamedText, isGeneratingImage]);
+  }, [messages, streamedText, isGeneratingImage, isGeneratingVideo]);
 
   useEffect(() => {
     return () => {
       abortControllerRef.current?.abort();
+      if (memoryNoticeTimerRef.current) {
+        clearTimeout(memoryNoticeTimerRef.current);
+      }
       if (typeof window !== 'undefined' && 'speechSynthesis' in window) {
         window.speechSynthesis.cancel();
       }
     };
   }, []);
+
+  const mergeMemoriesIntoState = (incoming: UserMemory[]) => {
+    if (!Array.isArray(incoming) || incoming.length === 0) return;
+    setMemories((prev) => {
+      const byId = new Map<string, UserMemory>();
+      for (const m of prev) byId.set(m.id, m);
+      for (const m of incoming) byId.set(m.id, m);
+      return Array.from(byId.values()).sort(
+        (a, b) => new Date(b.updated_at).getTime() - new Date(a.updated_at).getTime()
+      );
+    });
+  };
+
+  const handleAddMemory = async (content: string, category: UserMemoryCategory) => {
+    if (!token) throw new Error('Please sign in to save memories.');
+    const res = await fetch('/api/memories', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify({ content, category }),
+    });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) {
+      throw new Error(data.error || 'Could not save memory.');
+    }
+    if (data.memory) {
+      mergeMemoriesIntoState([data.memory]);
+    }
+  };
+
+  const handleDeleteMemory = async (memoryId: string) => {
+    if (!token) throw new Error('Please sign in to manage memories.');
+    const res = await fetch(`/api/memories/${encodeURIComponent(memoryId)}`, {
+      method: 'DELETE',
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) {
+      throw new Error(data.error || 'Could not delete memory.');
+    }
+    setMemories((prev) => prev.filter((m) => m.id !== memoryId));
+  };
+
+  const handleClearAllMemories = async () => {
+    if (!token) throw new Error('Please sign in to manage memories.');
+    const res = await fetch('/api/memories', {
+      method: 'DELETE',
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) {
+      throw new Error(data.error || 'Could not clear memories.');
+    }
+    setMemories([]);
+  };
 
   const handleCreateNewChat = async () => {
     if (!token) return;
@@ -602,7 +733,7 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({
     attachment: ChatAttachment,
     fallbackContent: string
   ) => {
-    if (isStreaming || isGeneratingImage) return;
+    if (isStreaming || isGeneratingImage || isGeneratingVideo) return;
     const promptToUse = attachment.prompt || attachment.enhancedPrompt || fallbackContent;
     if (!promptToUse) return;
     handleGenerateImage(promptToUse, {
@@ -612,19 +743,204 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({
     });
   };
 
+  const handleGenerateVideo = async (
+    rawPrompt: string,
+    options?: {
+      aspectRatio?: VideoAspectRatio;
+      duration?: VideoDuration;
+      resolution?: VideoResolution;
+      referenceImageDataUrl?: string;
+      skipUserMessage?: boolean;
+      messageIdForSpinner?: string;
+    }
+  ) => {
+    const cleanPrompt = rawPrompt.trim();
+    if (!cleanPrompt || isStreaming || isGeneratingImage || isGeneratingVideo) return;
+
+    if (!isSubscribed) {
+      openPaymentModal('monthly');
+      return;
+    }
+    if (!token) return;
+
+    const chosenRatio = options?.aspectRatio || videoAspectRatio;
+    const chosenDuration = options?.duration || videoDuration;
+    const chosenResolution = options?.resolution || videoResolution;
+    const firstImageAttachment =
+      !options?.skipUserMessage
+        ? pendingAttachments.find((att) => att.kind === 'image' && att.dataUrl)
+        : undefined;
+    const referenceImageDataUrl =
+      options?.referenceImageDataUrl || firstImageAttachment?.dataUrl;
+
+    let targetChatId = activeChatId;
+
+    if (!targetChatId) {
+      try {
+        const res = await fetch('/api/chats', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify({
+            title: cleanPrompt.slice(0, 34) + (cleanPrompt.length > 34 ? '...' : ''),
+            modelId: selectedModelId,
+          }),
+        });
+        if (res.ok) {
+          const newChat = await res.json();
+          setChats((prev) => [newChat, ...prev]);
+          setActiveChatId(newChat.id);
+          targetChatId = newChat.id;
+        }
+      } catch (err) {
+        console.error('Failed to create initial video chat:', err);
+        return;
+      }
+    }
+
+    const tempUserId = 'tmp-vid-' + Date.now();
+    if (!options?.skipUserMessage) {
+      const tempUserMsg: Message = {
+        id: tempUserId,
+        chat_id: targetChatId!,
+        role: 'user',
+        content: cleanPrompt,
+        model_id: selectedModelId,
+        tokens_used: 0,
+        ...(firstImageAttachment ? { attachments: [firstImageAttachment] } : {}),
+        created_at: new Date().toISOString(),
+      };
+      setMessages((prev) => [...prev, tempUserMsg]);
+      setInputMessage('');
+      if (firstImageAttachment) {
+        setPendingAttachments([]);
+      }
+    }
+
+    setIsGeneratingVideo(true);
+    setGeneratingVideoPromptPreview(cleanPrompt);
+    if (options?.messageIdForSpinner) {
+      setRegeneratingVideoMessageId(options.messageIdForSpinner);
+    }
+
+    try {
+      const res = await fetch('/api/generate-video', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          chatId: targetChatId,
+          prompt: cleanPrompt,
+          aspectRatio: chosenRatio,
+          duration: chosenDuration,
+          resolution: chosenResolution,
+          modelId: selectedModelId,
+          referenceImageDataUrl,
+          skipUserMessage: Boolean(options?.skipUserMessage),
+        }),
+      });
+
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        throw new Error(data.error || 'Failed to generate video.');
+      }
+
+      setMessages((prev) => {
+        const mapped = data.userMessage
+          ? prev.map((m) => (m.id === tempUserId ? data.userMessage : m))
+          : prev;
+        return data.assistantMessage ? [...mapped, data.assistantMessage] : mapped;
+      });
+
+      refreshUser();
+    } catch (err: any) {
+      setMessages((prev) => [
+        ...prev,
+        {
+          id: 'err-vid-' + Date.now(),
+          chat_id: targetChatId!,
+          role: 'assistant',
+          content: `⚠️ Error: ${err?.message || 'Failed to generate video.'}`,
+          model_id: selectedModelId,
+          tokens_used: 0,
+          created_at: new Date().toISOString(),
+        },
+      ]);
+    } finally {
+      setIsGeneratingVideo(false);
+      setGeneratingVideoPromptPreview('');
+      setRegeneratingVideoMessageId(null);
+    }
+  };
+
+  const handleRegenerateGeneratedVideo = (
+    msgId: string,
+    attachment: ChatAttachment,
+    fallbackContent: string
+  ) => {
+    if (isStreaming || isGeneratingImage || isGeneratingVideo) return;
+    const promptToUse = attachment.prompt || attachment.enhancedPrompt || fallbackContent;
+    if (!promptToUse) return;
+    handleGenerateVideo(promptToUse, {
+      aspectRatio: (attachment.aspectRatio as VideoAspectRatio) || videoAspectRatio,
+      duration: attachment.duration || videoDuration,
+      resolution: attachment.resolution || videoResolution,
+      skipUserMessage: true,
+      messageIdForSpinner: msgId,
+    });
+  };
+
+  const handleParseDocument = async (file: File): Promise<ParsedDocumentResponse> => {
+    if (!token) {
+      throw new Error('Please sign in to upload and analyze documents.');
+    }
+    const dataBase64 = await readFileAsBase64(file);
+    const res = await fetch('/api/chat/parse-attachment', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify({
+        name: file.name,
+        mimeType: file.type,
+        dataBase64,
+      }),
+    });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) {
+      throw new Error(data.error || `Could not parse "${file.name}".`);
+    }
+    return {
+      textContent: data.textContent || '',
+      pageCount: data.pageCount,
+      mimeType: data.mimeType,
+      fileType: data.fileType,
+    };
+  };
+
   const handleSendMessage = async (customPrompt?: string) => {
     const textToSend = (
       customPrompt !== undefined ? customPrompt : inputMessage
     ).trim();
 
-    if (imageMode && customPrompt === undefined) {
+    if (studioMode === 'image' && customPrompt === undefined) {
       await handleGenerateImage(textToSend);
+      return;
+    }
+
+    if (studioMode === 'video' && customPrompt === undefined) {
+      await handleGenerateVideo(textToSend);
       return;
     }
 
     const attachmentsToSend =
       customPrompt !== undefined ? [] : pendingAttachments;
-    if ((!textToSend && attachmentsToSend.length === 0) || isStreaming || isGeneratingImage) return;
+    if ((!textToSend && attachmentsToSend.length === 0) || isStreaming || isGeneratingImage || isGeneratingVideo) return;
 
     if (!isSubscribed) {
       openPaymentModal('monthly');
@@ -721,8 +1037,24 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({
           if (evt.kind === 'chunk') {
             fullAssistantReply += evt.text;
             setStreamedText(fullAssistantReply);
-          } else if (evt.kind === 'done' && evt.assistantMessage) {
-            finalizedMessage = evt.assistantMessage;
+          } else if (evt.kind === 'done') {
+            if (evt.assistantMessage) {
+              finalizedMessage = evt.assistantMessage;
+            }
+            if (Array.isArray(evt.savedMemories) && evt.savedMemories.length > 0) {
+              mergeMemoriesIntoState(evt.savedMemories as UserMemory[]);
+              const label =
+                evt.savedMemories.length === 1
+                  ? 'Saved to Memory'
+                  : `Saved ${evt.savedMemories.length} details to Memory`;
+              setSavedMemoryNotice(label);
+              if (memoryNoticeTimerRef.current) {
+                clearTimeout(memoryNoticeTimerRef.current);
+              }
+              memoryNoticeTimerRef.current = setTimeout(() => {
+                setSavedMemoryNotice(null);
+              }, 5000);
+            }
           }
         }
       };
@@ -823,6 +1155,33 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({
     a.click();
     document.body.removeChild(a);
     URL.revokeObjectURL(url);
+  };
+
+  const handleExportDocument = async (
+    msgId: string,
+    content: string,
+    format: 'pdf' | 'pptx',
+    modelLabel: string
+  ) => {
+    if (exportingDoc) return;
+    setExportingDoc({ msgId, format });
+    try {
+      if (format === 'pdf') {
+        await exportResponseToPdf(content, { modelLabel });
+      } else {
+        await exportResponseToPptx(content, { modelLabel });
+      }
+      setExportedDoc({ msgId, format });
+      setTimeout(() => {
+        setExportedDoc((prev) =>
+          prev?.msgId === msgId && prev?.format === format ? null : prev
+        );
+      }, 2200);
+    } catch (err) {
+      console.error(`Failed to export ${format.toUpperCase()}:`, err);
+    } finally {
+      setExportingDoc(null);
+    }
   };
 
   const handleExportFullChat = () => {
@@ -945,6 +1304,8 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({
         user={user}
         isSubscribed={isSubscribed}
         onOpenSettings={() => setSettingsModalOpen(true)}
+        onOpenMemory={() => setMemoryModalOpen(true)}
+        memoryCount={memories.length}
         onNavigateHome={onNavigateHome}
       />
 
@@ -955,6 +1316,17 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({
         onNavigateHome={onNavigateHome}
         onNavigateAccount={onNavigateAccount}
         onNavigateAdmin={onNavigateAdmin}
+      />
+
+      {/* Persistent User Memory Manager Modal */}
+      <WorkspaceMemoryModal
+        isOpen={memoryModalOpen}
+        onClose={() => setMemoryModalOpen(false)}
+        memories={memories}
+        isLoading={memoriesLoading}
+        onAddMemory={handleAddMemory}
+        onDeleteMemory={handleDeleteMemory}
+        onClearAllMemories={handleClearAllMemories}
       />
 
       {/* Unified Right-Side Profile Drawer on Mobile (Matches Homepage) */}
@@ -1016,10 +1388,10 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({
               <UploadCloud className="w-5 h-5" />
             </div>
             <p className="text-sm font-semibold text-[#1f1f1f] dark:text-[#e3e3e3]">
-              Drop photos or files to attach
+              Drop documents, code, or images to attach
             </p>
             <p className="text-xs text-[#444746] dark:text-[#9aa0a6]">
-              PNG, JPG, WEBP, TXT, MD, CSV, JSON, JS, TS, PY, HTML, CSS
+              PDF, DOCX, TXT, CSV, Code &amp; Images (PNG, JPG, WEBP)
             </p>
           </div>
         )}
@@ -1123,8 +1495,30 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({
             </div>
           </div>
 
-          {/* Right: Subtle Utility Actions (Export, Quota, Mobile New Chat) */}
+          {/* Right: Subtle Utility Actions (Memory, Export, Quota, Mobile New Chat) */}
           <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
+            {user && (
+              <button
+                type="button"
+                onClick={() => setMemoryModalOpen(true)}
+                data-testid="workspace-memory-btn"
+                aria-label={`Open Memory manager (${memories.length} saved)`}
+                title="Persistent Memory across chats"
+                className="h-8 w-8 sm:w-auto sm:px-3 rounded-full hover:bg-[#f0f4f9] dark:hover:bg-[#1e1f20] border border-black/[0.08] dark:border-white/[0.08] text-[12px] font-medium text-[#444746] dark:text-[#c4c7c5] hover:text-[#1f1f1f] dark:hover:text-[#e3e3e3] flex items-center justify-center gap-1.5 transition-colors cursor-pointer whitespace-nowrap shrink-0 relative"
+              >
+                <Brain className="w-3.5 h-3.5 shrink-0" />
+                <span className="hidden sm:inline">Memory</span>
+                {memories.length > 0 && (
+                  <span
+                    data-testid="header-memory-count"
+                    className="hidden sm:inline-flex items-center justify-center min-w-[18px] h-[18px] px-1 rounded-full bg-[#1f1f1f] text-white dark:bg-[#e3e3e3] dark:text-[#131314] text-[10px] font-mono tabular-nums"
+                  >
+                    {memories.length}
+                  </span>
+                )}
+              </button>
+            )}
+
             {messages.length > 0 && (
               <button
                 type="button"
@@ -1198,6 +1592,27 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({
                 Subscribe (৳699/mo)
               </button>
             </div>
+          </div>
+        )}
+
+        {/* Subtle Memory Auto-Capture Notice */}
+        {savedMemoryNotice && (
+          <div
+            data-testid="memory-saved-notice"
+            className="mx-3 sm:mx-6 mt-1 mb-1 flex items-center justify-center z-10"
+          >
+            <button
+              type="button"
+              onClick={() => {
+                setSavedMemoryNotice(null);
+                setMemoryModalOpen(true);
+              }}
+              className="inline-flex items-center gap-2 h-7 px-3 rounded-full bg-[#f0f4f9] dark:bg-[#1e1f20] hover:bg-[#e9eef6] dark:hover:bg-[#282a2c] border border-black/[0.08] dark:border-white/[0.08] text-[11.5px] font-medium text-[#1f1f1f] dark:text-[#e3e3e3] transition-colors cursor-pointer"
+            >
+              <Brain className="w-3.5 h-3.5 shrink-0 text-emerald-600 dark:text-emerald-400" />
+              <span>{savedMemoryNotice}</span>
+              <span className="text-[#444746] dark:text-[#9aa0a6] underline">Manage</span>
+            </button>
           </div>
         )}
 
@@ -1281,21 +1696,40 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({
                                   ) : (
                                     <div
                                       key={att.id}
-                                      className="inline-flex items-center gap-2 px-3 py-1.5 rounded-xl border border-black/[0.08] dark:border-white/[0.1] bg-white/70 dark:bg-[#1e1f20] text-xs max-w-[230px]"
+                                      className="inline-flex items-center gap-2 px-3 py-1.5 rounded-xl border border-black/[0.08] dark:border-white/[0.1] bg-white/75 dark:bg-[#1e1f20] text-xs max-w-[240px]"
                                     >
-                                      {/\.(js|ts|py|html|css|json)$/i.test(
-                                        att.name
-                                      ) ? (
-                                        <FileCode2 className="w-3.5 h-3.5 shrink-0 opacity-85" />
-                                      ) : (
-                                        <FileText className="w-3.5 h-3.5 shrink-0 opacity-85" />
-                                      )}
-                                      <span className="truncate font-medium">
-                                        {att.name}
-                                      </span>
-                                      <span className="text-[10px] opacity-70 font-mono shrink-0">
-                                        {formatFileSize(att.size)}
-                                      </span>
+                                      {(() => {
+                                        const cat =
+                                          att.fileType ||
+                                          getAttachmentFileCategory(att.name, att.mimeType);
+                                        if (cat === 'code') {
+                                          return <FileCode2 className="w-3.5 h-3.5 shrink-0 opacity-85" />;
+                                        }
+                                        if (cat === 'csv') {
+                                          return (
+                                            <FileSpreadsheet className="w-3.5 h-3.5 shrink-0 text-emerald-600 dark:text-emerald-400" />
+                                          );
+                                        }
+                                        if (cat === 'pdf') {
+                                          return (
+                                            <FileText className="w-3.5 h-3.5 shrink-0 text-rose-600 dark:text-rose-400" />
+                                          );
+                                        }
+                                        if (cat === 'docx') {
+                                          return (
+                                            <FileText className="w-3.5 h-3.5 shrink-0 text-sky-600 dark:text-sky-400" />
+                                          );
+                                        }
+                                        return <FileText className="w-3.5 h-3.5 shrink-0 opacity-85" />;
+                                      })()}
+                                      <div className="min-w-0">
+                                        <div className="truncate font-medium">
+                                          {att.name}
+                                        </div>
+                                        <div className="text-[10px] opacity-70 font-mono truncate">
+                                          {formatAttachmentBadgeMeta(att)}
+                                        </div>
+                                      </div>
                                     </div>
                                   )
                                 )}
@@ -1338,6 +1772,9 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({
                 const generatedImages = (m.attachments || []).filter(
                   isGeneratedImageAttachment
                 );
+                const generatedVideos = (m.attachments || []).filter(
+                  isGeneratedVideoAttachment
+                );
 
                 return (
                   <div
@@ -1354,16 +1791,38 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({
                         {generatedImages.length > 0 && (
                           <span className="text-[11px] opacity-75">· Image Studio</span>
                         )}
+                        {generatedVideos.length > 0 && (
+                          <span className="text-[11px] opacity-75">· Video Studio</span>
+                        )}
                       </div>
 
-                      {generatedImages.length > 0 ? (
+                      {generatedVideos.length > 0 ? (
+                        <div className="space-y-3">
+                          {generatedVideos.map((vidAtt) => (
+                            <GeneratedVideoCard
+                              key={vidAtt.id}
+                              attachment={vidAtt}
+                              isBusy={isStreaming || isGeneratingImage || isGeneratingVideo}
+                              isRegeneratingThis={regeneratingVideoMessageId === msgId}
+                              onRegenerate={(att) =>
+                                handleRegenerateGeneratedVideo(msgId, att, m.content)
+                              }
+                            />
+                          ))}
+                          {m.tokens_used > 0 && (
+                            <div className="text-[11px] font-mono text-[#444746]/75 dark:text-[#9aa0a6]/75 tabular-nums">
+                              {m.tokens_used.toLocaleString()} tok
+                            </div>
+                          )}
+                        </div>
+                      ) : generatedImages.length > 0 ? (
                         <div className="space-y-3">
                           {generatedImages.map((imgAtt) => (
                             <GeneratedImageCard
                               key={imgAtt.id}
                               attachment={imgAtt}
                               authToken={token}
-                              isBusy={isStreaming || isGeneratingImage}
+                              isBusy={isStreaming || isGeneratingImage || isGeneratingVideo}
                               isRegeneratingThis={regeneratingMessageId === msgId}
                               onRegenerate={(att) =>
                                 handleRegenerateGeneratedImage(msgId, att, m.content)
@@ -1379,6 +1838,85 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({
                       ) : (
                         <>
                           <FormattedMessage content={m.content} />
+
+                          {(() => {
+                            const docDetection = detectExportableDocument(m.content);
+                            if (!docDetection.hasStructuredDoc) return null;
+                            const isExportingPdf =
+                              exportingDoc?.msgId === msgId && exportingDoc.format === 'pdf';
+                            const isExportingPptx =
+                              exportingDoc?.msgId === msgId && exportingDoc.format === 'pptx';
+                            const isSavedPdf =
+                              exportedDoc?.msgId === msgId && exportedDoc.format === 'pdf';
+                            const isSavedPptx =
+                              exportedDoc?.msgId === msgId && exportedDoc.format === 'pptx';
+                            const typeLabel =
+                              docDetection.kind === 'presentation'
+                                ? `Presentation · ${docDetection.slideCount} slides`
+                                : docDetection.kind === 'cv'
+                                  ? `CV / Resume · ${docDetection.sectionCount} sections`
+                                  : `Structured Document · ${docDetection.sectionCount} sections`;
+
+                            return (
+                              <div
+                                data-testid="structured-export-bar"
+                                className="mt-2 px-3 py-2 rounded-2xl bg-[#f0f4f9]/85 dark:bg-[#1e1f20] border border-black/[0.08] dark:border-white/[0.08] flex flex-wrap items-center justify-between gap-2"
+                              >
+                                <div className="flex items-center gap-2 min-w-0 text-[12px] text-[#444746] dark:text-[#c4c7c5]">
+                                  {docDetection.kind === 'presentation' ? (
+                                    <Presentation className="w-3.5 h-3.5 shrink-0 text-[#1f1f1f] dark:text-[#e3e3e3]" />
+                                  ) : (
+                                    <FileText className="w-3.5 h-3.5 shrink-0 text-[#1f1f1f] dark:text-[#e3e3e3]" />
+                                  )}
+                                  <span className="truncate font-medium text-[#1f1f1f] dark:text-[#e3e3e3]">
+                                    {typeLabel}
+                                  </span>
+                                </div>
+
+                                <div className="flex items-center gap-1.5 shrink-0">
+                                  <button
+                                    type="button"
+                                    disabled={Boolean(exportingDoc)}
+                                    onClick={() =>
+                                      handleExportDocument(msgId, m.content, 'pdf', modelLabel)
+                                    }
+                                    data-testid="export-pdf-btn"
+                                    aria-label="Download structured document as PDF"
+                                    className="h-7 px-2.5 rounded-xl bg-white dark:bg-[#282a2c] hover:bg-[#e9eef6] dark:hover:bg-[#333638] border border-black/[0.08] dark:border-white/[0.1] text-[11.5px] font-medium text-[#1f1f1f] dark:text-[#e3e3e3] flex items-center gap-1.5 transition-colors cursor-pointer disabled:opacity-50 whitespace-nowrap"
+                                  >
+                                    {isExportingPdf ? (
+                                      <Loader2 className="w-3.5 h-3.5 animate-spin shrink-0" />
+                                    ) : isSavedPdf ? (
+                                      <Check className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400 shrink-0" />
+                                    ) : (
+                                      <FileText className="w-3.5 h-3.5 text-rose-600 dark:text-rose-400 shrink-0" />
+                                    )}
+                                    <span>{isSavedPdf ? 'PDF Saved' : 'Download .pdf'}</span>
+                                  </button>
+
+                                  <button
+                                    type="button"
+                                    disabled={Boolean(exportingDoc)}
+                                    onClick={() =>
+                                      handleExportDocument(msgId, m.content, 'pptx', modelLabel)
+                                    }
+                                    data-testid="export-pptx-btn"
+                                    aria-label="Download presentation slides as PowerPoint (.pptx)"
+                                    className="h-7 px-2.5 rounded-xl bg-[#1f1f1f] hover:bg-[#333333] dark:bg-[#e3e3e3] dark:hover:bg-white text-[11.5px] font-medium text-white dark:text-[#131314] flex items-center gap-1.5 transition-colors cursor-pointer disabled:opacity-50 whitespace-nowrap"
+                                  >
+                                    {isExportingPptx ? (
+                                      <Loader2 className="w-3.5 h-3.5 animate-spin shrink-0" />
+                                    ) : isSavedPptx ? (
+                                      <Check className="w-3.5 h-3.5 text-emerald-400 dark:text-emerald-600 shrink-0" />
+                                    ) : (
+                                      <Presentation className="w-3.5 h-3.5 shrink-0" />
+                                    )}
+                                    <span>{isSavedPptx ? 'PPTX Saved' : 'Download .pptx'}</span>
+                                  </button>
+                                </div>
+                              </div>
+                            );
+                          })()}
 
                           {/* Subtle Editorial Action Row */}
                           <div
@@ -1412,7 +1950,7 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({
                               <button
                                 type="button"
                                 onClick={() => handleRegenerate(idx)}
-                                disabled={isStreaming || isGeneratingImage}
+                                disabled={isStreaming || isGeneratingImage || isGeneratingVideo}
                                 aria-label="Regenerate response"
                                 className="h-7 px-2 rounded-lg text-[11.5px] font-medium text-[#444746] dark:text-[#9aa0a6] hover:text-[#1f1f1f] dark:hover:text-[#e3e3e3] hover:bg-black/[0.04] dark:hover:bg-white/[0.06] flex items-center gap-1.5 transition-colors cursor-pointer disabled:opacity-40 whitespace-nowrap shrink-0"
                               >
@@ -1537,6 +2075,16 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({
                 />
               )}
 
+              {isGeneratingVideo && (
+                <GeneratingVideoSkeleton
+                  prompt={generatingVideoPromptPreview}
+                  aspectRatio={videoAspectRatio}
+                  duration={videoDuration}
+                  resolution={videoResolution}
+                  model={selectedModel}
+                />
+              )}
+
               <div ref={messagesEndRef} />
             </div>
           )}
@@ -1554,6 +2102,7 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({
           onRemoveAttachment={(id) =>
             setPendingAttachments((prev) => prev.filter((a) => a.id !== id))
           }
+          onParseDocument={handleParseDocument}
           onSubmit={() => handleSendMessage()}
           onStopGeneration={handleStopGeneration}
           isStreaming={isStreaming}
@@ -1564,11 +2113,18 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({
           onOpenPaymentModal={() => openPaymentModal('monthly')}
           externalDroppedFiles={droppedFiles}
           onClearExternalDroppedFiles={() => setDroppedFiles(null)}
-          imageMode={imageMode}
-          onToggleImageMode={() => setImageMode((prev) => !prev)}
+          studioMode={studioMode}
+          onChangeStudioMode={setStudioMode}
           aspectRatio={imageAspectRatio}
           onSelectAspectRatio={setImageAspectRatio}
           isGeneratingImage={isGeneratingImage}
+          videoAspectRatio={videoAspectRatio}
+          onSelectVideoAspectRatio={setVideoAspectRatio}
+          videoDuration={videoDuration}
+          onSelectVideoDuration={setVideoDuration}
+          videoResolution={videoResolution}
+          onSelectVideoResolution={setVideoResolution}
+          isGeneratingVideo={isGeneratingVideo}
         />
       </main>
     </div>

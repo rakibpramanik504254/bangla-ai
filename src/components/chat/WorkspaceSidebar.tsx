@@ -12,6 +12,7 @@ import {
   Settings,
   MessageSquare,
   Download,
+  Brain,
 } from 'lucide-react';
 import { Chat, User } from '../../types/index.ts';
 import { partitionWorkspaceChats } from '../../utils/workspaceSidebar.ts';
@@ -33,6 +34,8 @@ interface WorkspaceSidebarProps {
   user: User | null;
   isSubscribed: boolean;
   onOpenSettings: () => void;
+  onOpenMemory?: () => void;
+  memoryCount?: number;
   onNavigateHome?: () => void;
 }
 
@@ -49,6 +52,8 @@ export const WorkspaceSidebar: React.FC<WorkspaceSidebarProps> = ({
   user,
   isSubscribed,
   onOpenSettings,
+  onOpenMemory,
+  memoryCount = 0,
   onNavigateHome,
 }) => {
   const { isInstalled, triggerInstall } = useAppInstall();
@@ -383,6 +388,33 @@ export const WorkspaceSidebar: React.FC<WorkspaceSidebarProps> = ({
               }}
               className="w-full !h-9 !px-3.5 !bg-white/85 hover:!bg-white dark:!bg-[#282a2c]/80 dark:hover:!bg-[#282a2c] !border-black/[0.08] dark:!border-white/[0.08] text-[#1f1f1f] dark:text-[#e3e3e3] text-xs font-medium justify-center"
             />
+          </div>
+        )}
+
+        {/* Persistent Memory Quick Access */}
+        {onOpenMemory && (
+          <div className="px-2.5 pb-2 shrink-0">
+            <button
+              type="button"
+              onClick={() => {
+                if (typeof window !== 'undefined' && window.innerWidth < 768) {
+                  onCloseSidebar();
+                }
+                onOpenMemory();
+              }}
+              data-testid="sidebar-memory-btn"
+              className="w-full h-9 px-3 rounded-xl hover:bg-black/[0.05] dark:hover:bg-white/[0.06] text-[#1f1f1f] dark:text-[#e3e3e3] text-[12.5px] font-medium flex items-center justify-between gap-2 transition-colors cursor-pointer"
+            >
+              <span className="flex items-center gap-2.5 min-w-0">
+                <Brain className="w-4 h-4 text-[#444746] dark:text-[#9aa0a6] shrink-0" />
+                <span className="truncate">Memory</span>
+              </span>
+              {memoryCount > 0 && (
+                <span className="text-[11px] font-mono tabular-nums px-1.5 py-0.2 rounded-full bg-white dark:bg-[#282a2c] text-[#444746] dark:text-[#9aa0a6] border border-black/[0.06] dark:border-white/[0.08]">
+                  {memoryCount}
+                </span>
+              )}
+            </button>
           </div>
         )}
 

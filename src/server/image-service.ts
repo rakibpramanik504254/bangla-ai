@@ -87,7 +87,6 @@ export async function enhanceImagePrompt(rawPrompt: string): Promise<string> {
         config: {
           systemInstruction,
           maxOutputTokens: 140,
-          temperature: 0.4,
         },
       });
       const candidate = response.text?.trim().replace(/^["']|["']$/g, '');

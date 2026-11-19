@@ -14,7 +14,7 @@ import {
 } from './seoController.ts';
 
 export const FAQ_JSON_LD_SCRIPT_ID = 'bangla-ai-faq-ld-json';
-export const NON_INDEXABLE_APP_SLUGS = new Set(['/workspace', '/account', '/admin']);
+export const NON_INDEXABLE_APP_SLUGS = new Set(['/workspace', '/account', '/admin', '/offer', '/promo']);
 
 export function resolveActiveSeoSlug(view: AppView, pathname: string = '/'): string {
   switch (view) {
@@ -30,6 +30,8 @@ export function resolveActiveSeoSlug(view: AppView, pathname: string = '/'): str
       return '/refund-policy';
     case 'security':
       return '/security';
+    case 'offer':
+      return '/offer';
     case 'chat':
       return '/workspace';
     case 'account':
@@ -51,6 +53,23 @@ export function applyAppViewFallbackOverrides(
 ): ResolvedDynamicPageSeo {
   if (matchedExact) return resolved;
 
+  if (view === 'offer') {
+    const title = 'মাত্র ৬৯৯৳/মাসে ১০+ প্রিমিয়াম AI — Bangla-AI.pro স্পেশাল অফার';
+    const description =
+      'ডলার কার্ড বা শেয়ার্ড অ্যাকাউন্ট ছাড়াই বিকাশ ও নগদে ব্যবহার করুন ChatGPT, Claude, Gemini, Grok ও DeepSeek। ১০০% পার্সোনাল ওয়ার্কস্পেস।';
+    return {
+      ...resolved,
+      title,
+      description,
+      ogTitle: title,
+      ogDescription: description,
+      twitterTitle: title,
+      twitterDescription: description,
+      robots: 'noindex, nofollow',
+      noIndex: true,
+      noFollow: true,
+    };
+  }
   if (view === 'chat') {
     return {
       ...resolved,

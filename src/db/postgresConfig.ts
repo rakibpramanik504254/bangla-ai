@@ -237,6 +237,18 @@ export const POSTGRES_SCHEMA_STATEMENTS: readonly string[] = [
     updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
   )`,
   `CREATE INDEX IF NOT EXISTS idx_page_seo_configs_updated_at ON page_seo_configs (updated_at DESC)`,
+
+  // 12. Persistent User Memories (cross-session preferences, instructions & context)
+  `CREATE TABLE IF NOT EXISTS user_memories (
+    id TEXT PRIMARY KEY,
+    user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    content TEXT NOT NULL,
+    category TEXT NOT NULL DEFAULT 'context' CHECK (category IN ('preference', 'instruction', 'context', 'profile')),
+    source TEXT NOT NULL DEFAULT 'auto' CHECK (source IN ('auto', 'manual')),
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+  )`,
+  `CREATE INDEX IF NOT EXISTS idx_user_memories_user_id ON user_memories (user_id, updated_at DESC)`,
 ];
 
 export const PROVIDER_ENV_KEY_MAP: Record<string, string> = {

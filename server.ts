@@ -7,11 +7,26 @@ import { db, verifyPassword, hashPassword } from './src/db/database.ts';
 import { authenticate, requireAdmin, generateToken, AuthenticatedRequest } from './src/server/auth.ts';
 import { AiService } from './src/server/ai-service.ts';
 import { generateWorkspaceImage } from './src/server/image-service.ts';
+import {
+  VideoGenerationError,
+  generateWorkspaceVideo,
+  resolveGeneratedVideoFilePath
+} from './src/server/video-service.ts';
 import { buildNewFreeModelsFromOpenRouterApi } from './src/server/openrouter-free-models.ts';
 import { sanitizeModelForWorkspace } from './src/server/model-sanitizer.ts';
 import { normalizeApiKey, buildProviderUpdatePayload } from './src/server/openrouter.ts';
 import { isSubscriptionActive, calculateUsageStats, PLANS } from './src/utils/billing.ts';
 import { sanitizeIncomingAttachments } from './src/utils/chatAttachments.ts';
+import {
+  AttachmentParseError,
+  parseAttachmentPayload
+} from './src/server/attachment-parser.ts';
+import {
+  MIN_MEMORY_CONTENT_CHARS,
+  extractExplicitMemoryFromUserPrompt,
+  normalizeMemoryCategory,
+  normalizeMemoryContent
+} from './src/utils/userMemory.ts';
 import {
   IMAGE_GENERATION_COMPLETION_TOKENS,
   IMAGE_GENERATION_PROMPT_TOKENS,
@@ -19,6 +34,12 @@ import {
   buildImageFilename,
   isAllowedImageProxyUrl
 } from './src/utils/imageGeneration.ts';
+import {
+  VIDEO_GENERATION_COMPLETION_TOKENS,
+  VIDEO_GENERATION_PROMPT_TOKENS,
+  VIDEO_GENERATION_TOTAL_TOKENS,
+  buildVideoFilename
+} from './src/utils/videoGeneration.ts';
 import type { ChatAttachment } from './src/types/index.ts';
 import { resolveUserAvatarUrl } from './src/utils/avatar.ts';
 import {
@@ -951,6 +972,68 @@ app.delete('/api/chats/:id', authenticate, async (req: AuthenticatedRequest, res
   }
 });
 
+// Parse uploaded PDF / DOCX / TXT / CSV attachments prior to chat submission
+app.post('/api/chat/parse-attachment', authenticate, async (req: AuthenticatedRequest, res: Response) => {
+  try {
+    const parsed = await parseAttachmentPayload(req.body || {});
+    res.json(parsed);
+  } catch (err: any) {
+    if (err instanceof AttachmentParseError) {
+      res.status(err.statusCode).json({ error: err.message });
+      return;
+    }
+    console.error('[Attachment Parse Error]:', err);
+    res.status(500).json({ error: err?.message || 'Failed to parse uploaded document.' });
+  }
+});
+
+// Persistent User Memory Endpoints
+app.get('/api/memories', authenticate, async (req: AuthenticatedRequest, res: Response) => {
+  try {
+    const memories = await db.listUserMemories(req.user!.id);
+    res.json({ memories });
+  } catch (err: any) {
+    res.status(500).json({ error: 'Failed to load saved memories: ' + err.message });
+  }
+});
+
+app.post('/api/memories', authenticate, async (req: AuthenticatedRequest, res: Response) => {
+  try {
+    const cleanContent = normalizeMemoryContent(req.body?.content);
+    if (cleanContent.length < MIN_MEMORY_CONTENT_CHARS) {
+      res.status(400).json({ error: `Memory content must be at least ${MIN_MEMORY_CONTENT_CHARS} characters.` });
+      return;
+    }
+    const category = normalizeMemoryCategory(req.body?.category);
+    const memory = await db.addUserMemory(req.user!.id, cleanContent, category, 'manual');
+    res.status(201).json({ memory });
+  } catch (err: any) {
+    res.status(500).json({ error: 'Failed to save memory: ' + err.message });
+  }
+});
+
+app.delete('/api/memories/:id', authenticate, async (req: AuthenticatedRequest, res: Response) => {
+  try {
+    const removed = await db.deleteUserMemory(req.params.id, req.user!.id);
+    if (!removed) {
+      res.status(404).json({ error: 'Memory entry not found.' });
+      return;
+    }
+    res.json({ success: true });
+  } catch (err: any) {
+    res.status(500).json({ error: 'Failed to delete memory: ' + err.message });
+  }
+});
+
+app.delete('/api/memories', authenticate, async (req: AuthenticatedRequest, res: Response) => {
+  try {
+    const deletedCount = await db.clearUserMemories(req.user!.id);
+    res.json({ success: true, deletedCount });
+  } catch (err: any) {
+    res.status(500).json({ error: 'Failed to clear memories: ' + err.message });
+  }
+});
+
 // Streaming Chat Completion Endpoint (SSE)
 app.post('/api/chat/stream', authenticate, async (req: AuthenticatedRequest, res: Response) => {
   try {
@@ -1003,8 +1086,11 @@ app.post('/api/chat/stream', authenticate, async (req: AuthenticatedRequest, res
     // Send initial metadata
     res.write(`data: ${JSON.stringify({ type: 'start', chatId: targetChat.id, userMessage: userMsg })}\n\n`);
 
-    // Prepare history
-    const previousMessages = await db.getMessages(targetChat.id);
+    // Prepare history & load cross-session user memories
+    const [previousMessages, userMemories] = await Promise.all([
+      db.getMessages(targetChat.id),
+      db.listUserMemories(user.id)
+    ]);
     const formattedHistory = previousMessages.map(m => ({
       role: m.role,
       content: m.content,
@@ -1023,11 +1109,22 @@ app.post('/api/chat/stream', authenticate, async (req: AuthenticatedRequest, res
               res.write(`data: ${JSON.stringify({ type: 'chunk', text: chunk })}\n\n`);
             }
           },
-          onDone: async (fullText: string, promptTokens: number, completionTokens: number) => {
+          onDone: async (fullText: string, promptTokens: number, completionTokens: number, extractedMemories = []) => {
             if (streamAbortController.signal.aborted || res.writableEnded) return;
             try {
               const assistantMsg = await db.addMessage(targetChat!.id, 'assistant', fullText, model.id, completionTokens);
               const usageRecord = await db.recordUsage(user.id, targetChat!.id, model.id, promptTokens, completionTokens);
+
+              // Persist AI-captured memories + explicit user prompt memory fallback
+              const promptMemories = extractedMemories.length === 0
+                ? extractExplicitMemoryFromUserPrompt(cleanMessage)
+                : [];
+              const candidates = [...extractedMemories, ...promptMemories];
+              const savedMemories = [];
+              for (const item of candidates.slice(0, 4)) {
+                const stored = await db.addUserMemory(user.id, item.content, item.category, 'auto');
+                if (stored) savedMemories.push(stored);
+              }
 
               const updatedUser = await db.getUserById(user.id);
               const usageLimit = updatedUser?.usage_limit !== undefined ? updatedUser.usage_limit : 0;
@@ -1038,7 +1135,8 @@ app.post('/api/chat/stream', authenticate, async (req: AuthenticatedRequest, res
                   type: 'done',
                   assistantMessage: assistantMsg,
                   usageRecord,
-                  usageStats
+                  usageStats,
+                  ...(savedMemories.length > 0 ? { savedMemories } : {})
                 })}\n\n`);
                 res.end();
               }
@@ -1058,7 +1156,8 @@ app.post('/api/chat/stream', authenticate, async (req: AuthenticatedRequest, res
             }
           }
         },
-        streamAbortController.signal
+        streamAbortController.signal,
+        { userMemories }
       );
     } catch (err: any) {
       if (streamAbortController.signal.aborted || err?.name === 'AbortError') return;
@@ -1237,6 +1336,144 @@ app.get('/api/image-proxy', authenticate, async (req: AuthenticatedRequest, res:
   } catch (err: any) {
     res.status(502).json({ error: err?.message || 'Failed to proxy image.' });
   }
+});
+
+// AI Video Generation Endpoint (Gemini Omni Flash via Interactions API)
+app.post('/api/generate-video', authenticate, async (req: AuthenticatedRequest, res: Response) => {
+  try {
+    const user = req.user!;
+    const {
+      chatId,
+      prompt,
+      aspectRatio,
+      duration,
+      resolution,
+      modelId,
+      referenceImageDataUrl,
+      skipUserMessage
+    } = req.body || {};
+
+    const cleanPrompt = typeof prompt === 'string' ? prompt.trim() : '';
+    if (!cleanPrompt) {
+      res.status(400).json({ error: 'Please describe the video scene you want to create.' });
+      return;
+    }
+    if (cleanPrompt.length > 1200) {
+      res.status(400).json({ error: 'Video prompt must be 1,200 characters or fewer.' });
+      return;
+    }
+
+    const accessCheck = await AiService.validateAccess(user);
+    if (!accessCheck.allowed) {
+      res.status(accessCheck.statusCode || 403).json({ error: accessCheck.reason });
+      return;
+    }
+
+    const enabledModels = await db.listModels(true);
+    const fallbackModelId = enabledModels.find(m => m.is_default)?.id || enabledModels[0]?.id || 'mod_gemini_2_5_flash';
+
+    let targetChat = chatId ? await db.getChat(chatId, user.id) : null;
+    if (!targetChat) {
+      const titleBase = cleanPrompt.slice(0, 32) + (cleanPrompt.length > 32 ? '...' : '');
+      targetChat = await db.createChat(user.id, titleBase, modelId || fallbackModelId);
+    }
+
+    const resolvedModelId = modelId || targetChat.model_id || fallbackModelId;
+
+    const generated = await generateWorkspaceVideo({
+      prompt: cleanPrompt,
+      aspectRatio,
+      duration,
+      resolution,
+      referenceImageDataUrl: typeof referenceImageDataUrl === 'string' ? referenceImageDataUrl : undefined
+    });
+
+    const userMessage = skipUserMessage
+      ? null
+      : await db.addMessage(targetChat.id, 'user', cleanPrompt, resolvedModelId, 0);
+
+    const attachment: ChatAttachment = {
+      id: generated.videoId,
+      name: buildVideoFilename(generated.enhancedPrompt || cleanPrompt, generated.aspectRatio),
+      mimeType: generated.mimeType,
+      size: generated.sizeBytes,
+      kind: 'video',
+      fileType: 'video',
+      isGeneratedVideo: true,
+      videoUrl: generated.videoUrl,
+      prompt: generated.prompt,
+      enhancedPrompt: generated.enhancedPrompt,
+      aspectRatio: generated.aspectRatio,
+      duration: generated.duration,
+      resolution: generated.resolution,
+      width: generated.width,
+      height: generated.height,
+      provider: generated.provider
+    };
+
+    const assistantCaption = `Generated **${generated.duration} ${generated.aspectRatio}** video (${generated.resolution})`;
+    const assistantMessage = await db.addMessage(
+      targetChat.id,
+      'assistant',
+      assistantCaption,
+      resolvedModelId,
+      VIDEO_GENERATION_TOTAL_TOKENS,
+      [attachment]
+    );
+
+    const usageRecord = await db.recordUsage(
+      user.id,
+      targetChat.id,
+      resolvedModelId,
+      VIDEO_GENERATION_PROMPT_TOKENS,
+      VIDEO_GENERATION_COMPLETION_TOKENS
+    );
+
+    const updatedUser = await db.getUserById(user.id);
+    const usageLimit = updatedUser?.usage_limit !== undefined ? updatedUser.usage_limit : 0;
+    const usageStats = calculateUsageStats(usageLimit, updatedUser?.current_usage || 0);
+
+    res.json({
+      chat: targetChat,
+      userMessage,
+      assistantMessage,
+      attachment,
+      videoUrl: generated.videoUrl,
+      enhancedPrompt: generated.enhancedPrompt,
+      aspectRatio: generated.aspectRatio,
+      duration: generated.duration,
+      resolution: generated.resolution,
+      provider: generated.provider,
+      usageRecord,
+      usageStats
+    });
+  } catch (err: any) {
+    console.error('Video generation route failed:', err);
+    const status = err instanceof VideoGenerationError ? err.statusCode : 502;
+    res.status(status).json({
+      error: err?.message || 'Failed to generate video. Please try again.'
+    });
+  }
+});
+
+// Serve generated MP4 clips with Range support & optional attachment download
+app.get('/api/media/video/:videoId', (req: Request, res: Response) => {
+  const filePath = resolveGeneratedVideoFilePath(req.params.videoId || '');
+  if (!filePath || !fs.existsSync(filePath)) {
+    res.status(404).json({ error: 'Generated video clip not found or expired.' });
+    return;
+  }
+
+  res.setHeader('Content-Type', 'video/mp4');
+  res.setHeader('Cache-Control', 'public, max-age=86400');
+  if (req.query.download === '1') {
+    const safeFilename =
+      typeof req.query.filename === 'string' && req.query.filename.trim()
+        ? req.query.filename.replace(/[^a-zA-Z0-9._-]/g, '_')
+        : 'bangla-ai-video.mp4';
+    res.setHeader('Content-Disposition', `attachment; filename="${safeFilename}"`);
+  }
+  res.sendFile(filePath);
 });
 
 // ==========================================

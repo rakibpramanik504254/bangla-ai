@@ -13,8 +13,14 @@ import {
   parseOpenRouterStreamPayload
 } from './openrouter.ts';
 import { sanitizeModelForWorkspace } from './model-sanitizer.ts';
-import type { ChatAttachment } from '../types/index.ts';
+import type { ChatAttachment, UserMemory, UserMemoryCategory } from '../types/index.ts';
 import { buildTextAttachmentPromptBlock, formatFileSize } from '../utils/chatAttachments.ts';
+import {
+  buildMemorySystemPromptBlock,
+  createStreamingMemoryFilter,
+  extractExplicitMemoryFromUserPrompt,
+  parseMemoryDirectivesFromResponse
+} from '../utils/userMemory.ts';
 
 export interface ChatMessageParam {
   role: 'user' | 'assistant' | 'system';
@@ -24,13 +30,19 @@ export interface ChatMessageParam {
 
 export interface StreamCallbacks {
   onChunk: (chunk: string) => void;
-  onDone: (fullText: string, promptTokens: number, completionTokens: number) => void | Promise<void>;
+  onDone: (
+    fullText: string,
+    promptTokens: number,
+    completionTokens: number,
+    extractedMemories?: Array<{ category: UserMemoryCategory; content: string }>
+  ) => void | Promise<void>;
   onError: (error: Error) => void;
 }
 
 const DEFAULT_SYSTEM_PROMPT = `You are Bangla AI, a premium, intelligent, and highly articulate multi-model AI assistant designed for professionals, developers, and businesses in Bangladesh and globally.
 Respond in clear, structured, and modern professional English by default (or fluent Bengali if the user requests it).
-Provide well-formatted markdown with clear headings, lists, code snippets with syntax highlighting, and actionable insights.`;
+Provide well-formatted markdown with clear headings, lists, tables, code snippets with syntax highlighting, and actionable insights.
+When the user asks for a report, CV/resume, or presentation deck, structure it cleanly with clear Markdown headings (# for main title, ## for sections or "## Slide 1: Title" separated by "---" horizontal dividers for presentations), concise bullet points, and tables so it exports cleanly to PDF and PowerPoint (.pptx).`;
 
 export class AiService {
   /**
@@ -99,6 +111,7 @@ export class AiService {
     modelSlug: string;
     fallbackSlug?: string;
     messages: ChatMessageParam[];
+    systemPrompt?: string;
     maxTokens?: number;
     extraHeaders?: Record<string, string>;
     callbacks: StreamCallbacks;
@@ -118,7 +131,7 @@ export class AiService {
           buildOpenRouterRequestBody(
             targetModel,
             params.messages,
-            DEFAULT_SYSTEM_PROMPT,
+            params.systemPrompt || DEFAULT_SYSTEM_PROMPT,
             params.maxTokens
           )
         )
@@ -207,8 +220,40 @@ export class AiService {
     provider: AiProvider,
     messages: ChatMessageParam[],
     callbacks: StreamCallbacks,
-    signal?: AbortSignal
+    signal?: AbortSignal,
+    options?: { userMemories?: UserMemory[] }
   ): Promise<void> {
+    const userMemories = options?.userMemories || [];
+    const effectiveSystemPrompt = `${DEFAULT_SYSTEM_PROMPT}${buildMemorySystemPromptBlock(userMemories)}`;
+
+    const memoryFilter = createStreamingMemoryFilter();
+    const filteredCallbacks: StreamCallbacks = {
+      onChunk: (chunk: string) => {
+        const cleanDelta = memoryFilter.push(chunk);
+        if (cleanDelta) {
+          callbacks.onChunk(cleanDelta);
+        }
+      },
+      onDone: async (rawFullText: string, promptTokens: number, completionTokens: number) => {
+        const flushed = memoryFilter.flush();
+        if (flushed.remainingText) {
+          callbacks.onChunk(flushed.remainingText);
+        }
+        const parsed = parseMemoryDirectivesFromResponse(rawFullText);
+        const merged = [...flushed.extractedMemories];
+        const seen = new Set(merged.map((m) => m.content.toLowerCase()));
+        for (const item of parsed.extractedMemories) {
+          const key = item.content.toLowerCase();
+          if (!seen.has(key)) {
+            seen.add(key);
+            merged.push(item);
+          }
+        }
+        await callbacks.onDone(parsed.visibleText || rawFullText, promptTokens, completionTokens, merged);
+      },
+      onError: callbacks.onError
+    };
+
     const lastUserMessage = messages[messages.length - 1];
     const lastUserMsg = lastUserMessage?.content || '';
     const lastUserAttachments = lastUserMessage?.attachments || [];
@@ -232,12 +277,13 @@ export class AiService {
           modelSlug: candidates.primary,
           fallbackSlug: candidates.fallback,
           messages,
+          systemPrompt: effectiveSystemPrompt,
           maxTokens: model.max_output_tokens,
           extraHeaders: {
             'HTTP-Referer': process.env.APP_URL || 'https://bangla-ai.pro',
             'X-Title': 'Bangla AI'
           },
-          callbacks,
+          callbacks: filteredCallbacks,
           lastUserMsg: lastUserTokenSource || lastUserMsg,
           signal
         });
@@ -304,7 +350,7 @@ export class AiService {
               model: candidateModel,
               contents: formattedContents,
               config: {
-                systemInstruction: DEFAULT_SYSTEM_PROMPT,
+                systemInstruction: effectiveSystemPrompt,
                 ...(signal ? { abortSignal: signal } : {})
               }
             });
@@ -328,13 +374,13 @@ export class AiService {
           const text = chunk.text;
           if (text) {
             accumulatedText += text;
-            callbacks.onChunk(text);
+            filteredCallbacks.onChunk(text);
           }
         }
 
         if (signal?.aborted) return;
         const tokenStats = estimateTokens(lastUserTokenSource || lastUserMsg, accumulatedText);
-        await callbacks.onDone(accumulatedText, tokenStats.promptTokens, tokenStats.completionTokens);
+        await filteredCallbacks.onDone(accumulatedText, tokenStats.promptTokens, tokenStats.completionTokens);
         return;
       } catch (err: any) {
         if (signal?.aborted || err?.name === 'AbortError') return;
@@ -370,8 +416,9 @@ export class AiService {
             apiKey: directKey,
             modelSlug: model.model_name,
             messages,
+            systemPrompt: effectiveSystemPrompt,
             maxTokens: model.max_output_tokens,
-            callbacks,
+            callbacks: filteredCallbacks,
             lastUserMsg: lastUserTokenSource || lastUserMsg,
             signal
           });
@@ -396,20 +443,20 @@ export class AiService {
     }
 
     // 3. Offline / Unconfigured Demo Synthesizer (used only when no API key is configured)
-    const generatedResponse = this.generateContextualResponse(model, lastUserMsg, lastUserAttachments);
+    const generatedResponse = this.generateContextualResponse(model, lastUserMsg, lastUserAttachments, userMemories);
     const chunks = this.splitIntoNaturalChunks(generatedResponse);
 
     for (let i = 0; i < chunks.length; i++) {
       if (signal?.aborted) return;
       const chunk = chunks[i];
       accumulatedText += chunk;
-      callbacks.onChunk(chunk);
+      filteredCallbacks.onChunk(chunk);
       await new Promise(r => setTimeout(r, 20));
     }
 
     if (signal?.aborted) return;
     const tokenStats = estimateTokens(lastUserTokenSource || lastUserMsg, accumulatedText);
-    await callbacks.onDone(accumulatedText, tokenStats.promptTokens, tokenStats.completionTokens);
+    await filteredCallbacks.onDone(accumulatedText, tokenStats.promptTokens, tokenStats.completionTokens);
   }
 
   public static splitIntoNaturalChunks(text: string): string[] {
@@ -431,10 +478,23 @@ export class AiService {
   private static generateContextualResponse(
     model: AiModel,
     prompt: string,
-    attachments: ChatAttachment[] = []
+    attachments: ChatAttachment[] = [],
+    userMemories: UserMemory[] = []
   ): string {
     const safeModel = sanitizeModelForWorkspace(model);
     const p = prompt.toLowerCase();
+    const explicitMem = extractExplicitMemoryFromUserPrompt(prompt);
+    if (explicitMem.length > 0) {
+      const memItem = explicitMem[0];
+      return `Got it — I have saved that to your persistent memory:\n\n- **Saved (${memItem.category}):** ${memItem.content}\n\nI will apply this preference across your future chats automatically.[[MEMORY:${memItem.category}|${memItem.content}]]`;
+    }
+    const memoryContextNote =
+      userMemories.length > 0
+        ? `\n\n> *Active Memory Context (${userMemories.length}):* ${userMemories
+            .slice(0, 3)
+            .map((m) => m.content)
+            .join(' · ')}`
+        : '';
     const badgeLabel =
       safeModel.badge === 'max' ? 'Frontier Max Intelligence' :
       safeModel.badge === 'high' ? 'High Throughput & Reasoning' :
@@ -474,6 +534,65 @@ export class AiService {
         lines.push('\nLet me know what specific edits, explanation, or analysis you would like on these attachments.');
       }
       return lines.join('\n');
+    }
+
+    if (p.includes('presentation') || p.includes('slide') || p.includes('pitch deck') || p.includes('deck')) {
+      return `# Strategic Growth & AI Adoption Deck
+
+---
+
+## Slide 1: Executive Overview
+
+Accelerating digital transformation across Bangladesh with unified AI workflows.
+
+- Consolidate frontier AI tools into a single BDT-billed workspace
+- Eliminate international dollar-card friction via bKash and Nagad
+- Empower engineering, marketing, and agency teams with 5x faster delivery
+
+---
+
+## Slide 2: Market Opportunity & Revenue Impact
+
+| Segment | Target Adoption | Projected Productivity Gain |
+| --- | --- | --- |
+| Software Teams | Code review & architecture | +45% faster sprint cycles |
+| Digital Agencies | Bilingual ad copy & SEO | +60% content output |
+| SMEs & Startups | Automated reports & support | -35% operational cost |
+
+---
+
+## Slide 3: 90-Day Rollout Roadmap
+
+- **Phase 1 (Weeks 1–4):** Onboarding, prompt templates, and document analysis workflows
+- **Phase 2 (Weeks 5–8):** Cross-team reporting and automated client proposal generation
+- **Phase 3 (Weeks 9–12):** Performance KPI audit and full enterprise scaling`;
+    }
+
+    if (p.includes('cv') || p.includes('resume')) {
+      return `# Tanvir Ahmed — Senior Software Engineer
+
+Dhaka, Bangladesh  ·  tanvir@example.com  ·  +880 1700-000000
+
+## Professional Summary
+
+Full-stack TypeScript and cloud systems engineer with 6+ years of experience building high-throughput fintech, SaaS, and AI productivity platforms.
+
+## Work Experience
+
+- **Lead Software Engineer — Dhaka Cloud Systems (2023–Present):** Architected multi-tenant Node.js APIs and React workspaces serving 120K+ monthly active users.
+- **Full-Stack Developer — Bengal FinTech Labs (2020–2023):** Engineered automated bKash/Nagad reconciliation pipelines with 99.98% uptime.
+
+## Education
+
+- **B.Sc. in Computer Science & Engineering** — Bangladesh University of Engineering & Technology (BUET)
+
+## Technical Skills
+
+| Domain | Core Technologies |
+| --- | --- |
+| Frontend | React, TypeScript, Tailwind CSS, Next.js |
+| Backend | Node.js, Express, PostgreSQL, Redis |
+| AI & Cloud | Gemini SDK, OpenRouter, Docker, Cloud Run |`;
     }
 
     if (p.includes('email') || p.includes('letter') || p.includes('proposal') || p.includes('partnership')) {
@@ -617,7 +736,7 @@ I am powered by **Bangla AI**, ready to assist you with comprehensive analysis, 
 
 ### Key Insights:
 * Your query has been processed through the **${safeModel.display_name}** inference pipeline.
-* I am calibrated to deliver structured, high-accuracy responses tailored to your technical and business requirements.
+* I am calibrated to deliver structured, high-accuracy responses tailored to your technical and business requirements.${memoryContextNote}
 
 Feel free to ask follow-up questions or provide additional requirements!`;
   }

@@ -11,7 +11,8 @@ export type AppView =
   | 'terms'
   | 'refund'
   | 'contact'
-  | 'security';
+  | 'security'
+  | 'offer';
 
 const VIEW_PATH_MAP: Record<AppView, string> = {
   home: '/',
@@ -24,6 +25,7 @@ const VIEW_PATH_MAP: Record<AppView, string> = {
   refund: '/refund-policy',
   contact: '/contact',
   security: '/security',
+  offer: '/offer',
 };
 
 export function resolveViewFromPathname(pathname: string): AppView {
@@ -45,6 +47,9 @@ export function resolveViewFromPathname(pathname: string): AppView {
       return 'about';
     case '/security':
       return 'security';
+    case '/offer':
+    case '/promo':
+      return 'offer';
     default:
       return 'home';
   }

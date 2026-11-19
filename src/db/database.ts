@@ -2,8 +2,19 @@ import crypto from 'node:crypto';
 import { Pool, PoolClient } from 'pg';
 import { PLANS, calculateExpiryDate } from '../utils/billing.ts';
 import { createSeededFreeModels } from '../server/openrouter-free-models.ts';
-import type { ChatAttachment } from '../types/index.ts';
+import type {
+  ChatAttachment,
+  UserMemory,
+  UserMemoryCategory,
+  UserMemorySource,
+} from '../types/index.ts';
 import type { FinanceLedgerEntry } from '../utils/financeLedger.ts';
+import {
+  MAX_MEMORIES_PER_USER,
+  MIN_MEMORY_CONTENT_CHARS,
+  normalizeMemoryCategory,
+  normalizeMemoryContent,
+} from '../utils/userMemory.ts';
 import {
   POSTGRES_SCHEMA_STATEMENTS,
   resolveEnvApiKeyForProvider,
@@ -201,6 +212,7 @@ interface MemoryDatabaseData {
   provider_api_keys: Record<string, ProviderKeySettingEntry>;
   finance_ledger: FinanceLedgerEntry[];
   page_seo_configs: PageSeoConfig[];
+  user_memories: UserMemory[];
 }
 
 export interface QueryExecutor {
@@ -717,7 +729,8 @@ function createInitialSeedData(env: Record<string, string | undefined> = process
     settings,
     provider_api_keys,
     finance_ledger: [],
-    page_seo_configs
+    page_seo_configs,
+    user_memories: []
   };
 }
 
@@ -910,6 +923,18 @@ function mapFinanceLedgerRow(row: any): FinanceLedgerEntry {
     deletedAt: toNullableISO(row.deleted_at),
     createdAt: toISO(row.created_at),
     updatedAt: toISO(row.updated_at)
+  };
+}
+
+function mapUserMemoryRow(row: any): UserMemory {
+  return {
+    id: String(row.id),
+    user_id: String(row.user_id),
+    content: String(row.content || ''),
+    category: normalizeMemoryCategory(row.category),
+    source: row.source === 'manual' ? 'manual' : 'auto',
+    created_at: toISO(row.created_at),
+    updated_at: toISO(row.updated_at)
   };
 }
 
@@ -3118,6 +3143,146 @@ export class Database {
       faqItems: [],
       updatedAt: new Date().toISOString()
     });
+  }
+
+  // --- Persistent User Memories ---
+  public async listUserMemories(userId: string): Promise<UserMemory[]> {
+    await this.ensureReady();
+    if (!this.pool) {
+      return this.memory!.user_memories
+        .filter(m => m.user_id === userId)
+        .sort((a, b) => new Date(b.updated_at).getTime() - new Date(a.updated_at).getTime())
+        .slice(0, MAX_MEMORIES_PER_USER)
+        .map(m => ({ ...m }));
+    }
+
+    const res = await this.pool.query(
+      `SELECT * FROM user_memories WHERE user_id = $1 ORDER BY updated_at DESC LIMIT $2`,
+      [userId, MAX_MEMORIES_PER_USER]
+    );
+    return res.rows.map(mapUserMemoryRow);
+  }
+
+  public async addUserMemory(
+    userId: string,
+    rawContent: string,
+    rawCategory: UserMemoryCategory = 'context',
+    source: UserMemorySource = 'auto'
+  ): Promise<UserMemory | null> {
+    await this.ensureReady();
+    const content = normalizeMemoryContent(rawContent);
+    if (content.length < MIN_MEMORY_CONTENT_CHARS) {
+      return null;
+    }
+    const category = normalizeMemoryCategory(rawCategory);
+    const now = new Date().toISOString();
+    const normalizedKey = content.toLowerCase();
+
+    if (!this.pool) {
+      const existing = this.memory!.user_memories.find(
+        m => m.user_id === userId && m.content.trim().toLowerCase() === normalizedKey
+      );
+      if (existing) {
+        existing.category = category;
+        existing.source = source === 'manual' ? 'manual' : existing.source;
+        existing.updated_at = now;
+        return { ...existing };
+      }
+
+      const mem: UserMemory = {
+        id: `mem_${crypto.randomUUID().slice(0, 10)}`,
+        user_id: userId,
+        content,
+        category,
+        source,
+        created_at: now,
+        updated_at: now
+      };
+      this.memory!.user_memories.unshift(mem);
+
+      // Keep bounded at MAX_MEMORIES_PER_USER per user
+      const userMems = this.memory!.user_memories.filter(m => m.user_id === userId);
+      if (userMems.length > MAX_MEMORIES_PER_USER) {
+        const dropIds = new Set(
+          userMems
+            .sort((a, b) => new Date(b.updated_at).getTime() - new Date(a.updated_at).getTime())
+            .slice(MAX_MEMORIES_PER_USER)
+            .map(m => m.id)
+        );
+        this.memory!.user_memories = this.memory!.user_memories.filter(m => !dropIds.has(m.id));
+      }
+
+      return { ...mem };
+    }
+
+    const existingRes = await this.pool.query(
+      `SELECT * FROM user_memories WHERE user_id = $1 AND LOWER(TRIM(content)) = $2 LIMIT 1`,
+      [userId, normalizedKey]
+    );
+    if (existingRes.rows[0]) {
+      const updatedRes = await this.pool.query(
+        `UPDATE user_memories
+         SET category = $1,
+             source = CASE WHEN $2 = 'manual' THEN 'manual' ELSE source END,
+             updated_at = $3
+         WHERE id = $4 AND user_id = $5
+         RETURNING *`,
+        [category, source, now, existingRes.rows[0].id, userId]
+      );
+      return mapUserMemoryRow(updatedRes.rows[0]);
+    }
+
+    const id = `mem_${crypto.randomUUID().slice(0, 10)}`;
+    const insertRes = await this.pool.query(
+      `INSERT INTO user_memories (id, user_id, content, category, source, created_at, updated_at)
+       VALUES ($1,$2,$3,$4,$5,$6,$7)
+       RETURNING *`,
+      [id, userId, content, category, source, now, now]
+    );
+
+    // Trim oldest beyond MAX_MEMORIES_PER_USER
+    await this.pool.query(
+      `DELETE FROM user_memories
+       WHERE user_id = $1
+         AND id NOT IN (
+           SELECT id FROM user_memories WHERE user_id = $1 ORDER BY updated_at DESC LIMIT $2
+         )`,
+      [userId, MAX_MEMORIES_PER_USER]
+    );
+
+    return mapUserMemoryRow(insertRes.rows[0]);
+  }
+
+  public async deleteUserMemory(id: string, userId: string): Promise<boolean> {
+    await this.ensureReady();
+    if (!this.pool) {
+      const prev = this.memory!.user_memories.length;
+      this.memory!.user_memories = this.memory!.user_memories.filter(
+        m => !(m.id === id && m.user_id === userId)
+      );
+      return this.memory!.user_memories.length < prev;
+    }
+
+    const res = await this.pool.query(
+      `DELETE FROM user_memories WHERE id = $1 AND user_id = $2`,
+      [id, userId]
+    );
+    return (res.rowCount ?? 0) > 0;
+  }
+
+  public async clearUserMemories(userId: string): Promise<number> {
+    await this.ensureReady();
+    if (!this.pool) {
+      const prev = this.memory!.user_memories.length;
+      this.memory!.user_memories = this.memory!.user_memories.filter(m => m.user_id !== userId);
+      return prev - this.memory!.user_memories.length;
+    }
+
+    const res = await this.pool.query(
+      `DELETE FROM user_memories WHERE user_id = $1`,
+      [userId]
+    );
+    return res.rowCount ?? 0;
   }
 }
 

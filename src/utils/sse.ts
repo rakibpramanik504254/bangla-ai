@@ -1,7 +1,7 @@
 export type ChatStreamEvent =
   | { kind: 'start'; chatId?: string }
   | { kind: 'chunk'; text: string }
-  | { kind: 'done'; assistantMessage?: any; usageStats?: any }
+  | { kind: 'done'; assistantMessage?: any; usageStats?: any; savedMemories?: any[] }
   | { kind: 'error'; message: string }
   | { kind: 'ignore' };
 
@@ -88,7 +88,8 @@ export function parseChatStreamPayload(dataStr: string): ChatStreamEvent {
     return {
       kind: 'done',
       assistantMessage: parsed.assistantMessage,
-      usageStats: parsed.usageStats
+      usageStats: parsed.usageStats,
+      ...(Array.isArray(parsed.savedMemories) ? { savedMemories: parsed.savedMemories } : {})
     };
   }
 

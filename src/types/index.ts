@@ -71,19 +71,29 @@ export interface Chat {
   updated_at: string;
 }
 
+export type WorkspaceStudioMode = 'chat' | 'image' | 'video';
+
+export type ChatAttachmentFileType = 'image' | 'video' | 'pdf' | 'docx' | 'csv' | 'txt' | 'code';
+
 export interface ChatAttachment {
   id: string;
   name: string;
   mimeType: string;
   size: number;
-  kind: 'image' | 'text';
+  kind: 'image' | 'text' | 'video';
+  fileType?: ChatAttachmentFileType;
+  pageCount?: number;
   dataUrl?: string;
   textContent?: string;
   imageUrl?: string;
+  videoUrl?: string;
   isGeneratedImage?: boolean;
+  isGeneratedVideo?: boolean;
   prompt?: string;
   enhancedPrompt?: string;
   aspectRatio?: '1:1' | '16:9' | '9:16';
+  duration?: '5s' | '8s' | '10s';
+  resolution?: '720p' | '1080p';
   width?: number;
   height?: number;
   seed?: number;
@@ -167,4 +177,17 @@ export interface PublicSettings {
   gsc_verification_code?: string;
   ga4_measurement_id?: string;
   ga4_enabled?: boolean;
+}
+
+export type UserMemoryCategory = 'preference' | 'instruction' | 'context' | 'profile';
+export type UserMemorySource = 'auto' | 'manual';
+
+export interface UserMemory {
+  id: string;
+  user_id: string;
+  content: string;
+  category: UserMemoryCategory;
+  source: UserMemorySource;
+  created_at: string;
+  updated_at: string;
 }

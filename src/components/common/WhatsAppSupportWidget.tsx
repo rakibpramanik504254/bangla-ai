@@ -29,7 +29,13 @@ export const WhatsAppLogo: React.FC<{ className?: string }> = ({ className = 'w-
   </svg>
 );
 
-export const WhatsAppSupportWidget: React.FC = () => {
+interface WhatsAppSupportWidgetProps {
+  liftForMobileBar?: boolean;
+}
+
+export const WhatsAppSupportWidget: React.FC<WhatsAppSupportWidgetProps> = ({
+  liftForMobileBar = false,
+}) => {
   const { user, token, loading } = useAuth();
   const [isOpen, setIsOpen] = useState(false);
   const [message, setMessage] = useState('');
@@ -58,7 +64,9 @@ export const WhatsAppSupportWidget: React.FC = () => {
   return (
     <div
       data-testid="whatsapp-support-widget"
-      className="fixed bottom-4 right-4 sm:bottom-5 sm:right-5 z-40 flex flex-col items-end gap-3"
+      className={`fixed ${
+        liftForMobileBar ? 'bottom-20 right-3.5 sm:bottom-5 sm:right-5' : 'bottom-4 right-4 sm:bottom-5 sm:right-5'
+      } z-40 flex flex-col items-end gap-3`}
     >
       {/* Expandable Live Chat Popover */}
       {isOpen && (
