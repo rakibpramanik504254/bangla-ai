@@ -18,7 +18,6 @@ import {
   FileCode2,
   FileSpreadsheet,
   UploadCloud,
-  Presentation,
   Loader2,
   Brain,
 } from 'lucide-react';
@@ -62,11 +61,7 @@ import {
   readFileAsBase64,
   type ParsedDocumentResponse,
 } from '../../utils/chatAttachments.ts';
-import { detectExportableDocument } from '../../utils/documentExport.ts';
-import {
-  exportResponseToPdf,
-  exportResponseToPptx,
-} from '../../utils/documentExportClient.ts';
+import { exportResponseToPdf } from '../../utils/documentExportClient.ts';
 import { copyTextSafely } from '../../utils/clipboard.ts';
 import { formatCompactTokens } from '../../utils/workspaceSidebar.ts';
 import {
@@ -296,8 +291,8 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({
   const [copiedMessageId, setCopiedMessageId] = useState<string | null>(null);
   const [speakingMessageId, setSpeakingMessageId] = useState<string | null>(null);
   const [messageFeedback, setMessageFeedback] = useState<Record<string, 'up' | 'down'>>({});
-  const [exportingDoc, setExportingDoc] = useState<{ msgId: string; format: 'pdf' | 'pptx' } | null>(null);
-  const [exportedDoc, setExportedDoc] = useState<{ msgId: string; format: 'pdf' | 'pptx' } | null>(null);
+  const [exportingPdfMessageId, setExportingPdfMessageId] = useState<string | null>(null);
+  const [exportedPdfMessageId, setExportedPdfMessageId] = useState<string | null>(null);
 
   const [studioMode, setStudioMode] = useState<WorkspaceStudioMode>('chat');
   const [imageAspectRatio, setImageAspectRatio] = useState<ImageAspectRatio>('1:1');
@@ -1138,57 +1133,32 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({
     }, 1800);
   };
 
-  const handleDownloadResponse = (
+  const handleDownloadPdf = async (
     msgId: string,
     content: string,
     modelLabel: string
   ) => {
-    const header = `<!-- Generated via Bangla AI (${modelLabel}) -->\n\n`;
-    const blob = new Blob([header + content], {
-      type: 'text/markdown;charset=utf-8',
-    });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `bangla-ai-${msgId.slice(-8)}.md`;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    URL.revokeObjectURL(url);
-  };
-
-  const handleExportDocument = async (
-    msgId: string,
-    content: string,
-    format: 'pdf' | 'pptx',
-    modelLabel: string
-  ) => {
-    if (exportingDoc) return;
-    setExportingDoc({ msgId, format });
+    if (exportingPdfMessageId) return;
+    setExportingPdfMessageId(msgId);
     try {
-      if (format === 'pdf') {
-        await exportResponseToPdf(content, { modelLabel });
-      } else {
-        await exportResponseToPptx(content, { modelLabel });
-      }
-      setExportedDoc({ msgId, format });
+      await exportResponseToPdf(content, { modelLabel });
+      setExportedPdfMessageId(msgId);
       setTimeout(() => {
-        setExportedDoc((prev) =>
-          prev?.msgId === msgId && prev?.format === format ? null : prev
-        );
+        setExportedPdfMessageId((prev) => (prev === msgId ? null : prev));
       }, 2200);
     } catch (err) {
-      console.error(`Failed to export ${format.toUpperCase()}:`, err);
+      console.error('Failed to export PDF:', err);
     } finally {
-      setExportingDoc(null);
+      setExportingPdfMessageId(null);
     }
   };
 
-  const handleExportFullChat = () => {
-    if (messages.length === 0) return;
+  const handleExportFullChat = async () => {
+    if (messages.length === 0 || exportingPdfMessageId) return;
     const activeChat = chats.find((c) => c.id === activeChatId);
-    const lines = [
-      `# ${activeChat?.title || 'Bangla AI Conversation'}`,
+    const title = activeChat?.title || 'Bangla AI Conversation';
+    const markdown = [
+      `# ${title}`,
       '',
       ...messages.map((m) => {
         const speaker =
@@ -1197,18 +1167,16 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({
             : `Assistant (${getModelDisplayName(m.model_id)})`;
         return `## ${speaker}\n\n${m.content}\n`;
       }),
-    ];
-    const blob = new Blob([lines.join('\n')], {
-      type: 'text/markdown;charset=utf-8',
-    });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `bangla-ai-chat-${(activeChatId || 'export').slice(-8)}.md`;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    URL.revokeObjectURL(url);
+    ].join('\n');
+
+    setExportingPdfMessageId('__full_chat__');
+    try {
+      await exportResponseToPdf(markdown, { modelLabel: 'Bangla AI', title });
+    } catch (err) {
+      console.error('Failed to export conversation as PDF:', err);
+    } finally {
+      setExportingPdfMessageId(null);
+    }
   };
 
   const handleToggleSpeak = (msgId: string, content: string) => {
@@ -1500,13 +1468,18 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({
             {messages.length > 0 && (
               <button
                 type="button"
+                disabled={Boolean(exportingPdfMessageId)}
                 onClick={handleExportFullChat}
-                aria-label="Export conversation as Markdown"
-                title="Export conversation (.md)"
-                className="h-8 w-8 sm:w-auto sm:px-3 rounded-full hover:bg-[#f0f4f9] dark:hover:bg-[#1e1f20] border border-black/[0.08] dark:border-white/[0.08] text-[12px] font-medium text-[#444746] dark:text-[#c4c7c5] hover:text-[#1f1f1f] dark:hover:text-[#e3e3e3] flex items-center justify-center gap-1.5 transition-colors cursor-pointer whitespace-nowrap shrink-0"
+                aria-label="Download conversation as PDF"
+                title="Download conversation (.pdf)"
+                className="h-8 w-8 sm:w-auto sm:px-3 rounded-full hover:bg-[#f0f4f9] dark:hover:bg-[#1e1f20] border border-black/[0.08] dark:border-white/[0.08] text-[12px] font-medium text-[#444746] dark:text-[#c4c7c5] hover:text-[#1f1f1f] dark:hover:text-[#e3e3e3] flex items-center justify-center gap-1.5 transition-colors cursor-pointer disabled:opacity-50 whitespace-nowrap shrink-0"
               >
-                <Download className="w-3.5 h-3.5 shrink-0" />
-                <span className="hidden sm:inline">Export</span>
+                {exportingPdfMessageId === '__full_chat__' ? (
+                  <Loader2 className="w-3.5 h-3.5 animate-spin shrink-0" />
+                ) : (
+                  <Download className="w-3.5 h-3.5 shrink-0" />
+                )}
+                <span className="hidden sm:inline">Export PDF</span>
               </button>
             )}
 
@@ -1817,85 +1790,6 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({
                         <>
                           <FormattedMessage content={m.content} />
 
-                          {(() => {
-                            const docDetection = detectExportableDocument(m.content);
-                            if (!docDetection.hasStructuredDoc) return null;
-                            const isExportingPdf =
-                              exportingDoc?.msgId === msgId && exportingDoc.format === 'pdf';
-                            const isExportingPptx =
-                              exportingDoc?.msgId === msgId && exportingDoc.format === 'pptx';
-                            const isSavedPdf =
-                              exportedDoc?.msgId === msgId && exportedDoc.format === 'pdf';
-                            const isSavedPptx =
-                              exportedDoc?.msgId === msgId && exportedDoc.format === 'pptx';
-                            const typeLabel =
-                              docDetection.kind === 'presentation'
-                                ? `Presentation · ${docDetection.slideCount} slides`
-                                : docDetection.kind === 'cv'
-                                  ? `CV / Resume · ${docDetection.sectionCount} sections`
-                                  : `Structured Document · ${docDetection.sectionCount} sections`;
-
-                            return (
-                              <div
-                                data-testid="structured-export-bar"
-                                className="mt-2 px-3 py-2 rounded-2xl bg-[#f0f4f9]/85 dark:bg-[#1e1f20] border border-black/[0.08] dark:border-white/[0.08] flex flex-wrap items-center justify-between gap-2"
-                              >
-                                <div className="flex items-center gap-2 min-w-0 text-[12px] text-[#444746] dark:text-[#c4c7c5]">
-                                  {docDetection.kind === 'presentation' ? (
-                                    <Presentation className="w-3.5 h-3.5 shrink-0 text-[#1f1f1f] dark:text-[#e3e3e3]" />
-                                  ) : (
-                                    <FileText className="w-3.5 h-3.5 shrink-0 text-[#1f1f1f] dark:text-[#e3e3e3]" />
-                                  )}
-                                  <span className="truncate font-medium text-[#1f1f1f] dark:text-[#e3e3e3]">
-                                    {typeLabel}
-                                  </span>
-                                </div>
-
-                                <div className="flex items-center gap-1.5 shrink-0">
-                                  <button
-                                    type="button"
-                                    disabled={Boolean(exportingDoc)}
-                                    onClick={() =>
-                                      handleExportDocument(msgId, m.content, 'pdf', modelLabel)
-                                    }
-                                    data-testid="export-pdf-btn"
-                                    aria-label="Download structured document as PDF"
-                                    className="h-7 px-2.5 rounded-xl bg-white dark:bg-[#282a2c] hover:bg-[#e9eef6] dark:hover:bg-[#333638] border border-black/[0.08] dark:border-white/[0.1] text-[11.5px] font-medium text-[#1f1f1f] dark:text-[#e3e3e3] flex items-center gap-1.5 transition-colors cursor-pointer disabled:opacity-50 whitespace-nowrap"
-                                  >
-                                    {isExportingPdf ? (
-                                      <Loader2 className="w-3.5 h-3.5 animate-spin shrink-0" />
-                                    ) : isSavedPdf ? (
-                                      <Check className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400 shrink-0" />
-                                    ) : (
-                                      <FileText className="w-3.5 h-3.5 text-rose-600 dark:text-rose-400 shrink-0" />
-                                    )}
-                                    <span>{isSavedPdf ? 'PDF Saved' : 'Download .pdf'}</span>
-                                  </button>
-
-                                  <button
-                                    type="button"
-                                    disabled={Boolean(exportingDoc)}
-                                    onClick={() =>
-                                      handleExportDocument(msgId, m.content, 'pptx', modelLabel)
-                                    }
-                                    data-testid="export-pptx-btn"
-                                    aria-label="Download presentation slides as PowerPoint (.pptx)"
-                                    className="h-7 px-2.5 rounded-xl bg-[#1f1f1f] hover:bg-[#333333] dark:bg-[#e3e3e3] dark:hover:bg-white text-[11.5px] font-medium text-white dark:text-[#131314] flex items-center gap-1.5 transition-colors cursor-pointer disabled:opacity-50 whitespace-nowrap"
-                                  >
-                                    {isExportingPptx ? (
-                                      <Loader2 className="w-3.5 h-3.5 animate-spin shrink-0" />
-                                    ) : isSavedPptx ? (
-                                      <Check className="w-3.5 h-3.5 text-emerald-400 dark:text-emerald-600 shrink-0" />
-                                    ) : (
-                                      <Presentation className="w-3.5 h-3.5 shrink-0" />
-                                    )}
-                                    <span>{isSavedPptx ? 'PPTX Saved' : 'Download .pptx'}</span>
-                                  </button>
-                                </div>
-                              </div>
-                            );
-                          })()}
-
                           {/* Subtle Editorial Action Row */}
                           <div
                             data-testid="response-action-bar"
@@ -1965,14 +1859,29 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({
 
                               <button
                                 type="button"
+                                disabled={Boolean(exportingPdfMessageId)}
                                 onClick={() =>
-                                  handleDownloadResponse(msgId, m.content, modelLabel)
+                                  handleDownloadPdf(msgId, m.content, modelLabel)
                                 }
-                                aria-label="Download response as Markdown"
-                                className="h-7 px-2 rounded-lg text-[11.5px] font-medium text-[#444746] dark:text-[#9aa0a6] hover:text-[#1f1f1f] dark:hover:text-[#e3e3e3] hover:bg-black/[0.04] dark:hover:bg-white/[0.06] flex items-center gap-1.5 transition-colors cursor-pointer whitespace-nowrap shrink-0"
+                                data-testid="export-pdf-btn"
+                                aria-label="Download response as PDF"
+                                title="Download PDF"
+                                className={`h-7 px-2 rounded-lg text-[11.5px] font-medium flex items-center gap-1.5 transition-colors cursor-pointer disabled:opacity-50 whitespace-nowrap shrink-0 ${
+                                  exportedPdfMessageId === msgId
+                                    ? 'bg-emerald-500/10 text-emerald-700 dark:text-emerald-400'
+                                    : 'text-[#444746] dark:text-[#9aa0a6] hover:text-[#1f1f1f] dark:hover:text-[#e3e3e3] hover:bg-black/[0.04] dark:hover:bg-white/[0.06]'
+                                }`}
                               >
-                                <Download className="w-3.5 h-3.5 shrink-0" />
-                                <span className="hidden sm:inline">Save</span>
+                                {exportingPdfMessageId === msgId ? (
+                                  <Loader2 className="w-3.5 h-3.5 animate-spin shrink-0" />
+                                ) : exportedPdfMessageId === msgId ? (
+                                  <Check className="w-3.5 h-3.5 shrink-0" />
+                                ) : (
+                                  <Download className="w-3.5 h-3.5 shrink-0" />
+                                )}
+                                <span className="hidden sm:inline">
+                                  {exportedPdfMessageId === msgId ? 'PDF Saved' : 'Download'}
+                                </span>
                               </button>
 
                               <div className="flex items-center gap-0.5 pl-1 ml-0.5 border-l border-black/[0.08] dark:border-white/[0.08]">
