@@ -265,7 +265,7 @@ function createDefaultSystemSettings(): SystemSettings {
     default_monthly_price: 699,
     default_yearly_price: 5999,
     support_email: 'ourbangla.ai@gmail.com',
-    support_phone: '+880 1622-860128',
+    support_phone: '+880 1878-242764',
     facebook_page_url: 'https://www.facebook.com/profile.php?id=61596472081766',
     bkash_number: '01812345678',
     nagad_number: '01712345678',
@@ -2786,10 +2786,14 @@ export class Database {
       return createDefaultSystemSettings();
     }
     try {
-      return {
+      const merged: SystemSettings = {
         ...createDefaultSystemSettings(),
         ...JSON.parse(String(res.rows[0].setting_value))
       };
+      if (merged.support_phone && merged.support_phone.replace(/\D/g, '').endsWith('1622860128')) {
+        merged.support_phone = '+880 1878-242764';
+      }
+      return merged;
     } catch {
       return createDefaultSystemSettings();
     }

@@ -202,11 +202,11 @@ export const Footer: React.FC<FooterProps> = ({
               </li>
               <li className="font-mono">
                 <a
-                  href="tel:+8801622860128"
+                  href="tel:+8801878242764"
                   className="text-[#1f1f1f] dark:text-[#e3e3e3] hover:underline transition-colors inline-flex items-center gap-1.5"
                 >
                   <Phone className="w-3 h-3 text-[#444746] dark:text-[#9aa0a6] shrink-0" />
-                  <span>+880 1622-860128</span>
+                  <span>+880 1878-242764</span>
                 </a>
               </li>
               <li className="font-mono pt-0.5">

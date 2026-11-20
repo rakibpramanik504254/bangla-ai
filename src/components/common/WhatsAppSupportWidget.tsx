@@ -2,8 +2,8 @@ import React, { useState } from 'react';
 import { X, Send } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext.tsx';
 
-const WHATSAPP_NUMBER_DISPLAY = '+880 1622-860128';
-const WHATSAPP_NUMBER_WA = '8801622860128';
+const WHATSAPP_NUMBER_DISPLAY = '+880 1878-242764';
+const WHATSAPP_NUMBER_WA = '8801878242764';
 const DEFAULT_MESSAGE = 'Assalamu Alaikum! I need help with Bangla AI subscription.';
 
 const QUICK_TOPICS = [

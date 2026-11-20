@@ -417,7 +417,7 @@ export const SeoAndSupportTab: React.FC<SeoAndSupportTabProps> = ({
             <input
               id="support-phone-input"
               type="text"
-              value={globalSettings.support_phone || '+880 1622-860128'}
+              value={globalSettings.support_phone || '+880 1878-242764'}
               onChange={e =>
                 setGlobalSettings({ ...globalSettings, support_phone: e.target.value })
               }

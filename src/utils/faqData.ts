@@ -171,7 +171,7 @@ export const FAQ_CATEGORIES: readonly FaqCategory[] = [
       {
         question: 'How do I contact Bangla-AI.pro for account or privacy support?',
         answer:
-          'You can reach our Dhaka support team directly via WhatsApp (+880 1622-860128) or email at ourbangla.ai@gmail.com for any billing, technical, or privacy requests.',
+          'You can reach our Dhaka support team directly via WhatsApp (+880 1878-242764) or email at ourbangla.ai@gmail.com for any billing, technical, or privacy requests.',
       },
     ],
   },

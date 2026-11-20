@@ -90,11 +90,11 @@ export const AboutPage: React.FC = () => {
             <span>Facebook Page</span>
           </a>
           <a
-            href="tel:+8801622860128"
+            href="tel:+8801878242764"
             className="min-h-9 h-auto py-1.5 px-3.5 sm:px-4 rounded-full border border-black/[0.08] dark:border-white/[0.08] bg-white dark:bg-[#131314] text-[#1f1f1f] dark:text-[#e3e3e3] flex items-center justify-center gap-1.5 font-medium hover:bg-[#e9eef6] dark:hover:bg-[#282a2c] transition-colors cursor-pointer"
           >
             <Phone className="w-3.5 h-3.5 text-[#444746] dark:text-[#9aa0a6] shrink-0" />
-            <span>+880 1622-860128</span>
+            <span>+880 1878-242764</span>
           </a>
           <a
             href="mailto:ourbangla.ai@gmail.com"

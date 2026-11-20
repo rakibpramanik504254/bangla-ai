@@ -195,7 +195,7 @@ export const RefundPolicyPage: React.FC<RefundPolicyPageProps> = ({
             )}
           </div>
           <p className="text-[11px] font-mono text-[#444746] dark:text-[#9aa0a6]">
-            bangla-ai.pro • Banani Commercial Area, Dhaka-1213, Bangladesh • Phone: +880 1622-860128 • Support Hours: 10:00 AM – 10:00 PM BST
+            bangla-ai.pro • Banani Commercial Area, Dhaka-1213, Bangladesh • Phone: +880 1878-242764 • Support Hours: 10:00 AM – 10:00 PM BST
           </p>
         </section>
       </div>

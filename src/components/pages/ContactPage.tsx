@@ -167,15 +167,15 @@ export const ContactPage: React.FC<ContactPageProps> = ({
               <div className="min-w-0">
                 <p className="text-[11px] text-[#444746] dark:text-[#9aa0a6]">Phone &amp; WhatsApp</p>
                 <a
-                  href="tel:+8801622860128"
+                  href="tel:+8801878242764"
                   className="font-mono font-semibold text-[#1f1f1f] dark:text-[#e3e3e3] hover:underline"
                 >
-                  +880 1622-860128
+                  +880 1878-242764
                 </a>
               </div>
               <button
                 type="button"
-                onClick={() => handleCopy('+8801622860128', 'phone')}
+                onClick={() => handleCopy('+8801878242764', 'phone')}
                 aria-label="Copy support phone number"
                 className="w-8 h-8 rounded-full border border-black/[0.08] dark:border-white/[0.08] bg-white dark:bg-[#1e1f20] flex items-center justify-center text-[#1f1f1f] dark:text-[#e3e3e3] shrink-0 hover:bg-[#e9eef6] dark:hover:bg-[#282a2c] transition-colors cursor-pointer"
               >
@@ -196,7 +196,7 @@ export const ContactPage: React.FC<ContactPageProps> = ({
                 <span>Send Support Email</span>
               </a>
               <a
-                href="tel:+8801622860128"
+                href="tel:+8801878242764"
                 className="btn-pill-secondary !min-h-0 !h-9 !py-0 !px-4 !text-xs"
               >
                 <Phone className="w-3.5 h-3.5 shrink-0" />

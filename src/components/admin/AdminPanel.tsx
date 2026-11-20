@@ -575,7 +575,7 @@ export const AdminPanel: React.FC = () => {
         seo_description: globalSettings.seo_description,
         seo_og_image_url: globalSettings.seo_og_image_url,
         support_email: globalSettings.support_email || 'ourbangla.ai@gmail.com',
-        support_phone: globalSettings.support_phone || '+880 1622-860128',
+        support_phone: globalSettings.support_phone || '+880 1878-242764',
         facebook_page_url: globalSettings.facebook_page_url || ''
       },
       'SEO metadata & public support contacts saved successfully.'

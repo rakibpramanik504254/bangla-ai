@@ -141,7 +141,7 @@ export const TermsPage: React.FC = () => {
           </p>
           <div className="pt-2 font-mono text-xs space-y-1 text-[#1f1f1f] dark:text-[#e3e3e3] break-words">
             <p>Email: <a href="mailto:ourbangla.ai@gmail.com" className="underline break-all">ourbangla.ai@gmail.com</a></p>
-            <p>Hotline: <a href="tel:+8801622860128" className="underline">+880 1622-860128</a></p>
+            <p>Hotline: <a href="tel:+8801878242764" className="underline">+880 1878-242764</a></p>
             <p>Official Website: <a href="https://bangla-ai.pro" target="_blank" rel="noopener noreferrer" className="underline">bangla-ai.pro</a></p>
             <p>Facebook: <a href="https://www.facebook.com/profile.php?id=61596472081766" target="_blank" rel="noopener noreferrer" className="underline break-all">facebook.com/profile.php?id=61596472081766</a></p>
             <p>Address: Banani Commercial Area, Dhaka-1213, Bangladesh</p>
