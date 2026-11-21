@@ -278,12 +278,37 @@ export function buildOpenRouterRequestBody(
 
 export interface OpenRouterParsedLine {
   textDelta?: string;
+  reasoningDelta?: string;
+  finishReason?: string;
   done?: boolean;
   error?: string;
   usage?: {
     promptTokens: number;
     completionTokens: number;
   };
+}
+
+function extractTextFromContentField(content: unknown): string {
+  if (typeof content === 'string') {
+    return content;
+  }
+  if (Array.isArray(content)) {
+    let combined = '';
+    for (const part of content) {
+      if (typeof part === 'string') {
+        combined += part;
+      } else if (part && typeof part === 'object') {
+        const p = part as Record<string, unknown>;
+        if (typeof p.text === 'string') {
+          combined += p.text;
+        } else if (typeof p.content === 'string') {
+          combined += p.content;
+        }
+      }
+    }
+    return combined;
+  }
+  return '';
 }
 
 export function parseOpenRouterStreamPayload(dataStr: string): OpenRouterParsedLine {
@@ -305,11 +330,30 @@ export function parseOpenRouterStreamPayload(dataStr: string): OpenRouterParsedL
   }
 
   const result: OpenRouterParsedLine = {};
-  const delta = parsed?.choices?.[0]?.delta;
-  if (typeof delta?.content === 'string' && delta.content.length > 0) {
-    result.textDelta = delta.content;
-  } else if (typeof delta?.reasoning === 'string' && delta.reasoning.length > 0 && !delta?.content) {
-    // Do not leak raw chain-of-thought reasoning unless needed; wait for content chunks
+  const choice = parsed?.choices?.[0];
+  const delta = choice?.delta;
+
+  const deltaText = extractTextFromContentField(delta?.content);
+  const messageText = !deltaText ? extractTextFromContentField(choice?.message?.content) : '';
+  const legacyText = !deltaText && !messageText && typeof choice?.text === 'string' ? choice.text : '';
+  const textCandidate = deltaText || messageText || legacyText;
+
+  if (textCandidate.length > 0) {
+    result.textDelta = textCandidate;
+  }
+
+  const reasoningCandidate =
+    extractTextFromContentField(delta?.reasoning) ||
+    extractTextFromContentField(delta?.reasoning_content) ||
+    extractTextFromContentField(choice?.message?.reasoning) ||
+    extractTextFromContentField(choice?.message?.reasoning_content);
+
+  if (reasoningCandidate.length > 0) {
+    result.reasoningDelta = reasoningCandidate;
+  }
+
+  if (typeof choice?.finish_reason === 'string' && choice.finish_reason.length > 0) {
+    result.finishReason = choice.finish_reason;
   }
 
   if (parsed?.usage) {
@@ -321,3 +365,170 @@ export function parseOpenRouterStreamPayload(dataStr: string): OpenRouterParsedL
 
   return result;
 }
+
+export interface OpenRouterKeyStatus {
+  ok: boolean;
+  error?: string;
+  label: string | null;
+  isFreeTier: boolean | null;
+  dailyFreeRequestLimit: number | null;
+  rpmFreeLimit: number;
+  usageTotalUsd: number | null;
+  usageDailyUsd: number | null;
+  usageWeeklyUsd: number | null;
+  usageMonthlyUsd: number | null;
+  creditLimitUsd: number | null;
+  limitRemainingUsd: number | null;
+  accountTotalCreditsUsd: number | null;
+  accountTotalUsageUsd: number | null;
+  accountBalanceUsd: number | null;
+  rateLimit: {
+    requests: number;
+    interval: string;
+  } | null;
+}
+
+function toOptionalFiniteNumber(value: unknown): number | null {
+  if (value === null || value === undefined || value === '') return null;
+  const num = Number(value);
+  return Number.isFinite(num) ? num : null;
+}
+
+export function parseOpenRouterKeyInfoResponse(
+  keyPayload: any,
+  creditsPayload?: any
+): OpenRouterKeyStatus {
+  const data = keyPayload?.data ?? keyPayload ?? {};
+  const isFreeTier = typeof data?.is_free_tier === 'boolean' ? data.is_free_tier : null;
+  const dailyFreeRequestLimit =
+    isFreeTier === false ? 1000 : isFreeTier === true ? 50 : null;
+
+  const rateLimitObj =
+    data?.rate_limit &&
+    typeof data.rate_limit === 'object' &&
+    Number.isFinite(Number(data.rate_limit.requests)) &&
+    typeof data.rate_limit.interval === 'string'
+      ? {
+          requests: Number(data.rate_limit.requests),
+          interval: String(data.rate_limit.interval)
+        }
+      : null;
+
+  const creditsData = creditsPayload?.data ?? creditsPayload ?? null;
+  const accountTotalCreditsUsd = toOptionalFiniteNumber(creditsData?.total_credits);
+  const accountTotalUsageUsd = toOptionalFiniteNumber(creditsData?.total_usage);
+  const accountBalanceUsd =
+    accountTotalCreditsUsd !== null && accountTotalUsageUsd !== null
+      ? Math.max(0, Number((accountTotalCreditsUsd - accountTotalUsageUsd).toFixed(6)))
+      : null;
+
+  return {
+    ok: true,
+    label: typeof data?.label === 'string' && data.label.trim() ? data.label.trim() : null,
+    isFreeTier,
+    dailyFreeRequestLimit,
+    rpmFreeLimit: 20,
+    usageTotalUsd: toOptionalFiniteNumber(data?.usage),
+    usageDailyUsd: toOptionalFiniteNumber(data?.usage_daily),
+    usageWeeklyUsd: toOptionalFiniteNumber(data?.usage_weekly),
+    usageMonthlyUsd: toOptionalFiniteNumber(data?.usage_monthly),
+    creditLimitUsd: toOptionalFiniteNumber(data?.limit),
+    limitRemainingUsd: toOptionalFiniteNumber(data?.limit_remaining),
+    accountTotalCreditsUsd,
+    accountTotalUsageUsd,
+    accountBalanceUsd,
+    rateLimit: rateLimitObj
+  };
+}
+
+export async function fetchOpenRouterKeyStatus(
+  apiKey: string,
+  baseUrl?: string
+): Promise<OpenRouterKeyStatus> {
+  const cleanKey = normalizeApiKey(apiKey);
+  const normalizedBase = (baseUrl || OPENROUTER_DEFAULT_BASE_URL).replace(/\/+$/, '');
+
+  const makeEmptyError = (error: string): OpenRouterKeyStatus => ({
+    ok: false,
+    error,
+    label: null,
+    isFreeTier: null,
+    dailyFreeRequestLimit: null,
+    rpmFreeLimit: 20,
+    usageTotalUsd: null,
+    usageDailyUsd: null,
+    usageWeeklyUsd: null,
+    usageMonthlyUsd: null,
+    creditLimitUsd: null,
+    limitRemainingUsd: null,
+    accountTotalCreditsUsd: null,
+    accountTotalUsageUsd: null,
+    accountBalanceUsd: null,
+    rateLimit: null
+  });
+
+  if (!isValidApiKey(cleanKey)) {
+    return makeEmptyError('OpenRouter API key is not configured.');
+  }
+
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), 8000);
+
+  try {
+    const headers = {
+      Authorization: `Bearer ${cleanKey}`,
+      Accept: 'application/json'
+    };
+
+    // Try modern /key endpoint first, fallback to legacy /auth/key
+    let keyResp = await fetch(`${normalizedBase}/key`, {
+      headers,
+      signal: controller.signal
+    });
+    if (keyResp.status === 404) {
+      keyResp = await fetch(`${normalizedBase}/auth/key`, {
+        headers,
+        signal: controller.signal
+      });
+    }
+
+    if (!keyResp.ok) {
+      const errBody = await keyResp.text().catch(() => '');
+      let msg = `OpenRouter returned HTTP ${keyResp.status}`;
+      try {
+        const parsedErr = JSON.parse(errBody);
+        msg = parsedErr?.error?.message || parsedErr?.message || msg;
+      } catch {
+        if (errBody.trim()) msg = `${msg}: ${errBody.trim().slice(0, 140)}`;
+      }
+      return makeEmptyError(msg);
+    }
+
+    const keyPayload = await keyResp.json().catch(() => ({}));
+
+    // Optionally fetch /credits (works on accounts/keys with credits permission; gracefully ignored if forbidden)
+    let creditsPayload: any = undefined;
+    try {
+      const creditsResp = await fetch(`${normalizedBase}/credits`, {
+        headers,
+        signal: controller.signal
+      });
+      if (creditsResp.ok) {
+        creditsPayload = await creditsResp.json().catch(() => undefined);
+      }
+    } catch {
+      // Optional endpoint; ignore failures
+    }
+
+    return parseOpenRouterKeyInfoResponse(keyPayload, creditsPayload);
+  } catch (err: any) {
+    const msg =
+      err?.name === 'AbortError'
+        ? 'Timed out while contacting OpenRouter.'
+        : err?.message || 'Failed to check OpenRouter key status.';
+    return makeEmptyError(msg);
+  } finally {
+    clearTimeout(timeout);
+  }
+}
+

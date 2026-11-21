@@ -2922,6 +2922,180 @@ export class Database {
     };
   }
 
+  public async getOpenRouterRequestUsageSummary(days = 7) {
+    await this.ensureReady();
+    const safeDays = Math.max(1, Math.min(30, Math.floor(days)));
+    const now = new Date();
+    const nowMs = now.getTime();
+    const oneMinuteAgoMs = nowMs - 60_000;
+
+    const toUtcDayKey = (d: Date) => d.toISOString().slice(0, 10);
+    const todayUtc = toUtcDayKey(now);
+    const nextUtcResetAt = new Date(
+      Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate() + 1, 0, 0, 0, 0)
+    ).toISOString();
+
+    const dayKeys: string[] = [];
+    for (let i = safeDays - 1; i >= 0; i--) {
+      const d = new Date(
+        Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate() - i, 0, 0, 0, 0)
+      );
+      dayKeys.push(toUtcDayKey(d));
+    }
+    const windowStartIso = `${dayKeys[0]}T00:00:00.000Z`;
+
+    const allModels = await this.listModels(false);
+    const modelMap = new Map<string, AiModel>();
+    for (const m of allModels) {
+      modelMap.set(m.id, m);
+    }
+
+    const isModelFree = (modelId: string, model?: AiModel): boolean => {
+      if (model?.is_free === true) return true;
+      const slug = (model?.openrouter_model_id || model?.model_name || modelId || '').trim().toLowerCase();
+      return slug.endsWith(':free') || slug === 'openrouter/free';
+    };
+
+    let recentRecords: Array<{ model_id: string; total_tokens: number; created_at: string }> = [];
+    let allTimeRequests = 0;
+    let allTimeTokens = 0;
+
+    if (!this.pool) {
+      allTimeRequests = this.memory!.usage_records.length;
+      allTimeTokens = this.memory!.usage_records.reduce((sum, r) => sum + (r.total_tokens || 0), 0);
+      const windowStartMs = new Date(windowStartIso).getTime();
+      recentRecords = this.memory!.usage_records
+        .filter(r => {
+          const ts = new Date(r.created_at).getTime();
+          return Number.isFinite(ts) && ts >= windowStartMs;
+        })
+        .map(r => ({
+          model_id: r.model_id,
+          total_tokens: Number(r.total_tokens || 0),
+          created_at: r.created_at
+        }));
+    } else {
+      const [allTimeRes, recentRes] = await Promise.all([
+        this.pool.query(
+          `SELECT COUNT(*)::int AS cnt, COALESCE(SUM(total_tokens), 0)::bigint AS tokens FROM usage_records`
+        ),
+        this.pool.query(
+          `SELECT model_id, total_tokens, created_at
+           FROM usage_records
+           WHERE created_at >= $1
+           ORDER BY created_at DESC`,
+          [windowStartIso]
+        )
+      ]);
+      allTimeRequests = Number(allTimeRes.rows[0]?.cnt ?? 0);
+      allTimeTokens = Number(allTimeRes.rows[0]?.tokens ?? 0);
+      recentRecords = recentRes.rows.map((row: any) => ({
+        model_id: String(row.model_id),
+        total_tokens: Number(row.total_tokens ?? 0),
+        created_at: row.created_at instanceof Date ? row.created_at.toISOString() : String(row.created_at)
+      }));
+    }
+
+    const dailyBuckets = new Map<
+      string,
+      { date: string; totalRequests: number; freeRequests: number; paidRequests: number; totalTokens: number }
+    >();
+    for (const dk of dayKeys) {
+      dailyBuckets.set(dk, {
+        date: dk,
+        totalRequests: 0,
+        freeRequests: 0,
+        paidRequests: 0,
+        totalTokens: 0
+      });
+    }
+
+    let todayTotalRequests = 0;
+    let todayFreeRequests = 0;
+    let todayPaidRequests = 0;
+    let todayTotalTokens = 0;
+    let lastMinuteRequests = 0;
+
+    const todayByModelMap = new Map<
+      string,
+      {
+        modelId: string;
+        displayName: string;
+        openrouterSlug: string;
+        isFree: boolean;
+        requests: number;
+        totalTokens: number;
+      }
+    >();
+
+    for (const rec of recentRecords) {
+      const parsedDate = new Date(rec.created_at);
+      const ts = parsedDate.getTime();
+      if (!Number.isFinite(ts)) continue;
+
+      const dayKey = toUtcDayKey(parsedDate);
+      const model = modelMap.get(rec.model_id);
+      const free = isModelFree(rec.model_id, model);
+      const tokens = Number(rec.total_tokens || 0);
+
+      const bucket = dailyBuckets.get(dayKey);
+      if (bucket) {
+        bucket.totalRequests += 1;
+        if (free) bucket.freeRequests += 1;
+        else bucket.paidRequests += 1;
+        bucket.totalTokens += tokens;
+      }
+
+      if (ts >= oneMinuteAgoMs) {
+        lastMinuteRequests += 1;
+      }
+
+      if (dayKey === todayUtc) {
+        todayTotalRequests += 1;
+        if (free) todayFreeRequests += 1;
+        else todayPaidRequests += 1;
+        todayTotalTokens += tokens;
+
+        const existing = todayByModelMap.get(rec.model_id);
+        if (existing) {
+          existing.requests += 1;
+          existing.totalTokens += tokens;
+        } else {
+          todayByModelMap.set(rec.model_id, {
+            modelId: rec.model_id,
+            displayName: model?.display_name || rec.model_id,
+            openrouterSlug: model?.openrouter_model_id || model?.model_name || rec.model_id,
+            isFree: free,
+            requests: 1,
+            totalTokens: tokens
+          });
+        }
+      }
+    }
+
+    const todayByModel = Array.from(todayByModelMap.values()).sort(
+      (a, b) => b.requests - a.requests || b.totalTokens - a.totalTokens
+    );
+
+    return {
+      utcDay: todayUtc,
+      nextUtcResetAt,
+      today: {
+        totalRequests: todayTotalRequests,
+        freeRequests: todayFreeRequests,
+        paidRequests: todayPaidRequests,
+        totalTokens: todayTotalTokens,
+        lastMinuteRequests
+      },
+      allTime: {
+        totalRequests: allTimeRequests,
+        totalTokens: allTimeTokens
+      },
+      dailyHistory: Array.from(dailyBuckets.values()),
+      todayByModel
+    };
+  }
+
   // --- Isolated Admin Finance Ledger (Money Management) ---
   public async listFinanceLedgerEntries(): Promise<FinanceLedgerEntry[]> {
     await this.ensureReady();

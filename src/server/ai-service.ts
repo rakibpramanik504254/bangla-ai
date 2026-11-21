@@ -144,77 +144,154 @@ export class AiService {
       });
     };
 
-    let response = await attemptRequest(params.modelSlug);
-
-    // Retry once with mapped fallback slug if primary slug is unavailable or rate-limited
+    const candidateModels: string[] = [params.modelSlug];
+    if (params.fallbackSlug && !candidateModels.includes(params.fallbackSlug)) {
+      candidateModels.push(params.fallbackSlug);
+    }
+    const isFreePrimary =
+      params.modelSlug.endsWith(':free') || params.modelSlug === 'openrouter/free';
+    const lastResortFallback = isFreePrimary ? 'openrouter/free' : 'openrouter/auto';
     if (
-      !response.ok &&
-      [400, 404, 429, 502, 503].includes(response.status) &&
-      params.fallbackSlug &&
-      params.fallbackSlug !== params.modelSlug
+      params.endpointUrl.includes('openrouter.ai') &&
+      !candidateModels.includes(lastResortFallback)
     ) {
-      console.warn(`[OpenRouter] Primary model "${params.modelSlug}" returned ${response.status}, retrying with fallback "${params.fallbackSlug}"`);
-      response = await attemptRequest(params.fallbackSlug);
+      candidateModels.push(lastResortFallback);
     }
 
-    if (!response.ok) {
-      let errMsg = `Upstream AI API error (${response.status})`;
-      try {
-        const errText = await response.text();
-        const parsedErr = JSON.parse(errText);
-        errMsg = parsedErr?.error?.message || parsedErr?.message || errMsg;
-      } catch {
-        // Keep status message
+    let lastFailureMessage =
+      'AI model is temporarily busy and returned an empty response. Please try again in a moment.';
+
+    for (let idx = 0; idx < candidateModels.length; idx++) {
+      const targetModel = candidateModels[idx];
+      const hasNextCandidate = idx < candidateModels.length - 1;
+
+      const response = await attemptRequest(targetModel);
+
+      if (!response.ok) {
+        let errMsg = `Upstream AI API error (${response.status})`;
+        try {
+          const errText = await response.text();
+          const parsedErr = JSON.parse(errText);
+          errMsg = parsedErr?.error?.message || parsedErr?.message || errMsg;
+        } catch {
+          // Keep status message
+        }
+
+        if (
+          hasNextCandidate &&
+          [400, 404, 408, 429, 500, 502, 503, 504].includes(response.status)
+        ) {
+          console.warn(
+            `[OpenRouter] Model "${targetModel}" returned HTTP ${response.status} (${errMsg.slice(0, 140)}), retrying with fallback "${candidateModels[idx + 1]}"`
+          );
+          lastFailureMessage = errMsg;
+          continue;
+        }
+        throw new Error(errMsg);
       }
-      throw new Error(errMsg);
-    }
 
-    const reader = response.body?.getReader();
-    if (!reader) {
-      throw new Error('Streaming response body unavailable from AI gateway.');
-    }
-
-    const decoder = new TextDecoder('utf-8');
-    const lineParser = createSseLineParser();
-    let accumulatedText = '';
-    let upstreamUsage: { promptTokens: number; completionTokens: number } | undefined;
-
-    const handlePayloads = (payloads: string[]) => {
-      for (const payload of payloads) {
-        const evt = parseOpenRouterStreamPayload(payload);
-        if (evt.error) {
-          throw new Error(evt.error);
+      const reader = response.body?.getReader();
+      if (!reader) {
+        if (hasNextCandidate) {
+          console.warn(
+            `[OpenRouter] Model "${targetModel}" returned no stream body, retrying with fallback "${candidateModels[idx + 1]}"`
+          );
+          continue;
         }
-        if (evt.usage) {
-          upstreamUsage = evt.usage;
+        throw new Error('Streaming response body unavailable from AI gateway.');
+      }
+
+      const decoder = new TextDecoder('utf-8');
+      const lineParser = createSseLineParser();
+      let accumulatedText = '';
+      let reasoningChars = 0;
+      let finishReason: string | undefined;
+      let upstreamUsage: { promptTokens: number; completionTokens: number } | undefined;
+      let streamError: string | null = null;
+
+      const handlePayloads = (payloads: string[]) => {
+        for (const payload of payloads) {
+          const evt = parseOpenRouterStreamPayload(payload);
+          if (evt.error) {
+            streamError = evt.error;
+            return;
+          }
+          if (evt.usage) {
+            upstreamUsage = evt.usage;
+          }
+          if (evt.finishReason) {
+            finishReason = evt.finishReason;
+          }
+          if (evt.reasoningDelta) {
+            reasoningChars += evt.reasoningDelta.length;
+          }
+          if (evt.textDelta) {
+            accumulatedText += evt.textDelta;
+            params.callbacks.onChunk(evt.textDelta);
+          }
         }
-        if (evt.textDelta) {
-          accumulatedText += evt.textDelta;
-          params.callbacks.onChunk(evt.textDelta);
+      };
+
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        const chunkStr = decoder.decode(value, { stream: true });
+        handlePayloads(lineParser.feed(chunkStr));
+        if (streamError) {
+          try {
+            await reader.cancel();
+          } catch {
+            // Ignore cancel errors
+          }
+          break;
         }
       }
-    };
 
-    while (true) {
-      const { done, value } = await reader.read();
-      if (done) break;
-      const chunkStr = decoder.decode(value, { stream: true });
-      handlePayloads(lineParser.feed(chunkStr));
-    }
-    const tail = decoder.decode();
-    if (tail) {
-      handlePayloads(lineParser.feed(tail));
-    }
-    handlePayloads(lineParser.flush());
+      if (!streamError) {
+        const tail = decoder.decode();
+        if (tail) {
+          handlePayloads(lineParser.feed(tail));
+        }
+        handlePayloads(lineParser.flush());
+      }
 
-    if (!accumulatedText.trim()) {
-      throw new Error('Upstream model completed without returning text content.');
+      if (streamError) {
+        if (accumulatedText.trim().length === 0 && hasNextCandidate) {
+          console.warn(
+            `[OpenRouter] Model "${targetModel}" failed mid-stream before emitting text (${streamError}), retrying with fallback "${candidateModels[idx + 1]}"`
+          );
+          lastFailureMessage = streamError;
+          continue;
+        }
+        throw new Error(streamError);
+      }
+
+      if (!accumulatedText.trim()) {
+        if (hasNextCandidate) {
+          console.warn(
+            `[OpenRouter] Model "${targetModel}" completed with empty text (finish_reason=${finishReason || 'unknown'}, reasoningChars=${reasoningChars}), retrying with fallback "${candidateModels[idx + 1]}"`
+          );
+          lastFailureMessage =
+            reasoningChars > 0
+              ? 'The selected reasoning model hit its thinking limit before generating a final answer. Please retry or switch models.'
+              : 'The AI model is temporarily overloaded and returned an empty response. Please try again in a moment.';
+          continue;
+        }
+        throw new Error(
+          reasoningChars > 0
+            ? 'The selected reasoning model reached its thinking limit without producing a final reply. Please try again or switch to another model.'
+            : lastFailureMessage
+        );
+      }
+
+      const estimated = estimateTokens(params.lastUserMsg, accumulatedText);
+      const promptTokens = upstreamUsage?.promptTokens || estimated.promptTokens;
+      const completionTokens = upstreamUsage?.completionTokens || estimated.completionTokens;
+      await params.callbacks.onDone(accumulatedText, promptTokens, completionTokens);
+      return;
     }
 
-    const estimated = estimateTokens(params.lastUserMsg, accumulatedText);
-    const promptTokens = upstreamUsage?.promptTokens || estimated.promptTokens;
-    const completionTokens = upstreamUsage?.completionTokens || estimated.completionTokens;
-    await params.callbacks.onDone(accumulatedText, promptTokens, completionTokens);
+    throw new Error(lastFailureMessage);
   }
 
   /**

@@ -14,7 +14,13 @@ import {
 } from './src/server/video-service.ts';
 import { buildNewFreeModelsFromOpenRouterApi } from './src/server/openrouter-free-models.ts';
 import { sanitizeModelForWorkspace } from './src/server/model-sanitizer.ts';
-import { normalizeApiKey, buildProviderUpdatePayload } from './src/server/openrouter.ts';
+import {
+  normalizeApiKey,
+  isValidApiKey,
+  buildProviderUpdatePayload,
+  fetchOpenRouterKeyStatus,
+  OPENROUTER_DEFAULT_BASE_URL
+} from './src/server/openrouter.ts';
 import { isSubscriptionActive, calculateUsageStats, PLANS } from './src/utils/billing.ts';
 import { sanitizeIncomingAttachments } from './src/utils/chatAttachments.ts';
 import {
@@ -1535,6 +1541,55 @@ app.get('/api/admin/stats', requireAdmin, async (_req: AuthenticatedRequest, res
   }
 });
 
+app.get('/api/admin/openrouter-usage', requireAdmin, async (req: AuthenticatedRequest, res: Response) => {
+  try {
+    const requestedDays = Number(req.query?.days);
+    const days = Number.isFinite(requestedDays) ? Math.max(1, Math.min(30, Math.floor(requestedDays))) : 7;
+
+    const [openRouterProvider, usageSummary] = await Promise.all([
+      db.getProviderBySlug('openrouter'),
+      db.getOpenRouterRequestUsageSummary(days)
+    ]);
+
+    const effectiveKey = normalizeApiKey(openRouterProvider?.api_key || process.env.OPENROUTER_API_KEY);
+    const baseUrl = (openRouterProvider?.base_url || OPENROUTER_DEFAULT_BASE_URL).replace(/\/+$/, '');
+    const configured = isValidApiKey(effectiveKey);
+    const isActive = openRouterProvider ? openRouterProvider.is_active : configured;
+
+    const keyStatus = configured
+      ? await fetchOpenRouterKeyStatus(effectiveKey, baseUrl)
+      : {
+          ok: false,
+          error: 'OpenRouter API key is not configured yet.',
+          label: null,
+          isFreeTier: null,
+          dailyFreeRequestLimit: null,
+          rpmFreeLimit: 20,
+          usageTotalUsd: null,
+          usageDailyUsd: null,
+          usageWeeklyUsd: null,
+          usageMonthlyUsd: null,
+          creditLimitUsd: null,
+          limitRemainingUsd: null,
+          accountTotalCreditsUsd: null,
+          accountTotalUsageUsd: null,
+          accountBalanceUsd: null,
+          rateLimit: null
+        };
+
+    res.json({
+      configured,
+      isActive,
+      apiKeyMasked: configured ? maskSecretKey(effectiveKey) : '',
+      checkedAt: new Date().toISOString(),
+      keyStatus,
+      usage: usageSummary
+    });
+  } catch (err: any) {
+    res.status(500).json({ error: 'Failed to load OpenRouter usage: ' + err.message });
+  }
+});
+
 app.get('/api/admin/users', requireAdmin, async (req: AuthenticatedRequest, res: Response) => {
   try {
     const { search, role, status } = req.query as { search?: string; role?: string; status?: string };
@@ -1675,20 +1730,22 @@ app.post('/api/admin/providers/:id/test', requireAdmin, async (req: Authenticate
     }
 
     if (provider.slug === 'openrouter') {
-      const baseUrl = (req.body?.base_url || provider.base_url || 'https://openrouter.ai/api/v1').replace(/\/+$/, '');
-      const resp = await fetch(`${baseUrl}/auth/key`, {
-        headers: { Authorization: `Bearer ${candidateKey}` }
-      });
-      if (!resp.ok) {
-        const errBody = await resp.text().catch(() => '');
-        res.status(400).json({ error: `OpenRouter rejected key (HTTP ${resp.status}). ${errBody.slice(0, 120)}` });
+      const baseUrl = (req.body?.base_url || provider.base_url || OPENROUTER_DEFAULT_BASE_URL).replace(/\/+$/, '');
+      const status = await fetchOpenRouterKeyStatus(candidateKey, baseUrl);
+      if (!status.ok) {
+        res.status(400).json({ error: status.error || 'OpenRouter rejected this API key.' });
         return;
       }
-      const keyInfo: any = await resp.json().catch(() => ({}));
+      const tierMsg =
+        status.isFreeTier === false
+          ? '1,000 free requests/day unlocked (paid credits active).'
+          : status.isFreeTier === true
+            ? 'Free tier active (50 free requests/day limit).'
+            : 'Key connected.';
       res.json({
         success: true,
-        message: 'OpenRouter API key is valid and connected! All 10 workspace models are ready.',
-        details: keyInfo?.data || null
+        message: `OpenRouter API key is valid and connected! ${tierMsg}`,
+        details: status
       });
       return;
     }

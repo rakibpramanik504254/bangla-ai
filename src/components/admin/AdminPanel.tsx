@@ -43,6 +43,7 @@ import {
   EmailSystemTab,
   SeoAndSupportTab
 } from './AdminSettingsTabs.tsx';
+import { OpenRouterUsageCard } from './OpenRouterUsageCard.tsx';
 import {
   validateGa4MeasurementId,
   validateGscVerificationCode
@@ -108,6 +109,7 @@ export const AdminPanel: React.FC = () => {
   const [newApiKey, setNewApiKey] = useState('');
   const [newBaseUrl, setNewBaseUrl] = useState('');
   const [testingProviderId, setTestingProviderId] = useState<string | null>(null);
+  const [openRouterRefreshSignal, setOpenRouterRefreshSignal] = useState(0);
 
   const [globalSettings, setGlobalSettings] = useState<any>({});
   const [mailWebhookInput, setMailWebhookInput] = useState('');
@@ -389,6 +391,7 @@ export const AdminPanel: React.FC = () => {
       });
       if (res.ok) {
         fetchProvidersAndModels();
+        setOpenRouterRefreshSignal(v => v + 1);
         setEditingProviderId(null);
         setNewApiKey('');
         setNewBaseUrl('');
@@ -418,6 +421,7 @@ export const AdminPanel: React.FC = () => {
       });
       if (res.ok) {
         fetchProvidersAndModels();
+        setOpenRouterRefreshSignal(v => v + 1);
         setFeedback(`${provider.name} is now ${!provider.is_active ? 'Active' : 'Paused'}.`);
       }
     } catch (err) {
@@ -438,6 +442,7 @@ export const AdminPanel: React.FC = () => {
       });
       if (res.ok) {
         fetchProvidersAndModels();
+        setOpenRouterRefreshSignal(v => v + 1);
         setFeedback(`API key removed for ${provider.name}.`);
       }
     } catch (err) {
@@ -465,6 +470,7 @@ export const AdminPanel: React.FC = () => {
       if (!res.ok) {
         setFeedback(`Error: ${data.error || 'Provider connection test failed.'}`);
       } else {
+        setOpenRouterRefreshSignal(v => v + 1);
         setFeedback(data.message || 'Connection test succeeded.');
       }
     } catch (err: any) {
@@ -1042,6 +1048,8 @@ export const AdminPanel: React.FC = () => {
                 </div>
               </div>
 
+              <OpenRouterUsageCard token={token} refreshSignal={openRouterRefreshSignal} />
+
               <div className="bg-white dark:bg-[#1e1f20] p-5 sm:p-6 rounded-2xl border border-black/[0.08] dark:border-white/[0.08]">
                 <h3 className="font-semibold text-[#1f1f1f] dark:text-[#e3e3e3] text-sm mb-4">
                   Model Token Consumption Breakdown
@@ -1407,6 +1415,8 @@ export const AdminPanel: React.FC = () => {
                   <strong className="text-[#1f1f1f] dark:text-[#e3e3e3]">Server-Side Secret Isolation:</strong> Configured API keys are stored strictly in PostgreSQL on the backend and never sent back to browser clients. Paste one <strong className="text-[#1f1f1f] dark:text-[#e3e3e3]">OpenRouter API Key</strong> below to power all Workspace models automatically.
                 </span>
               </div>
+
+              <OpenRouterUsageCard token={token} refreshSignal={openRouterRefreshSignal} />
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 {[...providers]

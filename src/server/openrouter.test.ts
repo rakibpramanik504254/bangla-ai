@@ -8,7 +8,8 @@ import {
   isRetryableGeminiError,
   resolveOpenRouterModels,
   buildOpenRouterRequestBody,
-  parseOpenRouterStreamPayload
+  parseOpenRouterStreamPayload,
+  parseOpenRouterKeyInfoResponse
 } from './openrouter.ts';
 
 test('normalizeApiKey strips Bearer prefix and whitespace', () => {
@@ -183,3 +184,69 @@ test('parseOpenRouterStreamPayload extracts deltas, usage, errors, and DONE', ()
   );
   assert.deepEqual(parseOpenRouterStreamPayload('[DONE]'), { done: true });
 });
+
+test('parseOpenRouterStreamPayload handles array content parts, message frames, reasoning, and finish_reason', () => {
+  assert.deepEqual(
+    parseOpenRouterStreamPayload(
+      '{"choices":[{"delta":{"content":[{"type":"text","text":"Hello "},{"type":"text","text":"Bangla AI"}]},"finish_reason":"stop"}]}'
+    ),
+    { textDelta: 'Hello Bangla AI', finishReason: 'stop' }
+  );
+
+  assert.deepEqual(
+    parseOpenRouterStreamPayload(
+      '{"choices":[{"message":{"content":"Final non-chunked reply"},"finish_reason":"stop"}]}'
+    ),
+    { textDelta: 'Final non-chunked reply', finishReason: 'stop' }
+  );
+
+  assert.deepEqual(
+    parseOpenRouterStreamPayload(
+      '{"choices":[{"delta":{"reasoning_content":"Thinking step..."},"finish_reason":"length"}]}'
+    ),
+    { reasoningDelta: 'Thinking step...', finishReason: 'length' }
+  );
+});
+
+test('parseOpenRouterKeyInfoResponse detects 1,000 req/day unlocked vs 50 req/day free tier and credits', () => {
+  const paidTier = parseOpenRouterKeyInfoResponse(
+    {
+      data: {
+        label: 'sk-or-v1-prod',
+        is_free_tier: false,
+        usage: 0.125,
+        usage_daily: 0.02,
+        limit: 10,
+        limit_remaining: 9.875,
+        rate_limit: { requests: 20, interval: '10s' }
+      }
+    },
+    {
+      data: {
+        total_credits: 10,
+        total_usage: 0.125
+      }
+    }
+  );
+  assert.equal(paidTier.ok, true);
+  assert.equal(paidTier.isFreeTier, false);
+  assert.equal(paidTier.dailyFreeRequestLimit, 1000);
+  assert.equal(paidTier.usageTotalUsd, 0.125);
+  assert.equal(paidTier.usageDailyUsd, 0.02);
+  assert.equal(paidTier.accountBalanceUsd, 9.875);
+
+  const freeTier = parseOpenRouterKeyInfoResponse({
+    data: {
+      label: 'sk-or-v1-free',
+      is_free_tier: true,
+      usage: 0,
+      limit: null,
+      limit_remaining: null
+    }
+  });
+  assert.equal(freeTier.ok, true);
+  assert.equal(freeTier.isFreeTier, true);
+  assert.equal(freeTier.dailyFreeRequestLimit, 50);
+  assert.equal(freeTier.accountBalanceUsd, null);
+});
+
