@@ -251,7 +251,7 @@ export const OfferLandingPage: React.FC<OfferLandingPageProps> = ({ onStartChat 
                 <span>বিকাশ ও নগদে সহজ পেমেন্ট</span>
               </div>
 
-              <h1 className="text-[28px] sm:text-4xl lg:text-[42px] font-bold tracking-tight leading-[1.26] text-[#1f1f1f] dark:text-[#e3e3e3] text-balance">
+              <h1 className="text-[28px] sm:text-4xl lg:text-[42px] font-bold tracking-normal leading-[1.26] text-[#1f1f1f] dark:text-[#e3e3e3] text-balance">
                 ডলার কার্ড বা শেয়ার্ড অ্যাকাউন্টের ঝামেলা ছাড়াই, বিকাশ-নগদে ব্যবহার করুন বিশ্বের সেরা ১০+ প্রিমিয়াম AI!
               </h1>
 
@@ -432,7 +432,7 @@ export const OfferLandingPage: React.FC<OfferLandingPageProps> = ({ onStartChat 
             <p className="text-xs font-medium text-[#444746] dark:text-[#9aa0a6]">
               তুলনামূলক বিশ্লেষণ · কেন বাংলা-এআই ডট প্রো সেরা
             </p>
-            <h2 className="text-2xl sm:text-3xl font-bold tracking-tight leading-[1.28] text-[#1f1f1f] dark:text-[#e3e3e3] text-balance">
+            <h2 className="text-2xl sm:text-3xl font-bold tracking-normal leading-[1.28] text-[#1f1f1f] dark:text-[#e3e3e3] text-balance">
               আলাদা সাবস্ক্রিপশন ও শেয়ার্ড অ্যাকাউন্টের ঝামেলা থেকে চিরতরে মুক্তি
             </h2>
           </div>
@@ -542,7 +542,7 @@ export const OfferLandingPage: React.FC<OfferLandingPageProps> = ({ onStartChat 
             <p className="text-xs font-medium text-[#444746] dark:text-[#9aa0a6]">
               আপগ্রেডেড প্রো ওয়ার্কস্পেস · ফ্রিল্যান্সার, শিক্ষার্থী ও উদ্যোক্তাদের জন্য
             </p>
-            <h2 className="text-2xl sm:text-3xl font-bold tracking-tight leading-[1.28] text-[#1f1f1f] dark:text-[#e3e3e3] text-balance">
+            <h2 className="text-2xl sm:text-3xl font-bold tracking-normal leading-[1.28] text-[#1f1f1f] dark:text-[#e3e3e3] text-balance">
               একটি সাবস্ক্রিপশনেই পাচ্ছেন আধুনিক প্রো ওয়ার্কস্পেসের সব সুবিধা
             </h2>
           </div>
@@ -661,7 +661,7 @@ export const OfferLandingPage: React.FC<OfferLandingPageProps> = ({ onStartChat 
               <p className="text-xs font-medium text-emerald-700 dark:text-emerald-400">
                 লিমিটেড টাইম অফার · কোনো হিডেন চার্জ নেই
               </p>
-              <h2 className="text-2xl sm:text-3xl lg:text-4xl font-bold tracking-tight leading-[1.24] text-[#1f1f1f] dark:text-[#e3e3e3] text-balance">
+              <h2 className="text-2xl sm:text-3xl lg:text-4xl font-bold tracking-normal leading-[1.24] text-[#1f1f1f] dark:text-[#e3e3e3] text-balance">
                 আপনার প্রয়োজন অনুযায়ী প্ল্যান বেছে নিন
               </h2>
               <p className="text-sm sm:text-base text-[#444746] dark:text-[#9aa0a6] leading-[1.7]">
@@ -739,7 +739,7 @@ export const OfferLandingPage: React.FC<OfferLandingPageProps> = ({ onStartChat 
                 data-testid="offer-plan-yearly"
                 className="relative rounded-2xl bg-white dark:bg-[#131314] border-2 border-[#1f1f1f] dark:border-[#e3e3e3] p-5 sm:p-7 flex flex-col justify-between"
               >
-                <div className="absolute -top-3 right-5 px-3 py-0.5 rounded-full bg-[#1f1f1f] dark:bg-[#e3e3e3] text-white dark:text-[#131314] text-[11px] font-bold tracking-tight whitespace-nowrap inline-flex items-center gap-1">
+                <div className="absolute -top-3 right-5 px-3 py-0.5 rounded-full bg-[#1f1f1f] dark:bg-[#e3e3e3] text-white dark:text-[#131314] text-[11px] font-bold tracking-normal whitespace-nowrap inline-flex items-center gap-1">
                   <Sparkles className="w-3 h-3 shrink-0" aria-hidden="true" />
                   <span>Best Value · মাসে মাত্র ৫০০৳</span>
                 </div>
@@ -828,7 +828,7 @@ export const OfferLandingPage: React.FC<OfferLandingPageProps> = ({ onStartChat 
             <p className="text-xs font-medium text-[#444746] dark:text-[#9aa0a6]">
               নিরাপদ লোকাল পেমেন্ট · Express Checkout
             </p>
-            <h2 className="text-2xl sm:text-3xl font-bold tracking-tight leading-[1.28] text-[#1f1f1f] dark:text-[#e3e3e3] text-balance">
+            <h2 className="text-2xl sm:text-3xl font-bold tracking-normal leading-[1.28] text-[#1f1f1f] dark:text-[#e3e3e3] text-balance">
               বিকাশ ও নগদে মাত্র ৩ ধাপে দ্রুত অ্যাকাউন্ট চালু করুন
             </h2>
           </div>
@@ -937,7 +937,7 @@ export const OfferLandingPage: React.FC<OfferLandingPageProps> = ({ onStartChat 
                 <p className="text-xs font-medium text-[#444746] dark:text-[#9aa0a6]">
                   সাধারণ জিজ্ঞাসা
                 </p>
-                <h2 className="text-2xl sm:text-3xl font-bold tracking-tight leading-[1.28] text-[#1f1f1f] dark:text-[#e3e3e3]">
+                <h2 className="text-2xl sm:text-3xl font-bold tracking-normal leading-[1.28] text-[#1f1f1f] dark:text-[#e3e3e3]">
                   মনে কোনো প্রশ্ন আছে?
                 </h2>
                 <p className="text-xs sm:text-sm text-[#444746] dark:text-[#9aa0a6] leading-[1.75]">
@@ -1004,7 +1004,7 @@ export const OfferLandingPage: React.FC<OfferLandingPageProps> = ({ onStartChat 
         {/* Final Distraction-Free Conversion Band */}
         <section className="max-w-5xl mx-auto px-4 sm:px-6">
           <div className="rounded-3xl bg-[#f0f4f9] dark:bg-[#1e1f20] border border-black/[0.08] dark:border-white/[0.08] p-6 sm:p-10 text-center space-y-5">
-            <h2 className="text-2xl sm:text-3xl font-bold tracking-tight leading-[1.28] text-[#1f1f1f] dark:text-[#e3e3e3] max-w-2xl mx-auto text-balance">
+            <h2 className="text-2xl sm:text-3xl font-bold tracking-normal leading-[1.28] text-[#1f1f1f] dark:text-[#e3e3e3] max-w-2xl mx-auto text-balance">
               আজই শুরু করুন আপনার পার্সোনাল প্রিমিয়াম AI ওয়ার্কস্পেস
             </h2>
             <p className="text-sm sm:text-base text-[#444746] dark:text-[#9aa0a6] max-w-xl mx-auto leading-[1.75]">

@@ -30,10 +30,13 @@
   }
 
   body {
-    font-family: 'Plus Jakarta Sans', 'Hind Siliguri', 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    font-family: 'Plus Jakarta Sans', 'Noto Sans Bengali', 'Hind Siliguri', 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
     color: var(--color-on-surface);
     background-color: var(--color-surface);
-    letter-spacing: -0.01em;
+    letter-spacing: 0;
+    font-kerning: normal;
+    text-rendering: optimizeLegibility;
+    font-feature-settings: "liga" 1, "kern" 1;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
   }
@@ -243,14 +246,31 @@
   }
 }
 
-/* Editorial Workspace Typography (English + Bengali Hind Siliguri harmony) */
+/* Editorial Workspace Typography (English + Bengali Noto Sans Bengali / Hind Siliguri harmony) */
 .workspace-typography {
-  font-family: 'Plus Jakarta Sans', 'Hind Siliguri', 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  font-family: 'Plus Jakarta Sans', 'Noto Sans Bengali', 'Hind Siliguri', 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
   letter-spacing: 0;
+  font-kerning: normal;
+  text-rendering: optimizeLegibility;
 }
 
 .workspace-prose {
-  font-family: 'Plus Jakarta Sans', 'Hind Siliguri', 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-  line-height: 1.7;
+  font-family: 'Plus Jakarta Sans', 'Noto Sans Bengali', 'Hind Siliguri', 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  line-height: 1.75;
+  letter-spacing: 0;
+  font-kerning: normal;
+  text-rendering: optimizeLegibility;
+  font-feature-settings: "liga" 1, "kern" 1;
+}
+
+.workspace-prose h1,
+.workspace-prose h2,
+.workspace-prose h3,
+.workspace-prose h4,
+.workspace-prose p,
+.workspace-prose li,
+.workspace-prose td,
+.workspace-prose th,
+.workspace-prose blockquote {
   letter-spacing: 0;
 }

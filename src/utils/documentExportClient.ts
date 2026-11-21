@@ -23,6 +23,20 @@ async function renderCanvasUnicodePdf(
   title: string,
   modelLabel: string
 ): Promise<jsPDF> {
+  if (typeof document !== 'undefined' && document.fonts) {
+    try {
+      await Promise.allSettled([
+        document.fonts.ready,
+        document.fonts.load('400 22px "Noto Sans Bengali"'),
+        document.fonts.load('700 30px "Noto Sans Bengali"'),
+        document.fonts.load('400 22px "Hind Siliguri"'),
+        document.fonts.load('700 30px "Hind Siliguri"'),
+      ]);
+    } catch {
+      // Proceed gracefully with available system fonts
+    }
+  }
+
   const parsed = parseDocumentForExport(content, title);
   const pageWidthPx = 1240; // ~150 DPI A4
   const pageHeightPx = 1754;
@@ -30,6 +44,7 @@ async function renderCanvasUnicodePdf(
   const marginTop = 92;
   const marginBottom = 100;
   const contentWidth = pageWidthPx - marginX * 2;
+  const pdfFontStack = '"Plus Jakarta Sans", "Noto Sans Bengali", "Hind Siliguri", system-ui, sans-serif';
 
   const canvases: HTMLCanvasElement[] = [];
 
@@ -38,6 +53,9 @@ async function renderCanvasUnicodePdf(
     canvas.width = pageWidthPx;
     canvas.height = pageHeightPx;
     const ctx = canvas.getContext('2d')!;
+    if ('letterSpacing' in ctx) {
+      (ctx as any).letterSpacing = '0px';
+    }
     ctx.fillStyle = '#ffffff';
     ctx.fillRect(0, 0, pageWidthPx, pageHeightPx);
     return { canvas, ctx };
@@ -93,7 +111,7 @@ async function renderCanvasUnicodePdf(
   };
 
   // Header metadata
-  ctx.font = '600 20px "Plus Jakarta Sans", "Noto Sans Bengali", system-ui, sans-serif';
+  ctx.font = `600 20px ${pdfFontStack}`;
   ctx.fillStyle = '#444746';
   ctx.fillText(`Bangla-AI.pro  ·  ${modelLabel}`, marginX, y);
   y += 28;
@@ -116,9 +134,9 @@ async function renderCanvasUnicodePdf(
       y += block.level === 1 ? 8 : 14;
       wrapAndDrawLines(
         stripInlineMarkdown(block.text),
-        `700 ${sz}px "Plus Jakarta Sans", "Noto Sans Bengali", system-ui, sans-serif`,
+        `700 ${sz}px ${pdfFontStack}`,
         '#1f1f1f',
-        sz + 14
+        sz + 16
       );
       y += 8;
       continue;
@@ -127,9 +145,9 @@ async function renderCanvasUnicodePdf(
     if (block.type === 'paragraph') {
       wrapAndDrawLines(
         stripInlineMarkdown(block.text),
-        '400 22px "Plus Jakarta Sans", "Noto Sans Bengali", system-ui, sans-serif',
+        `400 22px ${pdfFontStack}`,
         '#2b2d30',
-        34
+        36
       );
       y += 14;
       continue;
@@ -139,9 +157,9 @@ async function renderCanvasUnicodePdf(
       const text = block.lines.map(stripInlineMarkdown).join(' ');
       wrapAndDrawLines(
         text,
-        'italic 21px "Plus Jakarta Sans", "Noto Sans Bengali", system-ui, sans-serif',
+        `italic 21px ${pdfFontStack}`,
         '#444746',
-        32,
+        34,
         24
       );
       y += 12;
@@ -153,9 +171,9 @@ async function renderCanvasUnicodePdf(
         const prefix = block.ordered ? `${idx + 1}. ` : '•  ';
         wrapAndDrawLines(
           `${prefix}${stripInlineMarkdown(item)}`,
-          '400 22px "Plus Jakarta Sans", "Noto Sans Bengali", system-ui, sans-serif',
+          `400 22px ${pdfFontStack}`,
           '#2b2d30',
-          33,
+          35,
           24
         );
       });
@@ -169,9 +187,9 @@ async function renderCanvasUnicodePdf(
         const line = row.map(stripInlineMarkdown).join('   |   ');
         wrapAndDrawLines(
           line,
-          `${rIdx === 0 ? '700' : '400'} 20px "Plus Jakarta Sans", "Noto Sans Bengali", system-ui, sans-serif`,
+          `${rIdx === 0 ? '700' : '400'} 20px ${pdfFontStack}`,
           rIdx === 0 ? '#1f1f1f' : '#2b2d30',
-          30,
+          32,
           12
         );
       });
@@ -200,7 +218,7 @@ async function renderCanvasUnicodePdf(
   canvases.forEach((pageCanvas, idx) => {
     if (idx > 0) doc.addPage();
     const cCtx = pageCanvas.getContext('2d')!;
-    cCtx.font = '500 17px "Plus Jakarta Sans", system-ui, sans-serif';
+    cCtx.font = `500 17px ${pdfFontStack}`;
     cCtx.fillStyle = '#64748b';
     cCtx.fillText(`Bangla-AI.pro`, marginX, pageHeightPx - 44);
     const pageLabel = `Page ${idx + 1} of ${canvases.length}`;

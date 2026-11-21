@@ -144,10 +144,10 @@ const FormattedMessage: React.FC<{ content: string }> = ({ content }) => {
 
         if (block.type === 'heading') {
           const headingClasses: Record<1 | 2 | 3 | 4, string> = {
-            1: 'text-xl font-semibold text-[#1f1f1f] dark:text-[#e3e3e3] pt-2 tracking-tight',
-            2: 'text-lg font-semibold text-[#1f1f1f] dark:text-[#e3e3e3] pt-2 tracking-tight',
-            3: 'text-base font-semibold text-[#1f1f1f] dark:text-[#e3e3e3] pt-1.5',
-            4: 'text-[15px] font-semibold text-[#1f1f1f] dark:text-[#e3e3e3] pt-1',
+            1: 'text-xl font-semibold text-[#1f1f1f] dark:text-[#e3e3e3] pt-2 tracking-normal',
+            2: 'text-lg font-semibold text-[#1f1f1f] dark:text-[#e3e3e3] pt-2 tracking-normal',
+            3: 'text-base font-semibold text-[#1f1f1f] dark:text-[#e3e3e3] pt-1.5 tracking-normal',
+            4: 'text-[15px] font-semibold text-[#1f1f1f] dark:text-[#e3e3e3] pt-1 tracking-normal',
           };
           return (
             <h4 key={index} className={headingClasses[block.level]}>

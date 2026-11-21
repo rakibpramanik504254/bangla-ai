@@ -571,7 +571,7 @@ export const CheckoutPage: React.FC<CheckoutPageProps> = ({
                       }`
                     : 'Express Checkout · আলাদা রেজিস্ট্রেশন ছাড়াই ১ মিনিটে সাবস্ক্রিপশন'}
                 </p>
-                <h1 className="text-2xl sm:text-3xl font-bold tracking-tight leading-[1.24] text-[#1f1f1f] dark:text-[#e3e3e3]">
+                <h1 className="text-2xl sm:text-3xl font-bold tracking-normal leading-[1.28] text-[#1f1f1f] dark:text-[#e3e3e3]">
                   আপনার Bangla AI প্রো প্ল্যান চালু করুন
                 </h1>
               </div>
