@@ -115,11 +115,16 @@ export function generateMetaEventId(prefix: string): string {
   return `${prefix}_${randomPart}`;
 }
 
+function isAdminRoute(): boolean {
+  if (typeof window === 'undefined') return false;
+  return window.location.pathname.startsWith('/admin');
+}
+
 /**
  * Initializes the Meta Pixel script dynamically with the given Pixel ID
  */
 export function initMetaPixel(pixelId: string): void {
-  if (typeof window === 'undefined') return;
+  if (typeof window === 'undefined' || isAdminRoute()) return;
   captureMetaAttributionOnLoad();
   if (!pixelId || window._metaPixelInitialized) return;
 
@@ -173,7 +178,7 @@ export function trackMetaEvent(
   params?: Record<string, any>,
   eventId?: string
 ): void {
-  if (typeof window === 'undefined' || !window.fbq) return;
+  if (typeof window === 'undefined' || !window.fbq || isAdminRoute()) return;
   try {
     if (eventId) {
       window.fbq('track', eventName, params || {}, { eventID: eventId });
@@ -192,7 +197,7 @@ export function trackMetaEvent(
  * Tracks standard PageView (deduplicated per path so initial mount does not double-fire)
  */
 export function trackMetaPageView(): void {
-  if (typeof window === 'undefined' || !window.fbq || !window._metaPixelInitialized) return;
+  if (typeof window === 'undefined' || !window.fbq || !window._metaPixelInitialized || isAdminRoute()) return;
   const currentPath = `${window.location.pathname}${window.location.search}`;
   if ((window as any)._metaLastPageViewPath === currentPath) return;
   (window as any)._metaLastPageViewPath = currentPath;

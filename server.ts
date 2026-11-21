@@ -2569,7 +2569,11 @@ async function startServer() {
         const indexPath = path.resolve(distPath, 'index.html');
         const rawHtml = fs.readFileSync(indexPath, 'utf-8');
         const html = await renderHtmlWithSeo(rawHtml, req.path);
-        res.status(200).setHeader('Content-Type', 'text/html; charset=utf-8').send(html);
+        res
+          .status(200)
+          .setHeader('Content-Type', 'text/html; charset=utf-8')
+          .setHeader('Cache-Control', 'no-store, no-cache, must-revalidate')
+          .send(html);
       } catch (err: any) {
         res.status(500).send('Failed to render application HTML: ' + err.message);
       }
@@ -2596,7 +2600,11 @@ async function startServer() {
         const rawHtml = fs.readFileSync(indexPath, 'utf-8');
         const transformed = await vite.transformIndexHtml(req.originalUrl, rawHtml);
         const html = await renderHtmlWithSeo(transformed, req.path);
-        res.status(200).setHeader('Content-Type', 'text/html; charset=utf-8').send(html);
+        res
+          .status(200)
+          .setHeader('Content-Type', 'text/html; charset=utf-8')
+          .setHeader('Cache-Control', 'no-store, no-cache, must-revalidate')
+          .send(html);
       } catch (err: any) {
         vite.ssrFixStacktrace?.(err);
         next(err);
