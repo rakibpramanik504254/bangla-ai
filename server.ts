@@ -99,10 +99,20 @@ import {
   normalizeBdPhoneNumber,
   synthesizeGuestEmailFromPhone
 } from './src/utils/expressCheckout.ts';
+import {
+  META_GRAPH_API_VERSION,
+  buildMetaCapiAddPaymentInfoPayload,
+  buildMetaCapiPurchasePayload,
+  extractClientIpFromRequest,
+  sanitizeEventSourceUrl,
+  sanitizeMetaCookieValue,
+  sanitizeMetaUserAgent
+} from './src/utils/metaCapi.ts';
 
 dotenv.config();
 
 const app = express();
+app.set('trust proxy', true);
 const PORT = Number(process.env.PORT) || 3000;
 
 app.use(express.json({ limit: '25mb' }));
@@ -692,6 +702,24 @@ const dispatchPaymentSubmittedEmails = async (params: {
   }
 };
 
+const extractCheckoutMetaAttribution = (req: Request) => {
+  const rawMeta = req.body?.meta && typeof req.body.meta === 'object' ? req.body.meta : {};
+  const headerReferer = typeof req.headers.referer === 'string' ? req.headers.referer : undefined;
+  return {
+    metaFbp: sanitizeMetaCookieValue(rawMeta.fbp || req.body?.fbp),
+    metaFbc: sanitizeMetaCookieValue(rawMeta.fbc || req.body?.fbc),
+    metaClientIp: extractClientIpFromRequest(req.headers, req.ip),
+    metaClientUserAgent: sanitizeMetaUserAgent(
+      typeof req.headers['user-agent'] === 'string' ? req.headers['user-agent'] : undefined
+    ),
+    metaEventSourceUrl: sanitizeEventSourceUrl(rawMeta.eventSourceUrl || headerReferer),
+    addPaymentInfoEventId:
+      typeof rawMeta.addPaymentInfoEventId === 'string'
+        ? rawMeta.addPaymentInfoEventId.trim().slice(0, 128) || undefined
+        : undefined
+  };
+};
+
 // Common handler for both /api/payments/verify and /api/subscription/checkout
 const handlePaymentSubmission = async (req: AuthenticatedRequest, res: Response) => {
   try {
@@ -722,13 +750,22 @@ const handlePaymentSubmission = async (req: AuthenticatedRequest, res: Response)
       return;
     }
 
+    const checkoutMeta = extractCheckoutMetaAttribution(req);
+
     const payment = await db.createPendingPayment({
       userId: req.user!.id,
       planId: selectedPlan,
       gateway: selectedGateway,
       trxId: cleanTrx,
-      senderNumber: cleanSender
+      senderNumber: cleanSender,
+      metaFbp: checkoutMeta.metaFbp,
+      metaFbc: checkoutMeta.metaFbc,
+      metaClientIp: checkoutMeta.metaClientIp,
+      metaClientUserAgent: checkoutMeta.metaClientUserAgent,
+      metaEventSourceUrl: checkoutMeta.metaEventSourceUrl
     });
+
+    void sendMetaConversionsAddPaymentInfo(payment, activeSettings, checkoutMeta.addPaymentInfoEventId);
 
     await dispatchPaymentSubmittedEmails({
       customerEmail: req.user?.email,
@@ -831,13 +868,22 @@ app.post('/api/payments/express', async (req: Request, res: Response) => {
       }
     }
 
+    const checkoutMeta = extractCheckoutMetaAttribution(req);
+
     const payment = await db.createPendingPayment({
       userId: targetUser.id,
       planId: selectedPlan,
       gateway: selectedGateway,
       trxId: cleanTrx,
-      senderNumber: cleanSender
+      senderNumber: cleanSender,
+      metaFbp: checkoutMeta.metaFbp,
+      metaFbc: checkoutMeta.metaFbc,
+      metaClientIp: checkoutMeta.metaClientIp,
+      metaClientUserAgent: checkoutMeta.metaClientUserAgent,
+      metaEventSourceUrl: checkoutMeta.metaEventSourceUrl
     });
+
+    void sendMetaConversionsAddPaymentInfo(payment, activeSettings, checkoutMeta.addPaymentInfoEventId);
 
     await dispatchPaymentSubmittedEmails({
       customerEmail: targetUser.email,
@@ -2258,68 +2304,112 @@ app.get('/api/admin/payments', requireAdmin, async (_req: AuthenticatedRequest, 
   }
 });
 
-// Helper to fire Meta Conversions API (CAPI) server-side Purchase event
-async function sendMetaConversionsPurchase(payment: any, settings: any): Promise<boolean> {
+// Helper to dispatch a Meta Conversions API (CAPI) payload to Meta Graph API
+async function dispatchMetaCapiPayload(
+  eventName: string,
+  eventId: string,
+  matchedFields: string[],
+  payload: Record<string, any>,
+  settings: any
+): Promise<boolean> {
   if (!settings.facebook_pixel_id || !settings.facebook_pixel_access_token || !settings.facebook_pixel_enabled) {
     return false;
   }
 
   try {
-    const user = await db.getUserById(payment.user_id);
-    const emailHash = user ? crypto.createHash('sha256').update(user.email.trim().toLowerCase()).digest('hex') : undefined;
-    const cleanPhone = (payment.sender_number || '').replace(/[^0-9]/g, '');
-    const phoneHash = cleanPhone ? crypto.createHash('sha256').update(cleanPhone).digest('hex') : undefined;
-
-    const payload: any = {
-      data: [
-        {
-          event_name: 'Purchase',
-          event_time: Math.floor(Date.now() / 1000),
-          event_source_url: 'https://bangla-ai.pro',
-          action_source: 'website',
-          user_data: {
-            ...(emailHash ? { em: [emailHash] } : {}),
-            ...(phoneHash ? { ph: [phoneHash] } : {})
-          },
-          custom_data: {
-            currency: 'BDT',
-            value: Number(payment.amount),
-            content_name: payment.plan_name || (payment.plan_id === 'yearly' ? 'Yearly Plan (৳5,999)' : 'Monthly Plan (৳699)'),
-            content_type: 'product',
-            order_id: payment.trx_id,
-            payment_method: payment.gateway
-          }
-        }
-      ]
-    };
-
-    if (settings.facebook_pixel_test_code) {
-      payload.test_event_code = settings.facebook_pixel_test_code;
-    }
-
-    const endpoint = `https://graph.facebook.com/v19.0/${settings.facebook_pixel_id}/events?access_token=${settings.facebook_pixel_access_token}`;
+    const endpoint = `https://graph.facebook.com/${META_GRAPH_API_VERSION}/${settings.facebook_pixel_id}/events?access_token=${encodeURIComponent(settings.facebook_pixel_access_token)}`;
     const resp = await fetch(endpoint, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(payload)
     });
     const respData = await resp.json();
-    console.log('[Meta CAPI] Purchase event sent to Facebook Pixel:', respData);
+    console.log(`[Meta CAPI] ${eventName} sent (event_id=${eventId}, matched=${matchedFields.join(',')}):`, respData);
     return resp.ok;
   } catch (err) {
-    console.error('[Meta CAPI] Error sending Purchase event:', err);
+    console.error(`[Meta CAPI] Error sending ${eventName} event:`, err);
     return false;
   }
 }
 
+// Guards against concurrent double-tap approvals and duplicate CAPI Purchase dispatches
+const inFlightPaymentApprovals = new Set<string>();
+const dispatchedPurchaseEventIds = new Set<string>();
+
+// Helper to fire deduplicated Meta Conversions API (CAPI) server-side AddPaymentInfo event at checkout
+async function sendMetaConversionsAddPaymentInfo(
+  payment: any,
+  settings: any,
+  eventId?: string
+): Promise<boolean> {
+  if (!settings.facebook_pixel_id || !settings.facebook_pixel_access_token || !settings.facebook_pixel_enabled) {
+    return false;
+  }
+  const user = payment.user_id ? await db.getUserById(payment.user_id) : undefined;
+  const built = buildMetaCapiAddPaymentInfoPayload({
+    payment,
+    user,
+    eventId
+  });
+  return dispatchMetaCapiPayload('AddPaymentInfo', built.eventId, built.matchedFields, built.payload, settings);
+}
+
+// Helper to fire Meta Conversions API (CAPI) server-side Purchase event using customer's stored checkout attribution
+async function sendMetaConversionsPurchase(
+  payment: any,
+  settings: any,
+  options?: { testEventCode?: string }
+): Promise<{ fired: boolean; eventId?: string; matchedFields?: string[]; deduplicated?: boolean }> {
+  if (!settings.facebook_pixel_id || !settings.facebook_pixel_access_token || !settings.facebook_pixel_enabled) {
+    return { fired: false };
+  }
+
+  const user = payment.user_id ? await db.getUserById(payment.user_id) : undefined;
+  const built = buildMetaCapiPurchasePayload({
+    payment,
+    user,
+    testEventCode: options?.testEventCode
+  });
+
+  // Never dispatch the exact same live Purchase event_id twice from the server
+  if (!options?.testEventCode && dispatchedPurchaseEventIds.has(built.eventId)) {
+    console.warn(`[Meta CAPI] Skipped duplicate Purchase dispatch for event_id=${built.eventId}`);
+    return { fired: false, eventId: built.eventId, matchedFields: built.matchedFields, deduplicated: true };
+  }
+
+  if (!options?.testEventCode) {
+    dispatchedPurchaseEventIds.add(built.eventId);
+  }
+
+  const fired = await dispatchMetaCapiPayload(
+    'Purchase',
+    built.eventId,
+    built.matchedFields,
+    built.payload,
+    settings
+  );
+
+  if (!fired && !options?.testEventCode) {
+    dispatchedPurchaseEventIds.delete(built.eventId);
+  }
+
+  return { fired, eventId: built.eventId, matchedFields: built.matchedFields };
+}
+
 app.post('/api/admin/payments/:id/approve', requireAdmin, async (req: AuthenticatedRequest, res: Response) => {
+  const { id } = req.params;
+  if (inFlightPaymentApprovals.has(id)) {
+    res.status(409).json({ error: 'This payment is already being approved. Please wait.' });
+    return;
+  }
+
+  inFlightPaymentApprovals.add(id);
   try {
-    const { id } = req.params;
     const result = await db.approvePayment(id, req.user!.id);
     const settings = await db.getSettings();
 
-    // Trigger Meta Conversions API Purchase Event
-    const pixelFired = await sendMetaConversionsPurchase(result.payment, settings);
+    // Trigger Meta Conversions API Purchase Event (server-side only, live without test_event_code, deduplicated by payment.id)
+    const capiResult = await sendMetaConversionsPurchase(result.payment, settings);
 
     // Send subscription activation receipt email to customer (skip synthetic phone-only placeholders)
     const customer = await db.getUserById(result.payment.user_id);
@@ -2346,10 +2436,14 @@ app.post('/api/admin/payments/:id/approve', requireAdmin, async (req: Authentica
       message: `Payment approved! Subscription activated for ${result.payment.user_name || 'user'}.`,
       payment: result.payment,
       subscription: result.subscription,
-      pixelFired
+      pixelFired: capiResult.fired,
+      pixelEventId: capiResult.eventId,
+      pixelMatchedFields: capiResult.matchedFields || []
     });
   } catch (err: any) {
     res.status(400).json({ error: err.message || 'Payment approval failed.' });
+  } finally {
+    inFlightPaymentApprovals.delete(id);
   }
 });
 
@@ -2388,7 +2482,7 @@ app.post('/api/admin/payments/:id/reject', requireAdmin, async (req: Authenticat
   }
 });
 
-app.post('/api/admin/pixel/test', requireAdmin, async (_req: AuthenticatedRequest, res: Response) => {
+app.post('/api/admin/pixel/test', requireAdmin, async (req: AuthenticatedRequest, res: Response) => {
   try {
     const settings = await db.getSettings();
     if (!settings.facebook_pixel_id) {
@@ -2396,23 +2490,43 @@ app.post('/api/admin/pixel/test', requireAdmin, async (_req: AuthenticatedReques
       return;
     }
 
+    const testEventCode = typeof settings.facebook_pixel_test_code === 'string'
+      ? settings.facebook_pixel_test_code.trim()
+      : '';
+    if (!testEventCode) {
+      res.status(400).json({
+        error: 'Please enter and save a Meta Test Event Code (from Events Manager > Test Events) before sending a test Purchase, so test events never count as real live purchases in Ads Manager.'
+      });
+      return;
+    }
+
     const testPayment = {
+      id: `test_pay_${Date.now()}`,
       user_id: 'test_user',
+      user_name: 'Bangla AI Test Customer',
+      user_email: settings.support_email || 'ourbangla.ai@gmail.com',
       amount: 699,
       plan_name: 'Monthly Plan (৳699)',
       plan_id: 'monthly',
       trx_id: 'TEST_TRX_' + Date.now(),
       gateway: 'bkash',
-      sender_number: '01812345678'
+      sender_number: '01878242764',
+      meta_client_ip: extractClientIpFromRequest(req.headers, req.ip),
+      meta_client_user_agent: sanitizeMetaUserAgent(
+        typeof req.headers['user-agent'] === 'string' ? req.headers['user-agent'] : undefined
+      ),
+      meta_event_source_url: 'https://bangla-ai.pro/offer'
     };
 
-    const fired = await sendMetaConversionsPurchase(testPayment, settings);
+    const capiResult = await sendMetaConversionsPurchase(testPayment, settings, { testEventCode });
     res.json({
       success: true,
-      pixelFired: fired,
-      message: fired
-        ? 'Meta Conversions API Purchase test event successfully delivered to Facebook!'
-        : 'Pixel test dispatched (Note: Server-side CAPI requires a valid Conversions API Access Token from Meta Events Manager).'
+      pixelFired: capiResult.fired,
+      eventId: capiResult.eventId,
+      matchedFields: capiResult.matchedFields || [],
+      message: capiResult.fired
+        ? `Meta Conversions API Purchase test event delivered to Test Events (${testEventCode}, event_id: ${capiResult.eventId})!`
+        : 'Pixel test could not be delivered (ensure Pixel Enabled + a valid Conversions API Access Token are saved).'
     });
   } catch (err: any) {
     res.status(500).json({ error: err.message || 'Pixel test failed.' });

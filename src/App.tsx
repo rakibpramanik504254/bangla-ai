@@ -21,7 +21,11 @@ import { WhatsAppSupportWidget } from './components/common/WhatsAppSupportWidget
 import { AppInstallProvider } from './context/AppInstallContext.tsx';
 import { InstallGuideModal } from './components/common/InstallGuideModal.tsx';
 import { TutorialModal } from './components/common/TutorialModal.tsx';
-import { initMetaPixel, trackMetaPageView } from './utils/metaPixel.ts';
+import {
+  captureMetaAttributionOnLoad,
+  initMetaPixel,
+  trackMetaPageView,
+} from './utils/metaPixel.ts';
 import {
   AppView,
   CheckoutPlanId,
@@ -142,6 +146,11 @@ function MainApp() {
     openAccountModal,
     closeAccountModal,
   } = useAuth();
+
+  // Capture Facebook click/browser attribution (fbclid, _fbc, _fbp) immediately on landing
+  useEffect(() => {
+    captureMetaAttributionOnLoad();
+  }, []);
 
   // Initialize Meta Pixel, GSC verification meta tag, and Google Analytics 4 from backend public settings
   useEffect(() => {

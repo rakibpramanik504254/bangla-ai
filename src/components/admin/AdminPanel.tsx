@@ -29,7 +29,6 @@ import {
 import { useAuth } from '../../context/AuthContext.tsx';
 import { formatBDT } from '../../utils/billing.ts';
 import { AdminStats, AiProvider, AiModel, Payment } from '../../types/index.ts';
-import { trackMetaPurchase } from '../../utils/metaPixel.ts';
 import { isFreeAiModel } from '../../utils/modelTier.ts';
 import {
   ADMIN_NAV_GROUPS,
@@ -101,6 +100,7 @@ export const AdminPanel: React.FC = () => {
   const [paymentFilter, setPaymentFilter] = useState<'all' | 'pending' | 'completed' | 'rejected'>('all');
   const [paymentSearch, setPaymentSearch] = useState('');
   const [copiedId, setCopiedId] = useState<string | null>(null);
+  const [approvingPaymentId, setApprovingPaymentId] = useState<string | null>(null);
 
   const [providers, setProviders] = useState<AiProvider[]>([]);
   const [models, setModels] = useState<AiModel[]>([]);
@@ -218,7 +218,8 @@ export const AdminPanel: React.FC = () => {
   };
 
   const handleApprovePayment = async (payment: Payment) => {
-    if (!token) return;
+    if (!token || approvingPaymentId === payment.id) return;
+    setApprovingPaymentId(payment.id);
     try {
       const res = await fetch(`/api/admin/payments/${payment.id}/approve`, {
         method: 'POST',
@@ -227,19 +228,17 @@ export const AdminPanel: React.FC = () => {
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || 'Failed to approve payment');
 
-      trackMetaPurchase(
-        payment.plan_name || (payment.plan_id === 'yearly' ? 'Yearly Plan (৳5,999)' : 'Monthly Plan (৳699)'),
-        payment.amount,
-        payment.trx_id,
-        payment.gateway
-      );
-
-      setFeedback(`Payment approved! Subscription activated and Facebook Pixel Purchase event fired.`);
+      const capiNote = data.pixelFired
+        ? ` Meta CAPI Purchase event delivered (${data.pixelEventId || 'deduplicated'}).`
+        : ' (Meta CAPI skipped — enable Pixel & Access Token in Meta Pixel settings to send server Purchase events.)';
+      setFeedback(`Payment approved! Subscription activated.${capiNote}`);
       fetchPayments();
       fetchUsers();
       fetchStats();
     } catch (err: any) {
       setFeedback(`Error: ${err.message}`);
+    } finally {
+      setApprovingPaymentId(null);
     }
   };
 
@@ -1222,11 +1221,12 @@ export const AdminPanel: React.FC = () => {
                             <div className="flex flex-wrap items-center gap-2 pt-1">
                               <button
                                 type="button"
+                                disabled={approvingPaymentId === p.id}
                                 onClick={() => handleApprovePayment(p)}
-                                className="flex-1 min-h-9 py-1.5 px-3 rounded-full bg-[#1f1f1f] hover:bg-[#1f1f1f]/90 dark:bg-[#e3e3e3] dark:hover:bg-[#e3e3e3]/90 text-white dark:text-[#131314] font-semibold text-xs flex items-center justify-center gap-1.5 transition-colors cursor-pointer"
+                                className="flex-1 min-h-9 py-1.5 px-3 rounded-full bg-[#1f1f1f] hover:bg-[#1f1f1f]/90 dark:bg-[#e3e3e3] dark:hover:bg-[#e3e3e3]/90 text-white dark:text-[#131314] font-semibold text-xs flex items-center justify-center gap-1.5 transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
                               >
                                 <Check className="w-3.5 h-3.5 text-emerald-400 dark:text-emerald-600 shrink-0" />
-                                <span>Approve &amp; Activate</span>
+                                <span>{approvingPaymentId === p.id ? 'Approving...' : 'Approve & Activate'}</span>
                               </button>
                               <button
                                 type="button"
@@ -1338,12 +1338,13 @@ export const AdminPanel: React.FC = () => {
                                   <div className="flex items-center justify-end gap-2">
                                     <button
                                       type="button"
+                                      disabled={approvingPaymentId === p.id}
                                       onClick={() => handleApprovePayment(p)}
-                                      className="h-8 px-3.5 rounded-full bg-[#1f1f1f] hover:bg-[#1f1f1f]/90 dark:bg-[#e3e3e3] dark:hover:bg-[#e3e3e3]/90 text-white dark:text-[#131314] font-semibold text-xs flex items-center gap-1.5 transition-colors cursor-pointer"
-                                      title="Approve payment, activate subscription and fire Meta Pixel Purchase event"
+                                      className="h-8 px-3.5 rounded-full bg-[#1f1f1f] hover:bg-[#1f1f1f]/90 dark:bg-[#e3e3e3] dark:hover:bg-[#e3e3e3]/90 text-white dark:text-[#131314] font-semibold text-xs flex items-center gap-1.5 transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+                                      title="Approve payment, activate subscription and fire Meta CAPI Purchase event"
                                     >
                                       <Check className="w-3.5 h-3.5 text-emerald-400 dark:text-emerald-600" />
-                                      <span>Approve &amp; Activate</span>
+                                      <span>{approvingPaymentId === p.id ? 'Approving...' : 'Approve & Activate'}</span>
                                     </button>
 
                                     <button

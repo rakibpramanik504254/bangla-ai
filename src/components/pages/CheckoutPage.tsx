@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import {
   AlertCircle,
   ArrowLeft,
@@ -24,6 +24,8 @@ import {
 } from '../../utils/expressCheckout.ts';
 import { buildCheckoutUrl, type CheckoutPlanId } from '../../utils/navigation.ts';
 import {
+  generateMetaEventId,
+  getMetaBrowserAttribution,
   trackMetaAddPaymentInfo,
   trackMetaInitiateCheckout,
 } from '../../utils/metaPixel.ts';
@@ -182,8 +184,12 @@ export const CheckoutPage: React.FC<CheckoutPageProps> = ({
     };
   }, []);
 
-  // Track Meta InitiateCheckout whenever plan changes
+  // Track Meta InitiateCheckout once per selected plan (avoiding duplicate fires)
+  const lastTrackedPlanRef = useRef<string | null>(null);
   useEffect(() => {
+    const planKey = `${plan.name}:${plan.priceBDT}`;
+    if (lastTrackedPlanRef.current === planKey) return;
+    lastTrackedPlanRef.current = planKey;
     trackMetaInitiateCheckout(plan.name, plan.priceBDT);
   }, [plan.name, plan.priceBDT]);
 
@@ -240,6 +246,7 @@ export const CheckoutPage: React.FC<CheckoutPageProps> = ({
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (submitting) return;
 
     const cleanTrx = trxId.trim().toUpperCase();
     if (!cleanTrx || cleanTrx.length < 6) {
@@ -264,6 +271,11 @@ export const CheckoutPage: React.FC<CheckoutPageProps> = ({
 
     try {
       const endpoint = isAuthenticated ? '/api/payments/verify' : '/api/payments/express';
+      const addPaymentInfoEventId = generateMetaEventId('add_payment_info');
+      const metaAttribution = {
+        ...getMetaBrowserAttribution(),
+        addPaymentInfoEventId,
+      };
       const minDelay = new Promise((resolve) => setTimeout(resolve, 900));
       const fetchPromise = fetch(endpoint, {
         method: 'POST',
@@ -278,6 +290,7 @@ export const CheckoutPage: React.FC<CheckoutPageProps> = ({
                 gateway,
                 senderNumber: cleanSender,
                 trxId: cleanTrx,
+                meta: metaAttribution,
               }
             : {
                 planId: selectedPlan,
@@ -285,6 +298,7 @@ export const CheckoutPage: React.FC<CheckoutPageProps> = ({
                 senderNumber: cleanSender,
                 trxId: cleanTrx,
                 ...(trimmedEmail ? { email: trimmedEmail } : {}),
+                meta: metaAttribution,
               }
         ),
       });
@@ -303,7 +317,7 @@ export const CheckoutPage: React.FC<CheckoutPageProps> = ({
         throw new Error(resData.error || 'Payment verification submission failed.');
       }
 
-      trackMetaAddPaymentInfo(plan.name, plan.priceBDT, gateway);
+      trackMetaAddPaymentInfo(plan.name, plan.priceBDT, gateway, addPaymentInfoEventId);
 
       if (!isAuthenticated && resData.autoAuthenticated && resData.token && resData.user) {
         applySession(resData.token, resData.user);

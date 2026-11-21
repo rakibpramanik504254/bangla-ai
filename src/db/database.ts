@@ -92,6 +92,11 @@ export interface Payment {
   created_at: string;
   approved_at?: string;
   approved_by?: string;
+  meta_fbp?: string;
+  meta_fbc?: string;
+  meta_client_ip?: string;
+  meta_client_user_agent?: string;
+  meta_event_source_url?: string;
 }
 
 export interface Chat {
@@ -793,7 +798,12 @@ function mapPaymentRow(row: any): Payment {
     admin_note: row.admin_note ? String(row.admin_note) : undefined,
     created_at: toISO(row.created_at),
     approved_at: toOptionalISO(row.approved_at),
-    approved_by: row.approved_by ? String(row.approved_by) : undefined
+    approved_by: row.approved_by ? String(row.approved_by) : undefined,
+    meta_fbp: row.meta_fbp ? String(row.meta_fbp) : undefined,
+    meta_fbc: row.meta_fbc ? String(row.meta_fbc) : undefined,
+    meta_client_ip: row.meta_client_ip ? String(row.meta_client_ip) : undefined,
+    meta_client_user_agent: row.meta_client_user_agent ? String(row.meta_client_user_agent) : undefined,
+    meta_event_source_url: row.meta_event_source_url ? String(row.meta_event_source_url) : undefined
   };
 }
 
@@ -1890,6 +1900,11 @@ export class Database {
     gateway: 'bkash' | 'nagad' | 'rocket';
     trxId: string;
     senderNumber: string;
+    metaFbp?: string;
+    metaFbc?: string;
+    metaClientIp?: string;
+    metaClientUserAgent?: string;
+    metaEventSourceUrl?: string;
   }): Promise<Payment> {
     await this.ensureReady();
     const cleanTrx = params.trxId.trim().toUpperCase();
@@ -1921,7 +1936,12 @@ export class Database {
         trx_id: cleanTrx,
         sender_number: params.senderNumber.trim(),
         status: 'pending',
-        created_at: now
+        created_at: now,
+        meta_fbp: params.metaFbp,
+        meta_fbc: params.metaFbc,
+        meta_client_ip: params.metaClientIp,
+        meta_client_user_agent: params.metaClientUserAgent,
+        meta_event_source_url: params.metaEventSourceUrl
       };
       this.memory!.payments.unshift(newPayment);
       return newPayment;
@@ -1943,8 +1963,9 @@ export class Database {
     const res = await this.pool.query(
       `INSERT INTO payments (
         id, user_id, user_name, user_email, plan_id, plan_name, amount, currency,
-        gateway, trx_id, sender_number, status, created_at
-      ) VALUES ($1,$2,$3,$4,$5,$6,$7,'BDT',$8,$9,$10,'pending',$11)
+        gateway, trx_id, sender_number, status, created_at,
+        meta_fbp, meta_fbc, meta_client_ip, meta_client_user_agent, meta_event_source_url
+      ) VALUES ($1,$2,$3,$4,$5,$6,$7,'BDT',$8,$9,$10,'pending',$11,$12,$13,$14,$15,$16)
       RETURNING *`,
       [
         paymentId,
@@ -1957,7 +1978,12 @@ export class Database {
         params.gateway,
         cleanTrx,
         params.senderNumber.trim(),
-        now
+        now,
+        params.metaFbp || null,
+        params.metaFbc || null,
+        params.metaClientIp || null,
+        params.metaClientUserAgent || null,
+        params.metaEventSourceUrl || null
       ]
     );
     return mapPaymentRow(res.rows[0]);
@@ -1971,6 +1997,9 @@ export class Database {
       const payment = this.memory!.payments.find(p => p.id === paymentId);
       if (!payment) {
         throw new Error('Payment record not found.');
+      }
+      if (payment.status === 'completed') {
+        throw new Error('This payment has already been approved.');
       }
       payment.status = 'completed';
       payment.approved_at = now;
@@ -2020,11 +2049,14 @@ export class Database {
     try {
       await client.query('BEGIN');
 
-      const payRes = await client.query(`SELECT * FROM payments WHERE id = $1 LIMIT 1`, [paymentId]);
+      const payRes = await client.query(`SELECT * FROM payments WHERE id = $1 FOR UPDATE`, [paymentId]);
       if (!payRes.rows[0]) {
         throw new Error('Payment record not found.');
       }
       const payment = mapPaymentRow(payRes.rows[0]);
+      if (payment.status === 'completed') {
+        throw new Error('This payment has already been approved.');
+      }
       const planKey = payment.plan_id || 'monthly';
       const plan = PLANS[planKey];
 
@@ -2046,10 +2078,13 @@ export class Database {
              approved_at = $1,
              approved_by = $2,
              subscription_id = $3
-         WHERE id = $4
+         WHERE id = $4 AND status <> 'completed'
          RETURNING *`,
         [now, adminUserId, subId, paymentId]
       );
+      if (!updatedPayRes.rows[0]) {
+        throw new Error('This payment has already been approved.');
+      }
 
       await client.query(`DELETE FROM subscriptions WHERE user_id = $1`, [payment.user_id]);
       const insertedSubRes = await client.query(

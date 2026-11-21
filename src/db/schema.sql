@@ -62,7 +62,12 @@ CREATE TABLE IF NOT EXISTS payments (
     admin_note TEXT,
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     approved_at TIMESTAMPTZ,
-    approved_by TEXT
+    approved_by TEXT,
+    meta_fbp TEXT,
+    meta_fbc TEXT,
+    meta_client_ip TEXT,
+    meta_client_user_agent TEXT,
+    meta_event_source_url TEXT
 );
 
 CREATE INDEX IF NOT EXISTS idx_payments_user_id ON payments (user_id);

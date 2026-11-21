@@ -238,7 +238,7 @@ export const MetaPixelTab: React.FC<MetaPixelTabProps> = ({
             htmlFor="meta-pixel-test-code"
             className="block font-medium mb-1 text-[#1f1f1f] dark:text-[#e3e3e3]"
           >
-            Test Event Code (Optional for Meta Testing):
+            Test Event Code (For Test Button Only — Never Affects Live Orders):
           </label>
           <input
             id="meta-pixel-test-code"
@@ -253,21 +253,24 @@ export const MetaPixelTab: React.FC<MetaPixelTabProps> = ({
             placeholder="e.g. TEST12345"
             className="w-full px-3.5 py-2.5 rounded-xl border border-black/[0.08] dark:border-white/[0.08] bg-[#f0f4f9] dark:bg-[#131314] text-[#1f1f1f] dark:text-[#e3e3e3] font-mono text-xs focus:outline-none focus:border-[#1f1f1f] dark:focus:border-[#e3e3e3]"
           />
+          <span className="text-[10px] text-[#444746] dark:text-[#9aa0a6] block mt-1">
+            Required only to use &ldquo;Send Test Purchase Event&rdquo; safely without counting as a real live purchase in Ads Manager.
+          </span>
         </div>
 
         <div className="pt-3 border-t border-black/[0.06] dark:border-white/[0.06] flex flex-wrap items-center justify-between gap-3">
           <div className="flex flex-wrap items-center gap-2">
             <button
               type="button"
-              disabled={testingPixel || !globalSettings.facebook_pixel_id}
+              disabled={testingPixel || !globalSettings.facebook_pixel_id || !globalSettings.facebook_pixel_test_code?.trim()}
               onClick={onTestPixel}
-              className="h-9 px-4 rounded-full border border-black/[0.1] dark:border-white/[0.12] hover:bg-[#f0f4f9] dark:hover:bg-[#282a2c] text-xs font-semibold flex items-center gap-1.5 cursor-pointer disabled:opacity-50 transition-colors"
+              className="h-9 px-4 rounded-full border border-black/[0.1] dark:border-white/[0.12] hover:bg-[#f0f4f9] dark:hover:bg-[#282a2c] text-xs font-semibold flex items-center gap-1.5 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
             >
               <Activity className="w-3.5 h-3.5 text-[#1f1f1f] dark:text-[#e3e3e3] shrink-0" />
               <span>{testingPixel ? 'Sending Test...' : 'Send Test Purchase Event'}</span>
             </button>
             <span className="text-[10px] text-[#444746] dark:text-[#9aa0a6]">
-              Check Meta Events Manager &gt; Test Events
+              Save Test Event Code first &gt; check Meta Events Manager &gt; Test Events
             </span>
           </div>
 

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
   X,
   ShieldCheck,
@@ -20,7 +20,12 @@ import {
   resolveActiveMfsGateway,
   resolveEnabledMfsGateways
 } from '../../utils/expressCheckout.ts';
-import { trackMetaInitiateCheckout, trackMetaAddPaymentInfo } from '../../utils/metaPixel.ts';
+import {
+  generateMetaEventId,
+  getMetaBrowserAttribution,
+  trackMetaInitiateCheckout,
+  trackMetaAddPaymentInfo
+} from '../../utils/metaPixel.ts';
 import { WatchTutorialButton } from '../common/WatchTutorialButton.tsx';
 import { shouldShowTutorialCta } from '../../utils/tutorial.ts';
 
@@ -113,45 +118,49 @@ export const PaymentModal: React.FC<PaymentModalProps> = ({
   const enabledGatewayIds = resolveEnabledMfsGateways(paymentSettings);
   const visibleGateways = MFS_GATEWAYS.filter(item => enabledGatewayIds.includes(item.id));
 
+  const trackedCheckoutOpenRef = useRef(false);
+
   useEffect(() => {
-    if (isOpen) {
-      setSelectedPlan(defaultPlan);
+    if (!isOpen) {
+      trackedCheckoutOpenRef.current = false;
+      return;
     }
+
+    setSelectedPlan(defaultPlan);
+    setSubmittedPayment(null);
+    setError(null);
+    setTrxId('');
+    setQuickPassword('');
+    setPasswordSaved(false);
+    setPasswordError(null);
+    setSettingsLoaded(false);
+
+    if (!trackedCheckoutOpenRef.current) {
+      trackedCheckoutOpenRef.current = true;
+      const initialPlan = PLANS[defaultPlan];
+      trackMetaInitiateCheckout(initialPlan.name, initialPlan.priceBDT);
+    }
+
+    fetch('/api/payment/settings', { cache: 'no-store' })
+      .then(res => res.json())
+      .then(data => {
+        if (data && data.bkash_number) {
+          const nextSettings: PaymentSettings = {
+            bkash_number: data.bkash_number,
+            nagad_number: data.nagad_number,
+            rocket_number: data.rocket_number,
+            bkash_enabled: data.bkash_enabled !== false,
+            nagad_enabled: data.nagad_enabled !== false,
+            rocket_enabled: data.rocket_enabled !== false
+          };
+          setPaymentSettings(nextSettings);
+          const activeIds = resolveEnabledMfsGateways(nextSettings);
+          setGateway(prev => resolveActiveMfsGateway(activeIds, prev));
+        }
+      })
+      .catch(err => console.error('Failed to load payment numbers:', err))
+      .finally(() => setSettingsLoaded(true));
   }, [isOpen, defaultPlan]);
-
-  useEffect(() => {
-    if (isOpen) {
-      setSubmittedPayment(null);
-      setError(null);
-      setTrxId('');
-      setQuickPassword('');
-      setPasswordSaved(false);
-      setPasswordError(null);
-      setSettingsLoaded(false);
-
-      trackMetaInitiateCheckout(plan.name, plan.priceBDT);
-
-      fetch('/api/payment/settings', { cache: 'no-store' })
-        .then(res => res.json())
-        .then(data => {
-          if (data && data.bkash_number) {
-            const nextSettings: PaymentSettings = {
-              bkash_number: data.bkash_number,
-              nagad_number: data.nagad_number,
-              rocket_number: data.rocket_number,
-              bkash_enabled: data.bkash_enabled !== false,
-              nagad_enabled: data.nagad_enabled !== false,
-              rocket_enabled: data.rocket_enabled !== false
-            };
-            setPaymentSettings(nextSettings);
-            const activeIds = resolveEnabledMfsGateways(nextSettings);
-            setGateway(prev => resolveActiveMfsGateway(activeIds, prev));
-          }
-        })
-        .catch(err => console.error('Failed to load payment numbers:', err))
-        .finally(() => setSettingsLoaded(true));
-    }
-  }, [isOpen, selectedPlan]);
 
   useEffect(() => {
     if (enabledGatewayIds.length > 0 && !enabledGatewayIds.includes(gateway)) {
@@ -188,6 +197,7 @@ export const PaymentModal: React.FC<PaymentModalProps> = ({
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (loading) return;
 
     const cleanTrx = trxId.trim().toUpperCase();
     if (!cleanTrx || cleanTrx.length < 6) {
@@ -212,6 +222,11 @@ export const PaymentModal: React.FC<PaymentModalProps> = ({
 
     try {
       const endpoint = isAuthenticated ? '/api/payments/verify' : '/api/payments/express';
+      const addPaymentInfoEventId = generateMetaEventId('add_payment_info');
+      const metaAttribution = {
+        ...getMetaBrowserAttribution(),
+        addPaymentInfoEventId
+      };
       const minDelay = new Promise(resolve => setTimeout(resolve, 1200));
       const fetchPromise = fetch(endpoint, {
         method: 'POST',
@@ -225,14 +240,16 @@ export const PaymentModal: React.FC<PaymentModalProps> = ({
                 planId: selectedPlan,
                 gateway,
                 senderNumber: cleanSender,
-                trxId: cleanTrx
+                trxId: cleanTrx,
+                meta: metaAttribution
               }
             : {
                 planId: selectedPlan,
                 gateway,
                 senderNumber: cleanSender,
                 trxId: cleanTrx,
-                ...(trimmedEmail ? { email: trimmedEmail } : {})
+                ...(trimmedEmail ? { email: trimmedEmail } : {}),
+                meta: metaAttribution
               }
         )
       });
@@ -251,7 +268,7 @@ export const PaymentModal: React.FC<PaymentModalProps> = ({
         throw new Error(resData.error || 'Payment verification submission failed.');
       }
 
-      trackMetaAddPaymentInfo(plan.name, plan.priceBDT, gateway);
+      trackMetaAddPaymentInfo(plan.name, plan.priceBDT, gateway, addPaymentInfoEventId);
 
       if (!isAuthenticated && resData.autoAuthenticated && resData.token && resData.user) {
         applySession(resData.token, resData.user);

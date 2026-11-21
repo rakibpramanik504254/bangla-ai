@@ -59,6 +59,11 @@ export interface Payment {
   created_at: string;
   approved_at?: string;
   approved_by?: string;
+  meta_fbp?: string;
+  meta_fbc?: string;
+  meta_client_ip?: string;
+  meta_client_user_agent?: string;
+  meta_event_source_url?: string;
 }
 
 export interface Chat {
