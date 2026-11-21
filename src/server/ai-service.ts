@@ -21,6 +21,12 @@ import {
   extractExplicitMemoryFromUserPrompt,
   parseMemoryDirectivesFromResponse
 } from '../utils/userMemory.ts';
+import {
+  BANGLA_AI_BRAND_SYSTEM_RULES,
+  createStreamingBrandSanitizer,
+  matchInstantBrandResponse,
+  sanitizeBrandIdentityLeaks
+} from './brand-identity.ts';
 
 export interface ChatMessageParam {
   role: 'user' | 'assistant' | 'system';
@@ -42,7 +48,7 @@ export interface StreamCallbacks {
 const DEFAULT_SYSTEM_PROMPT = `You are Bangla AI, a premium, intelligent, and highly articulate multi-model AI assistant designed for professionals, developers, and businesses in Bangladesh and globally.
 Respond in clear, structured, and modern professional English by default (or fluent Bengali if the user requests it).
 Provide well-formatted markdown with clear headings, lists, tables, code snippets with syntax highlighting, and actionable insights.
-When the user asks for a report, CV/resume, or presentation deck, structure it cleanly with clear Markdown headings (# for main title, ## for sections or "## Slide 1: Title" separated by "---" horizontal dividers for presentations), concise bullet points, and tables so it exports cleanly to PDF and PowerPoint (.pptx).`;
+When the user asks for a report, CV/resume, or presentation deck, structure it cleanly with clear Markdown headings (# for main title, ## for sections or "## Slide 1: Title" separated by "---" horizontal dividers for presentations), concise bullet points, and tables so it exports cleanly to PDF.${BANGLA_AI_BRAND_SYSTEM_RULES}`;
 
 export class AiService {
   /**
@@ -227,17 +233,28 @@ export class AiService {
     const effectiveSystemPrompt = `${DEFAULT_SYSTEM_PROMPT}${buildMemorySystemPromptBlock(userMemories)}`;
 
     const memoryFilter = createStreamingMemoryFilter();
+    const brandSanitizer = createStreamingBrandSanitizer();
     const filteredCallbacks: StreamCallbacks = {
       onChunk: (chunk: string) => {
         const cleanDelta = memoryFilter.push(chunk);
         if (cleanDelta) {
-          callbacks.onChunk(cleanDelta);
+          const brandedDelta = brandSanitizer.push(cleanDelta);
+          if (brandedDelta) {
+            callbacks.onChunk(brandedDelta);
+          }
         }
       },
       onDone: async (rawFullText: string, promptTokens: number, completionTokens: number) => {
         const flushed = memoryFilter.flush();
         if (flushed.remainingText) {
-          callbacks.onChunk(flushed.remainingText);
+          const brandedTail = brandSanitizer.push(flushed.remainingText);
+          if (brandedTail) {
+            callbacks.onChunk(brandedTail);
+          }
+        }
+        const finalBrandedTail = brandSanitizer.flush();
+        if (finalBrandedTail) {
+          callbacks.onChunk(finalBrandedTail);
         }
         const parsed = parseMemoryDirectivesFromResponse(rawFullText);
         const merged = [...flushed.extractedMemories];
@@ -249,7 +266,8 @@ export class AiService {
             merged.push(item);
           }
         }
-        await callbacks.onDone(parsed.visibleText || rawFullText, promptTokens, completionTokens, merged);
+        const finalVisibleText = sanitizeBrandIdentityLeaks(parsed.visibleText || rawFullText);
+        await callbacks.onDone(finalVisibleText, promptTokens, completionTokens, merged);
       },
       onError: callbacks.onError
     };
@@ -261,6 +279,23 @@ export class AiService {
       .filter(Boolean)
       .join('\n\n');
     let accumulatedText = '';
+
+    // 0. Instant Bangla AI Brand Greeting & Identity Guard (0 API cost, 100% consistent across all models)
+    const instantBrandReply = matchInstantBrandResponse(lastUserMsg, lastUserAttachments.length > 0);
+    if (instantBrandReply) {
+      const chunks = this.splitIntoNaturalChunks(instantBrandReply);
+      for (let i = 0; i < chunks.length; i++) {
+        if (signal?.aborted) return;
+        const chunk = chunks[i];
+        accumulatedText += chunk;
+        callbacks.onChunk(chunk);
+        await new Promise((r) => setTimeout(r, 15));
+      }
+      if (signal?.aborted) return;
+      const tokenStats = estimateTokens(lastUserMsg, accumulatedText);
+      await callbacks.onDone(accumulatedText, tokenStats.promptTokens, tokenStats.completionTokens, []);
+      return;
+    }
 
     // 1. Check OpenRouter Unified Gateway (1 API key accesses all workspace models)
     const openRouterProvider = await db.getProviderBySlug('openrouter');
@@ -495,14 +530,7 @@ export class AiService {
             .map((m) => m.content)
             .join(' · ')}`
         : '';
-    const badgeLabel =
-      safeModel.badge === 'max' ? 'Frontier Max Intelligence' :
-      safeModel.badge === 'high' ? 'High Throughput & Reasoning' :
-      safeModel.badge === 'xhigh' ? 'Extreme Inference Power' :
-      safeModel.badge === 'reasoning' ? 'Deep Chain-of-Thought Reasoning' :
-      safeModel.badge === 'coding' ? 'Advanced Code Specialist' :
-      safeModel.badge === 'super_fast' ? 'Ultra Fast Low-Latency' : 'Balanced Multimodal';
-    const modelBadge = `*Model: ${safeModel.display_name}* (${badgeLabel})\n\n`;
+    const modelBadge = '';
 
     if (attachments.length > 0) {
       const images = attachments.filter(a => a.kind === 'image');
@@ -730,12 +758,12 @@ export function normalizeBDPhoneNumber(input: string): PhoneValidationResult {
 Would you like to drill down into a specific industry vertical or financial projection model?`;
     }
 
-    return `${modelBadge}Thank you for your prompt. 
+    return `Thank you for your prompt.
 
-I am powered by **Bangla AI**, ready to assist you with comprehensive analysis, research, code architecture, or creative synthesis.
+I am **Bangla AI**, ready to assist you with comprehensive analysis, research, code architecture, or creative writing.
 
 ### Key Insights:
-* Your query has been processed through the **${safeModel.display_name}** inference pipeline.
+* Your query is handled seamlessly by **Bangla AI**.
 * I am calibrated to deliver structured, high-accuracy responses tailored to your technical and business requirements.${memoryContextNote}
 
 Feel free to ask follow-up questions or provide additional requirements!`;
