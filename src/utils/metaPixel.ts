@@ -1,7 +1,12 @@
 /**
  * Meta (Facebook) Pixel integration helper for Bangla AI
- * Handles client-side tracking for PageView, InitiateCheckout, AddPaymentInfo, and Purchase events,
+ * Handles client-side tracking for PageView, InitiateCheckout, and AddPaymentInfo,
  * plus capture of `_fbp`, `_fbc` / `fbclid`, and `eventID` deduplication parameters.
+ *
+ * IMPORTANT: `Purchase` events are strictly Server-Side CAPI only (fired exclusively
+ * when an admin approves a payment). A browser-level Meta `/tr` firewall is installed
+ * before `fbevents.js` loads so legacy Meta Event Setup Tool (`cs_est`) or Automatic
+ * Events rules saved in Meta Events Manager can NEVER fire fake browser `Purchase` events.
  */
 
 declare global {
@@ -10,6 +15,7 @@ declare global {
     _fbq?: any;
     _metaPixelInitialized?: boolean;
     _metaPixelId?: string;
+    _metaPurchaseFirewallInstalled?: boolean;
   }
 }
 
@@ -20,6 +26,194 @@ export interface MetaBrowserAttribution {
   fbp?: string;
   fbc?: string;
   eventSourceUrl?: string;
+}
+
+const META_TRACKING_URL_REGEX = /(?:^|\/\/)(?:www\.|m\.)?facebook\.com\/tr(?:\/|\?|$)/i;
+
+function safeDecodeURIComponent(input: string): string {
+  try {
+    return decodeURIComponent(input);
+  } catch {
+    return input;
+  }
+}
+
+function serializedBodyHasBlockedMetaSignal(raw: string): boolean {
+  if (!raw) return false;
+  const decoded = safeDecodeURIComponent(raw);
+  if (/(?:^|[?&])ev=purchase(?:&|$)/i.test(raw) || /(?:^|[?&])ev=purchase(?:&|$)/i.test(decoded)) {
+    return true;
+  }
+  if (/(?:^|[?&])(?:cd\[cs_est\]|cs_est)=/i.test(decoded)) {
+    return true;
+  }
+  return false;
+}
+
+/**
+ * Determines whether an outgoing browser beacon to Meta Pixel's `/tr` endpoint is an
+ * unauthorized browser `Purchase` or Meta Event Setup Tool (`cs_est`) event that must be blocked.
+ * Legitimate browser events (`PageView`, `InitiateCheckout`, `AddPaymentInfo`) are always allowed.
+ */
+export function isBlockedMetaBrowserBeacon(
+  url: unknown,
+  body?: unknown
+): boolean {
+  if (typeof url !== 'string' || !META_TRACKING_URL_REGEX.test(url)) {
+    return false;
+  }
+
+  // 1. Inspect URL query string
+  const qIndex = url.indexOf('?');
+  if (qIndex !== -1) {
+    const queryStr = url.slice(qIndex + 1);
+    if (serializedBodyHasBlockedMetaSignal(queryStr)) {
+      return true;
+    }
+  }
+
+  // 2. Inspect optional POST/Beacon body (FormData, URLSearchParams, or query string)
+  if (body) {
+    if (typeof body === 'string') {
+      if (serializedBodyHasBlockedMetaSignal(body)) return true;
+    } else if (typeof URLSearchParams !== 'undefined' && body instanceof URLSearchParams) {
+      if (serializedBodyHasBlockedMetaSignal(body.toString())) return true;
+    } else if (typeof FormData !== 'undefined' && body instanceof FormData) {
+      for (const [k, v] of body.entries()) {
+        const keyLower = String(k).toLowerCase();
+        const valLower = typeof v === 'string' ? v.trim().toLowerCase() : '';
+        if (keyLower === 'ev' && valLower === 'purchase') return true;
+        if (keyLower === 'cs_est' || keyLower === 'cd[cs_est]') return true;
+      }
+    }
+  }
+
+  return false;
+}
+
+/**
+ * Installs a lightweight client-side firewall BEFORE `fbevents.js` loads to drop any
+ * browser-originated Meta Pixel `Purchase` or Event Setup Tool (`cs_est`) beacons.
+ * Server-side Conversions API `Purchase` events (fired only on admin payment approval)
+ * are unaffected.
+ */
+export function installMetaBrowserPurchaseFirewall(): void {
+  if (typeof window === 'undefined' || window._metaPurchaseFirewallInstalled) return;
+  window._metaPurchaseFirewallInstalled = true;
+
+  try {
+    // 1. Guard navigator.sendBeacon
+    if (typeof navigator !== 'undefined' && typeof navigator.sendBeacon === 'function') {
+      const originalSendBeacon = navigator.sendBeacon.bind(navigator);
+      navigator.sendBeacon = (url: string | URL, data?: BodyInit | null): boolean => {
+        const urlStr = typeof url === 'string' ? url : url.toString();
+        if (isBlockedMetaBrowserBeacon(urlStr, data)) {
+          console.info('[Meta Pixel Firewall] Blocked unauthorized browser Purchase/cs_est sendBeacon.');
+          return true; // Pretend accepted so fbevents.js does not fall back to Image/form
+        }
+        return originalSendBeacon(url, data);
+      };
+    }
+
+    // 2. Guard window.fetch
+    if (typeof window.fetch === 'function') {
+      const originalFetch = window.fetch.bind(window);
+      window.fetch = (input: RequestInfo | URL, init?: RequestInit): Promise<Response> => {
+        const urlStr =
+          typeof input === 'string'
+            ? input
+            : input instanceof URL
+              ? input.toString()
+              : input?.url || '';
+        if (isBlockedMetaBrowserBeacon(urlStr, init?.body)) {
+          console.info('[Meta Pixel Firewall] Blocked unauthorized browser Purchase/cs_est fetch.');
+          return Promise.resolve(new Response('', { status: 204 }));
+        }
+        return originalFetch(input, init);
+      };
+    }
+
+    // 3. Guard HTMLImageElement.prototype.src (Meta's primary GET pixel beacon)
+    if (typeof HTMLImageElement !== 'undefined') {
+      const srcDesc = Object.getOwnPropertyDescriptor(HTMLImageElement.prototype, 'src');
+      if (srcDesc?.set && srcDesc?.get) {
+        Object.defineProperty(HTMLImageElement.prototype, 'src', {
+          configurable: true,
+          enumerable: srcDesc.enumerable,
+          get() {
+            return srcDesc.get!.call(this);
+          },
+          set(value: string) {
+            if (isBlockedMetaBrowserBeacon(value)) {
+              console.info('[Meta Pixel Firewall] Blocked unauthorized browser Purchase/cs_est Image beacon.');
+              return;
+            }
+            srcDesc.set!.call(this, value);
+          }
+        });
+      }
+
+      const originalSetAttr = HTMLImageElement.prototype.setAttribute;
+      HTMLImageElement.prototype.setAttribute = function (name: string, value: string) {
+        if (name.toLowerCase() === 'src' && isBlockedMetaBrowserBeacon(value)) {
+          console.info('[Meta Pixel Firewall] Blocked unauthorized browser Purchase/cs_est Image setAttribute.');
+          return;
+        }
+        return originalSetAttr.call(this, name, value);
+      };
+    }
+
+    // 4. Guard HTMLFormElement.prototype.submit (Meta's iframe POST fallback)
+    if (typeof HTMLFormElement !== 'undefined' && typeof HTMLFormElement.prototype.submit === 'function') {
+      const originalSubmit = HTMLFormElement.prototype.submit;
+      HTMLFormElement.prototype.submit = function () {
+        const action = this.getAttribute('action') || this.action || '';
+        if (META_TRACKING_URL_REGEX.test(action)) {
+          const inputs = Array.from(this.querySelectorAll('input[name]')) as HTMLInputElement[];
+          const blocked =
+            isBlockedMetaBrowserBeacon(action) ||
+            inputs.some(inp => {
+              const nameLower = (inp.name || '').toLowerCase();
+              const valLower = (inp.value || '').trim().toLowerCase();
+              return (
+                (nameLower === 'ev' && valLower === 'purchase') ||
+                nameLower === 'cs_est' ||
+                nameLower === 'cd[cs_est]'
+              );
+            });
+          if (blocked) {
+            console.info('[Meta Pixel Firewall] Blocked unauthorized browser Purchase/cs_est form submit.');
+            return;
+          }
+        }
+        return originalSubmit.call(this);
+      };
+    }
+
+    // 5. Guard XMLHttpRequest
+    if (typeof XMLHttpRequest !== 'undefined') {
+      const origOpen = XMLHttpRequest.prototype.open;
+      const origSend = XMLHttpRequest.prototype.send;
+      XMLHttpRequest.prototype.open = function (
+        method: string,
+        url: string | URL,
+        ...rest: any[]
+      ) {
+        (this as any)._metaFirewallUrl = typeof url === 'string' ? url : url.toString();
+        return (origOpen as any).call(this, method, url, ...rest);
+      };
+      XMLHttpRequest.prototype.send = function (body?: Document | XMLHttpRequestBodyInit | null) {
+        const targetUrl = (this as any)._metaFirewallUrl;
+        if (isBlockedMetaBrowserBeacon(targetUrl, body)) {
+          console.info('[Meta Pixel Firewall] Blocked unauthorized browser Purchase/cs_est XHR.');
+          return;
+        }
+        return origSend.call(this, body);
+      };
+    }
+  } catch (err) {
+    console.warn('[Meta Pixel Firewall] Could not install all guards:', err);
+  }
 }
 
 function readCookie(name: string): string | undefined {
@@ -125,6 +319,7 @@ function isAdminRoute(): boolean {
  */
 export function initMetaPixel(pixelId: string): void {
   if (typeof window === 'undefined' || isAdminRoute()) return;
+  installMetaBrowserPurchaseFirewall();
   captureMetaAttributionOnLoad();
   if (!pixelId || window._metaPixelInitialized) return;
 
@@ -155,7 +350,7 @@ export function initMetaPixel(pixelId: string): void {
 
     if (window.fbq) {
       // Disable Meta's Automatic Events (autoConfig) so button clicks cannot fire
-      // un-deduplicated automatic browser Purchase / Subscribe events on top of CAPI.
+      // automatic browser Purchase / Subscribe events on top of CAPI.
       window.fbq('set', 'autoConfig', false, pixelId);
       window.fbq('init', pixelId);
       window._metaPixelInitialized = true;
@@ -163,7 +358,7 @@ export function initMetaPixel(pixelId: string): void {
       const currentPath = `${window.location.pathname}${window.location.search}`;
       (window as any)._metaLastPageViewPath = currentPath;
       window.fbq('track', 'PageView');
-      console.log(`[Meta Pixel] Initialized successfully with Pixel ID: ${pixelId} (autoConfig=false)`);
+      console.log(`[Meta Pixel] Initialized successfully with Pixel ID: ${pixelId} (autoConfig=false, Purchase firewall active)`);
     }
   } catch (err) {
     console.warn('[Meta Pixel] Initialization failed or blocked by client:', err);
@@ -171,7 +366,9 @@ export function initMetaPixel(pixelId: string): void {
 }
 
 /**
- * Safe generic event tracker with optional `eventID` for CAPI deduplication
+ * Safe generic event tracker with optional `eventID` for CAPI deduplication.
+ * Browser-side `Purchase` calls are strictly blocked because real Purchase events
+ * must only originate from Server-Side CAPI when admin approves a payment.
  */
 export function trackMetaEvent(
   eventName: string,
@@ -179,6 +376,10 @@ export function trackMetaEvent(
   eventId?: string
 ): void {
   if (typeof window === 'undefined' || !window.fbq || isAdminRoute()) return;
+  if (eventName.trim().toLowerCase() === 'purchase') {
+    console.info('[Meta Pixel] Skipped client-side Purchase event (Purchase is strictly Server-Side CAPI on payment approval).');
+    return;
+  }
   try {
     if (eventId) {
       window.fbq('track', eventName, params || {}, { eventID: eventId });
@@ -247,25 +448,14 @@ export function trackMetaAddPaymentInfo(
 }
 
 /**
- * Tracks Purchase event (intended only for customer-side browser flows sharing the CAPI `eventID`)
+ * Deprecated no-op: Purchase events must only fire server-side via Meta CAPI upon admin approval.
  */
 export function trackMetaPurchase(
-  planName: string,
-  priceBDT: number,
-  trxId: string,
-  gateway: string,
-  eventId?: string
+  _planName: string,
+  _priceBDT: number,
+  _trxId: string,
+  _gateway: string,
+  _eventId?: string
 ): void {
-  trackMetaEvent(
-    'Purchase',
-    {
-      content_name: planName,
-      content_type: 'product',
-      value: priceBDT,
-      currency: 'BDT',
-      order_id: trxId,
-      payment_method: gateway,
-    },
-    eventId
-  );
+  console.info('[Meta Pixel] Client-side trackMetaPurchase is disabled; Purchase fires strictly via Server CAPI on approval.');
 }

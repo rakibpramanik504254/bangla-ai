@@ -6,7 +6,10 @@ import {
   X,
   RotateCcw,
   GripVertical,
-  AlertTriangle
+  AlertTriangle,
+  ArrowUpDown,
+  Zap,
+  Flame
 } from 'lucide-react';
 import { AiModel } from '../../types/index.ts';
 import {
@@ -19,6 +22,11 @@ import {
   isModelCustomized
 } from '../../utils/modelBrandIcons.ts';
 import { isFreeAiModel } from '../../utils/modelTier.ts';
+import {
+  type FreeModelSortKey,
+  evaluateFreeModelMetrics,
+  sortFreeModels
+} from '../../utils/freeModelRanking.ts';
 import { BrandLogoIcon } from '../chat/BrandLogoIcon.tsx';
 import { WorkspaceModelIcon } from '../chat/WorkspaceModelIcon.tsx';
 
@@ -28,6 +36,7 @@ interface ModelsCatalogTabProps {
   setModels: React.Dispatch<React.SetStateAction<AiModel[]>>;
   onRefreshModels: () => Promise<void> | void;
   setFeedback: (msg: string | null) => void;
+  modelUsageMap?: Record<string, number>;
 }
 
 export const ModelsCatalogTab: React.FC<ModelsCatalogTabProps> = ({
@@ -35,9 +44,11 @@ export const ModelsCatalogTab: React.FC<ModelsCatalogTabProps> = ({
   models,
   setModels,
   onRefreshModels,
-  setFeedback
+  setFeedback,
+  modelUsageMap
 }) => {
   const [modelFilter, setModelFilter] = useState<'all' | 'flagship' | 'free'>('all');
+  const [freeSortBy, setFreeSortBy] = useState<FreeModelSortKey>('default');
   const [syncingFreeModels, setSyncingFreeModels] = useState(false);
   const [bulkTogglingTier, setBulkTogglingTier] = useState<'paid' | 'free' | null>(null);
 
@@ -91,12 +102,30 @@ export const ModelsCatalogTab: React.FC<ModelsCatalogTabProps> = ({
   const paidOnCount = flagshipModelsList.filter(m => m.is_enabled).length;
   const customizedCount = models.filter(m => isModelCustomized(m)).length;
 
+  const sortedFreeModelsList = sortFreeModels(freeModelsList, freeSortBy, modelUsageMap);
+
   const visibleModels =
     modelFilter === 'free'
-      ? freeModelsList
+      ? sortedFreeModelsList
       : modelFilter === 'flagship'
       ? flagshipModelsList
       : models;
+
+  const handleSelectFreeSort = (nextSort: FreeModelSortKey) => {
+    setFreeSortBy(nextSort);
+    if (modelFilter !== 'free') {
+      setModelFilter('free');
+    }
+  };
+
+  const FREE_SORT_OPTIONS: Array<{ key: FreeModelSortKey; label: string; hint: string }> = [
+    { key: 'default', label: 'Default Order', hint: 'Catalog order' },
+    { key: 'most_powerful', label: 'Most Powerful', hint: 'Highest capability & parameter size first' },
+    { key: 'most_used', label: 'Most Consumed', hint: 'Highest actual tokens used on Bangla AI first' },
+    { key: 'highest_burn', label: 'Heaviest Burn', hint: 'Models that consume the most tokens/compute per chat' },
+    { key: 'most_economical', label: 'Most Economical', hint: 'Lightest, lowest token-burn free models first' },
+    { key: 'largest_context', label: 'Max Context', hint: 'Largest context window first' }
+  ];
 
   const handleToggleModel = async (model: AiModel) => {
     try {
@@ -536,6 +565,38 @@ export const ModelsCatalogTab: React.FC<ModelsCatalogTabProps> = ({
             </button>
           </div>
         </div>
+
+        {/* Free Models Sort Controls (Scoped exclusively to OpenRouter Free Models) */}
+        <div
+          data-testid="free-models-sort-bar"
+          className="pt-3 border-t border-black/[0.06] dark:border-white/[0.06] flex flex-col sm:flex-row sm:items-center justify-between gap-2.5"
+        >
+          <div className="flex items-center gap-1.5 text-[11px] font-semibold text-[#1f1f1f] dark:text-[#e3e3e3] shrink-0">
+            <ArrowUpDown className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
+            <span>Sort Free Models:</span>
+          </div>
+          <div className="flex flex-wrap items-center gap-1.5">
+            {FREE_SORT_OPTIONS.map(opt => {
+              const active = modelFilter === 'free' && freeSortBy === opt.key;
+              return (
+                <button
+                  key={opt.key}
+                  type="button"
+                  data-testid={`free-sort-${opt.key}`}
+                  title={opt.hint}
+                  onClick={() => handleSelectFreeSort(opt.key)}
+                  className={`h-7 px-2.5 rounded-full text-[11px] font-medium cursor-pointer transition-colors whitespace-nowrap ${
+                    active
+                      ? 'bg-[#1f1f1f] text-white dark:bg-[#e3e3e3] dark:text-[#131314] font-semibold'
+                      : 'bg-[#f0f4f9] dark:bg-[#131314] text-[#444746] dark:text-[#9aa0a6] hover:text-[#1f1f1f] dark:hover:text-[#e3e3e3]'
+                  }`}
+                >
+                  {opt.label}
+                </button>
+              );
+            })}
+          </div>
+        </div>
       </div>
 
       {/* AI Brand Logo Library (Sticky on Desktop md+, Compact Non-Sticky Strip on Mobile) */}
@@ -737,6 +798,33 @@ export const ModelsCatalogTab: React.FC<ModelsCatalogTabProps> = ({
                   <span>Out: {m.max_output_tokens.toLocaleString()}</span>
                 </div>
 
+                {isFreeModel(m) && (() => {
+                  const metrics = evaluateFreeModelMetrics(m, modelUsageMap);
+                  return (
+                    <div className="flex flex-wrap items-center gap-1.5 text-[10px] font-mono tabular-nums">
+                      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-indigo-50 text-indigo-700 dark:bg-indigo-950/40 dark:text-indigo-300 border border-indigo-200/80 dark:border-indigo-800/70 font-semibold">
+                        <Zap className="w-2.5 h-2.5" />
+                        Power {metrics.powerScore} · {metrics.powerLabel}
+                      </span>
+                      <span
+                        className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full border font-semibold ${
+                          metrics.burnLabel === 'Heavy'
+                            ? 'bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-950/40 dark:text-amber-300 dark:border-amber-800'
+                            : metrics.burnLabel === 'Medium'
+                              ? 'bg-[#f0f4f9] text-[#444746] border-black/[0.08] dark:bg-[#282a2c] dark:text-[#c4c7c5] dark:border-white/[0.1]'
+                              : 'bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-950/40 dark:text-emerald-400 dark:border-emerald-800'
+                        }`}
+                      >
+                        <Flame className="w-2.5 h-2.5" />
+                        {metrics.burnLabel} Burn
+                      </span>
+                      <span className="text-[#444746] dark:text-[#9aa0a6]">
+                        Used: {metrics.tokensUsed.toLocaleString()} tok
+                      </span>
+                    </div>
+                  );
+                })()}
+
                 <div className="flex items-center justify-between gap-2 pt-1">
                   <div className="flex items-center gap-1.5 flex-wrap">
                     <button
@@ -791,6 +879,7 @@ export const ModelsCatalogTab: React.FC<ModelsCatalogTabProps> = ({
               <tr>
                 <th className="py-3 px-4 font-medium">Logo, Display Name &amp; Subtitle</th>
                 <th className="py-3 px-4 font-medium">Tier</th>
+                <th className="py-3 px-4 font-medium">Free Power &amp; Usage</th>
                 <th className="py-3 px-4 font-medium">Context Window</th>
                 <th className="py-3 px-4 font-medium">Max Output</th>
                 <th className="py-3 px-4 font-medium">Workspace Status</th>
@@ -968,6 +1057,38 @@ export const ModelsCatalogTab: React.FC<ModelsCatalogTabProps> = ({
                       >
                         {isFreeModel(m) ? 'FREE' : m.badge}
                       </span>
+                    </td>
+                    <td className="py-3 px-4">
+                      {isFreeModel(m) ? (() => {
+                        const metrics = evaluateFreeModelMetrics(m, modelUsageMap);
+                        return (
+                          <div className="space-y-1 font-mono tabular-nums">
+                            <div className="flex items-center gap-1.5 flex-wrap">
+                              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold bg-indigo-50 text-indigo-700 dark:bg-indigo-950/40 dark:text-indigo-300 border border-indigo-200/80 dark:border-indigo-800/70">
+                                <Zap className="w-2.5 h-2.5" />
+                                {metrics.powerScore} · {metrics.powerLabel}
+                              </span>
+                              <span
+                                className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold border ${
+                                  metrics.burnLabel === 'Heavy'
+                                    ? 'bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-950/40 dark:text-amber-300 dark:border-amber-800'
+                                    : metrics.burnLabel === 'Medium'
+                                      ? 'bg-[#f0f4f9] text-[#444746] border-black/[0.08] dark:bg-[#282a2c] dark:text-[#c4c7c5] dark:border-white/[0.1]'
+                                      : 'bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-950/40 dark:text-emerald-400 dark:border-emerald-800'
+                                }`}
+                              >
+                                <Flame className="w-2.5 h-2.5" />
+                                {metrics.burnLabel}
+                              </span>
+                            </div>
+                            <div className="text-[10px] text-[#444746] dark:text-[#9aa0a6]">
+                              Used: {metrics.tokensUsed.toLocaleString()} tok
+                            </div>
+                          </div>
+                        );
+                      })() : (
+                        <span className="text-[11px] font-mono text-[#444746]/50 dark:text-[#9aa0a6]/50">—</span>
+                      )}
                     </td>
                     <td className="py-3 px-4 font-mono tabular-nums">
                       {m.context_window.toLocaleString()}

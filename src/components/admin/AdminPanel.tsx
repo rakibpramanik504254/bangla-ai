@@ -1403,6 +1403,7 @@ export const AdminPanel: React.FC = () => {
               setModels={setModels}
               onRefreshModels={fetchProvidersAndModels}
               setFeedback={setFeedback}
+              modelUsageMap={stats?.modelUsageMap}
             />
           )}
 
