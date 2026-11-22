@@ -201,3 +201,91 @@ test('Database Developer API lifecycle: create, deduct credit, refund, daily lim
   assert.equal(afterDelete.ok, false);
   if (!afterDelete.ok) assert.equal(afterDelete.statusCode, 401);
 });
+
+test('Developer API paid gate enforces active Monthly/Yearly subscription and ৳399 verified payment per key', async () => {
+  const memDb = new Database({ pool: null, databaseUrl: '' });
+  await memDb.init();
+
+  // 1. Free user (no active Monthly/Yearly subscription) -> blocked with SUBSCRIPTION_REQUIRED (403)
+  const freeUser = await memDb.createUser({
+    email: 'free-api-tester@example.com',
+    password: 'Password123!',
+    name: 'Free Tester',
+    phone: '01711111111',
+  });
+
+  const freeBilling = await memDb.getUserDeveloperApiBillingStatus(freeUser.id);
+  assert.equal(freeBilling.hasActiveSubscription, false);
+  assert.equal(freeBilling.priceBdt, 399);
+  assert.equal(freeBilling.availablePaidSlots, 0);
+
+  await assert.rejects(
+    () => memDb.createDeveloperApiKey(freeUser.id, 'Blocked Key', { requirePaidAddon: true }),
+    (err: any) => err?.code === 'SUBSCRIPTION_REQUIRED' && err?.statusCode === 403
+  );
+
+  // 2. Active Monthly subscriber (usr_sub_002) WITHOUT ৳399 add-on payment -> blocked with PAYMENT_REQUIRED (402)
+  const subBefore = await memDb.getSubscriptionByUserId('usr_sub_002');
+  assert.equal(subBefore?.plan_id, 'monthly');
+  assert.equal(subBefore?.status, 'active');
+
+  const subBillingInitial = await memDb.getUserDeveloperApiBillingStatus('usr_sub_002');
+  assert.equal(subBillingInitial.hasActiveSubscription, true);
+  assert.equal(subBillingInitial.availablePaidSlots, 0);
+  assert.equal(subBillingInitial.pendingPayment, null);
+
+  await assert.rejects(
+    () => memDb.createDeveloperApiKey('usr_sub_002', 'Paid Key', { requirePaidAddon: true }),
+    (err: any) => err?.code === 'PAYMENT_REQUIRED' && err?.statusCode === 402
+  );
+
+  // 3. Subscriber submits ৳399 Developer API payment -> pending -> still blocked until admin approves
+  const pendingAddon = await memDb.createPendingPayment({
+    userId: 'usr_sub_002',
+    planId: 'developer_api',
+    gateway: 'bkash',
+    trxId: 'DEVAPI399TRX1',
+    senderNumber: '01722222222',
+  });
+  assert.equal(pendingAddon.amount, 399);
+  assert.equal(pendingAddon.plan_id, 'developer_api');
+  assert.equal(pendingAddon.status, 'pending');
+
+  const billingWhilePending = await memDb.getUserDeveloperApiBillingStatus('usr_sub_002');
+  assert.equal(billingWhilePending.availablePaidSlots, 0);
+  assert.equal(billingWhilePending.pendingPayment?.trx_id, 'DEVAPI399TRX1');
+
+  await assert.rejects(
+    () => memDb.createDeveloperApiKey('usr_sub_002', 'Still Pending', { requirePaidAddon: true }),
+    (err: any) => err?.code === 'PAYMENT_REQUIRED' && err?.statusCode === 402
+  );
+
+  // 4. Admin approves ৳399 payment -> unlocks 1 paid slot WITHOUT modifying Monthly subscription
+  const approved = await memDb.approvePayment(pendingAddon.id, 'usr_admin_001');
+  assert.equal(approved.payment.status, 'completed');
+  const subAfter = await memDb.getSubscriptionByUserId('usr_sub_002');
+  assert.equal(subAfter?.id, subBefore?.id);
+  assert.equal(subAfter?.plan_id, 'monthly');
+  assert.equal(subAfter?.expires_at, subBefore?.expires_at);
+
+  const billingUnlocked = await memDb.getUserDeveloperApiBillingStatus('usr_sub_002');
+  assert.equal(billingUnlocked.availablePaidSlots, 1);
+  assert.equal(billingUnlocked.pendingPayment, null);
+
+  // 5. Subscriber creates API key -> succeeds and consumes the ৳399 paid slot
+  const created = await memDb.createDeveloperApiKey('usr_sub_002', 'Paid Production Key', {
+    requirePaidAddon: true,
+  });
+  assert.ok(created.plainKey.startsWith('sk-banglaai-'));
+
+  const billingAfterRedeem = await memDb.getUserDeveloperApiBillingStatus('usr_sub_002');
+  assert.equal(billingAfterRedeem.availablePaidSlots, 0);
+
+  // 6. Deleting the key & retrying without paying another ৳399 -> blocked again (prevents free-credit farming)
+  await memDb.deleteUserDeveloperApiKey(created.key.id, 'usr_sub_002');
+  await assert.rejects(
+    () => memDb.createDeveloperApiKey('usr_sub_002', 'Second Key Attempt', { requirePaidAddon: true }),
+    (err: any) => err?.code === 'PAYMENT_REQUIRED' && err?.statusCode === 402
+  );
+});
+

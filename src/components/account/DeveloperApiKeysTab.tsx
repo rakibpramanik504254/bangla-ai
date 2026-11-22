@@ -1,22 +1,33 @@
 import React, { useCallback, useEffect, useState } from 'react';
 import {
   AlertCircle,
+  ArrowRight,
   Check,
   CheckCircle2,
+  Clock,
   Code2,
   Copy,
   Key,
+  Lock,
   Plus,
   RefreshCw,
   Terminal,
   Trash2,
   X,
 } from 'lucide-react';
-import type { DeveloperApiDefaults, DeveloperApiKey } from '../../types/index.ts';
+import type {
+  DeveloperApiBillingStatus,
+  DeveloperApiDefaults,
+  DeveloperApiKey,
+} from '../../types/index.ts';
 import { copyTextSafely } from '../../utils/clipboard.ts';
+import { DEVELOPER_API_ADDON, formatBDT } from '../../utils/billing.ts';
+import { DeveloperApiPaymentModal } from '../billing/DeveloperApiPaymentModal.tsx';
 
 interface DeveloperApiKeysTabProps {
   token: string | null;
+  onOpenSubscriptionCheckout?: () => void;
+  onPaymentSubmitted?: () => void;
 }
 
 interface DeveloperModelOption {
@@ -27,7 +38,21 @@ interface DeveloperModelOption {
 
 const DEFAULT_BASE_URL = 'https://bangla-ai.pro/api/v1';
 
-export const DeveloperApiKeysTab: React.FC<DeveloperApiKeysTabProps> = ({ token }) => {
+const DEFAULT_BILLING_STATUS: DeveloperApiBillingStatus = {
+  priceBdt: DEVELOPER_API_ADDON.priceBDT,
+  hasActiveSubscription: false,
+  activePlanId: null,
+  activePlanName: null,
+  subscriptionExpiresAt: null,
+  availablePaidSlots: 0,
+  pendingPayment: null,
+};
+
+export const DeveloperApiKeysTab: React.FC<DeveloperApiKeysTabProps> = ({
+  token,
+  onOpenSubscriptionCheckout,
+  onPaymentSubmitted,
+}) => {
   const [keys, setKeys] = useState<DeveloperApiKey[]>([]);
   const [baseUrl, setBaseUrl] = useState(DEFAULT_BASE_URL);
   const [maxKeys, setMaxKeys] = useState(5);
@@ -35,12 +60,14 @@ export const DeveloperApiKeysTab: React.FC<DeveloperApiKeysTabProps> = ({ token 
     dailyLimit: 50,
     initialCredits: 50,
   });
+  const [billing, setBilling] = useState<DeveloperApiBillingStatus>(DEFAULT_BILLING_STATUS);
   const [models, setModels] = useState<DeveloperModelOption[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
 
   const [newKeyName, setNewKeyName] = useState('');
   const [creating, setCreating] = useState(false);
+  const [isPaymentModalOpen, setIsPaymentModalOpen] = useState(false);
   const [newlyCreatedKey, setNewlyCreatedKey] = useState<{
     name: string;
     plainKey: string;
@@ -77,6 +104,28 @@ export const DeveloperApiKeysTab: React.FC<DeveloperApiKeysTabProps> = ({ token 
             initialCredits: Number(data.defaults.initialCredits) || 50,
           });
         }
+        if (data.billing) {
+          setBilling({
+            priceBdt: Number(data.billing.priceBdt) || DEVELOPER_API_ADDON.priceBDT,
+            hasActiveSubscription: Boolean(data.billing.hasActiveSubscription),
+            activePlanId:
+              data.billing.activePlanId === 'yearly'
+                ? 'yearly'
+                : data.billing.activePlanId === 'monthly'
+                ? 'monthly'
+                : null,
+            activePlanName:
+              typeof data.billing.activePlanName === 'string'
+                ? data.billing.activePlanName
+                : null,
+            subscriptionExpiresAt:
+              typeof data.billing.subscriptionExpiresAt === 'string'
+                ? data.billing.subscriptionExpiresAt
+                : null,
+            availablePaidSlots: Math.max(0, Number(data.billing.availablePaidSlots) || 0),
+            pendingPayment: data.billing.pendingPayment || null,
+          });
+        }
         setKeys(Array.isArray(data.keys) ? data.keys : []);
         setModels(Array.isArray(data.models) ? data.models : []);
       } catch (err: any) {
@@ -106,6 +155,23 @@ export const DeveloperApiKeysTab: React.FC<DeveloperApiKeysTabProps> = ({ token 
     e.preventDefault();
     if (!token || creating) return;
     setFeedback(null);
+
+    if (keys.length >= maxKeys) {
+      setFeedback({
+        type: 'error',
+        text: `Maximum of ${maxKeys} API keys allowed per account. Delete an unused key first.`,
+      });
+      return;
+    }
+
+    // No free API key creation:
+    // 1) Must have an active Monthly or Yearly subscription
+    // 2) Must have an approved ৳399 Developer API payment slot ready
+    if (!billing.hasActiveSubscription || billing.availablePaidSlots < 1) {
+      setIsPaymentModalOpen(true);
+      return;
+    }
+
     setCreating(true);
     try {
       const res = await fetch('/api/developer/keys', {
@@ -120,9 +186,17 @@ export const DeveloperApiKeysTab: React.FC<DeveloperApiKeysTabProps> = ({ token 
       });
       const data = await res.json().catch(() => ({}));
       if (!res.ok) {
+        if (res.status === 402 || data.code === 'PAYMENT_REQUIRED' || data.code === 'SUBSCRIPTION_REQUIRED') {
+          await fetchKeys(true);
+          setIsPaymentModalOpen(true);
+          return;
+        }
         throw new Error(data.error || 'Failed to generate API key.');
       }
       setNewKeyName('');
+      if (data.billing) {
+        setBilling(data.billing);
+      }
       if (data.key) {
         setKeys((prev) => [data.key, ...prev]);
       } else {
@@ -407,22 +481,32 @@ print(response.choices[0].message.content)`,
       </div>
 
       {/* Create New API Key Card */}
-      <div className="rounded-2xl bg-white dark:bg-[#1e1f20] border border-black/[0.08] dark:border-white/[0.08] p-4 sm:p-5 space-y-3">
+      <div className="rounded-2xl bg-white dark:bg-[#1e1f20] border border-black/[0.08] dark:border-white/[0.08] p-4 sm:p-5 space-y-3.5">
         <div className="flex flex-wrap items-center justify-between gap-2">
           <div>
-            <h4 className="text-sm font-semibold text-[#1f1f1f] dark:text-[#e3e3e3]">
-              Create API Key
-            </h4>
+            <div className="flex flex-wrap items-center gap-2">
+              <h4 className="text-sm font-semibold text-[#1f1f1f] dark:text-[#e3e3e3]">
+                Create API Key
+              </h4>
+              {billing.hasActiveSubscription && billing.availablePaidSlots > 0 ? (
+                <span
+                  data-testid="developer-api-paid-slot-badge"
+                  className="px-2.5 py-0.5 rounded-full text-[10px] font-semibold bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border border-emerald-500/20"
+                >
+                  {billing.availablePaidSlots} Paid Slot Ready
+                </span>
+              ) : (
+                <span className="px-2.5 py-0.5 rounded-full text-[10px] font-mono font-semibold bg-[#f0f4f9] dark:bg-[#131314] text-[#1f1f1f] dark:text-[#e3e3e3] border border-black/[0.08] dark:border-white/[0.1]">
+                  {formatBDT(billing.priceBdt)} Add-on
+                </span>
+              )}
+            </div>
             <p className="text-xs text-[#444746] dark:text-[#9aa0a6] mt-0.5">
-              New keys start with{' '}
+              Requires an active Monthly or Yearly plan +{' '}
               <span className="font-mono font-semibold text-[#1f1f1f] dark:text-[#e3e3e3]">
-                {defaults.initialCredits}
+                {formatBDT(billing.priceBdt)}
               </span>{' '}
-              credits and{' '}
-              <span className="font-mono font-semibold text-[#1f1f1f] dark:text-[#e3e3e3]">
-                {defaults.dailyLimit}
-              </span>{' '}
-              requests/day limit.
+              per API key ({defaults.initialCredits} credits &amp; {defaults.dailyLimit} req/day).
             </p>
           </div>
           <button
@@ -439,6 +523,71 @@ print(response.choices[0].message.content)`,
           </button>
         </div>
 
+        {/* Gate Notice: Monthly/Yearly Subscription Required */}
+        {!loading && !billing.hasActiveSubscription && (
+          <div
+            data-testid="developer-api-subscription-gate-banner"
+            className="rounded-xl p-3.5 bg-amber-500/[0.08] border border-amber-500/25 flex flex-col sm:flex-row sm:items-center justify-between gap-3"
+          >
+            <div className="flex items-start gap-2.5 text-xs">
+              <Lock className="w-4 h-4 text-amber-600 dark:text-amber-400 shrink-0 mt-0.5" />
+              <div className="space-y-0.5">
+                <p className="font-semibold text-[#1f1f1f] dark:text-[#e3e3e3]">
+                  Monthly or Yearly Subscription Required
+                </p>
+                <p className="text-[11px] text-[#444746] dark:text-[#c4c7c5] leading-relaxed">
+                  Developer API keys cannot be purchased standalone. Activate a Monthly or Yearly
+                  plan first, then pay {formatBDT(billing.priceBdt)} to unlock API key creation.
+                </p>
+              </div>
+            </div>
+            {onOpenSubscriptionCheckout && (
+              <button
+                type="button"
+                data-testid="developer-api-subscribe-first-btn"
+                onClick={onOpenSubscriptionCheckout}
+                className="h-8 px-3.5 rounded-full bg-[#1f1f1f] hover:bg-[#1f1f1f]/90 dark:bg-[#e3e3e3] dark:hover:bg-[#e3e3e3]/90 text-white dark:text-[#131314] text-[11px] font-semibold inline-flex items-center justify-center gap-1.5 cursor-pointer shrink-0 whitespace-nowrap"
+              >
+                <span>Get Pro Plan</span>
+                <ArrowRight className="w-3 h-3" />
+              </button>
+            )}
+          </div>
+        )}
+
+        {/* Pending ৳399 Verification Card */}
+        {!loading && billing.hasActiveSubscription && billing.pendingPayment && (
+          <div
+            data-testid="developer-api-pending-payment-banner"
+            className="rounded-xl p-3.5 bg-amber-500/[0.08] border border-amber-500/25 flex flex-col sm:flex-row sm:items-center justify-between gap-2.5"
+          >
+            <div className="flex items-start gap-2.5 text-xs">
+              <Clock className="w-4 h-4 text-amber-600 dark:text-amber-400 shrink-0 mt-0.5" />
+              <div className="space-y-0.5">
+                <p className="font-semibold text-[#1f1f1f] dark:text-[#e3e3e3]">
+                  {formatBDT(billing.pendingPayment.amount)} API Payment Awaiting Admin Verification
+                </p>
+                <p className="text-[11px] text-[#444746] dark:text-[#c4c7c5] font-mono">
+                  {billing.pendingPayment.gateway.toUpperCase()} · TrxID:{' '}
+                  <strong className="text-[#1f1f1f] dark:text-[#e3e3e3]">
+                    {billing.pendingPayment.trx_id}
+                  </strong>
+                </p>
+              </div>
+            </div>
+            <button
+              type="button"
+              onClick={() => {
+                setRefreshing(true);
+                fetchKeys(true);
+              }}
+              className="h-8 px-3 rounded-full border border-amber-500/35 text-amber-800 dark:text-amber-300 hover:bg-amber-500/10 text-[11px] font-semibold cursor-pointer shrink-0 whitespace-nowrap"
+            >
+              Check Status
+            </button>
+          </div>
+        )}
+
         <form onSubmit={handleCreateKey} className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2.5">
           <label htmlFor="new-api-key-name" className="sr-only">
             API Key Label
@@ -454,12 +603,26 @@ print(response.choices[0].message.content)`,
           />
           <button
             type="submit"
-            disabled={creating || keys.length >= maxKeys}
+            disabled={creating || loading || keys.length >= maxKeys}
             data-testid="create-api-key-btn"
             className="h-10 px-5 rounded-full bg-[#1f1f1f] hover:bg-[#1f1f1f]/90 dark:bg-[#e3e3e3] dark:hover:bg-[#e3e3e3]/90 text-white dark:text-[#131314] text-xs font-semibold inline-flex items-center justify-center gap-1.5 transition-colors cursor-pointer shrink-0 disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap"
           >
-            <Plus className="w-3.5 h-3.5" />
-            <span>{creating ? 'Creating...' : 'Create API Key'}</span>
+            {billing.hasActiveSubscription && billing.availablePaidSlots > 0 ? (
+              <>
+                <Plus className="w-3.5 h-3.5" />
+                <span>{creating ? 'Creating...' : 'Create API Key'}</span>
+              </>
+            ) : !billing.hasActiveSubscription ? (
+              <>
+                <Lock className="w-3.5 h-3.5" />
+                <span>Create API Key ({formatBDT(billing.priceBdt)})</span>
+              </>
+            ) : (
+              <>
+                <Key className="w-3.5 h-3.5" />
+                <span>Create API Key ({formatBDT(billing.priceBdt)})</span>
+              </>
+            )}
           </button>
         </form>
       </div>
@@ -642,6 +805,20 @@ print(response.choices[0].message.content)`,
           <code>{codeSnippets[snippetTab]}</code>
         </pre>
       </div>
+
+      {/* ৳399 Developer API Payment Popup (or Subscription Required Prompt) */}
+      <DeveloperApiPaymentModal
+        isOpen={isPaymentModalOpen}
+        onClose={() => setIsPaymentModalOpen(false)}
+        billing={billing}
+        defaults={defaults}
+        requestedKeyName={newKeyName}
+        onOpenSubscriptionCheckout={onOpenSubscriptionCheckout}
+        onSubmitted={() => {
+          void fetchKeys(true);
+          onPaymentSubmitted?.();
+        }}
+      />
     </div>
   );
 };

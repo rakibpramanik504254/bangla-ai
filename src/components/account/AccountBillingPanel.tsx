@@ -1082,7 +1082,19 @@ export const AccountBillingPanel: React.FC<AccountBillingPanelProps> = ({
           )}
 
           {/* TAB 3B: DEVELOPER API KEYS */}
-          {activeTab === 'api_keys' && <DeveloperApiKeysTab token={token} />}
+          {activeTab === 'api_keys' && (
+            <DeveloperApiKeysTab
+              token={token}
+              onOpenSubscriptionCheckout={() => {
+                onCloseModal?.();
+                openCheckout('monthly');
+              }}
+              onPaymentSubmitted={() => {
+                void fetchPayments();
+                void refreshUser();
+              }}
+            />
+          )}
 
           {/* TAB 4: ACCOUNT & SECURITY */}
           {activeTab === 'security' && (

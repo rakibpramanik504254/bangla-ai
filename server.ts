@@ -21,7 +21,15 @@ import {
   fetchOpenRouterKeyStatus,
   OPENROUTER_DEFAULT_BASE_URL
 } from './src/server/openrouter.ts';
-import { isSubscriptionActive, calculateUsageStats, PLANS } from './src/utils/billing.ts';
+import {
+  DEVELOPER_API_ADDON,
+  PLANS,
+  calculateUsageStats,
+  getPaymentPlanInfo,
+  hasActivePaidSubscription,
+  isSubscriptionActive,
+  type PaymentPlanId
+} from './src/utils/billing.ts';
 import { sanitizeIncomingAttachments } from './src/utils/chatAttachments.ts';
 import {
   AttachmentParseError,
@@ -731,7 +739,7 @@ app.get('/api/payment/settings', async (_req: Request, res: Response) => {
 const dispatchPaymentSubmittedEmails = async (params: {
   customerEmail?: string | null;
   customerName: string;
-  planId: 'monthly' | 'yearly';
+  planId: PaymentPlanId;
   gateway: 'bkash' | 'nagad' | 'rocket';
   amount: number;
   trxId: string;
@@ -739,7 +747,7 @@ const dispatchPaymentSubmittedEmails = async (params: {
 }) => {
   const settings = await db.getSettings();
   const mailConfig = resolveMailRuntimeConfig(settings);
-  const planDetails = PLANS[params.planId];
+  const planDetails = getPaymentPlanInfo(params.planId);
   const hasRealCustomerEmail = Boolean(params.customerEmail && !isSyntheticPhoneEmail(params.customerEmail));
 
   if (hasRealCustomerEmail && params.customerEmail) {
@@ -798,8 +806,24 @@ const extractCheckoutMetaAttribution = (req: Request) => {
 const handlePaymentSubmission = async (req: AuthenticatedRequest, res: Response) => {
   try {
     const { planId, gateway, paymentMethod, trxId, senderNumber } = req.body;
-    const selectedPlan = planId === 'yearly' ? 'yearly' : 'monthly';
+    const selectedPlan: PaymentPlanId =
+      planId === 'yearly'
+        ? 'yearly'
+        : planId === 'developer_api'
+        ? 'developer_api'
+        : 'monthly';
     const selectedGateway = ((gateway || paymentMethod || 'bkash') as string).toLowerCase() as 'bkash' | 'nagad' | 'rocket';
+
+    if (selectedPlan === 'developer_api') {
+      const currentSub = await db.getSubscriptionByUserId(req.user!.id);
+      if (!hasActivePaidSubscription(currentSub)) {
+        res.status(403).json({
+          code: 'SUBSCRIPTION_REQUIRED',
+          error: 'An active Monthly or Yearly subscription is required before you can purchase Developer API access.'
+        });
+        return;
+      }
+    }
 
     if (!['bkash', 'nagad', 'rocket'].includes(selectedGateway)) {
       res.status(400).json({ error: 'Valid MFS gateway (bKash, Nagad, or Rocket) is required.' });
@@ -854,7 +878,10 @@ const handlePaymentSubmission = async (req: AuthenticatedRequest, res: Response)
     res.json({
       success: true,
       status: 'pending',
-      message: `Payment request submitted! Your Transaction ID (${payment.trx_id}) is awaiting admin verification. Access will be unlocked as soon as verified.`,
+      message:
+        selectedPlan === 'developer_api'
+          ? `Developer API payment submitted! Your Transaction ID (${payment.trx_id}) is awaiting admin verification. Once approved, you can immediately generate your API key.`
+          : `Payment request submitted! Your Transaction ID (${payment.trx_id}) is awaiting admin verification. Access will be unlocked as soon as verified.`,
       payment
     });
   } catch (err: any) {
@@ -866,6 +893,13 @@ const handlePaymentSubmission = async (req: AuthenticatedRequest, res: Response)
 app.post('/api/payments/express', async (req: Request, res: Response) => {
   try {
     const { planId, gateway, paymentMethod, trxId, senderNumber, email, name } = req.body || {};
+    if (planId === 'developer_api') {
+      res.status(403).json({
+        code: 'SUBSCRIPTION_REQUIRED',
+        error: 'Developer API access cannot be purchased standalone. Please activate a Monthly or Yearly subscription first.'
+      });
+      return;
+    }
     const selectedPlan = planId === 'yearly' ? 'yearly' : 'monthly';
     const selectedGateway = ((gateway || paymentMethod || 'bkash') as string).toLowerCase() as 'bkash' | 'nagad' | 'rocket';
 
@@ -2536,16 +2570,17 @@ app.post('/api/admin/payments/:id/approve', requireAdmin, async (req: Authentica
     // Trigger Meta Conversions API Purchase Event (server-side only, live without test_event_code, deduplicated by payment.id)
     const capiResult = await sendMetaConversionsPurchase(result.payment, settings);
 
-    // Send subscription activation receipt email to customer (skip synthetic phone-only placeholders)
+    // Send approval receipt email to customer (skip synthetic phone-only placeholders)
     const customer = await db.getUserById(result.payment.user_id);
+    const isDeveloperApiAddon = result.payment.plan_id === 'developer_api';
     if (customer?.email && !isSyntheticPhoneEmail(customer.email)) {
-      const planKey = result.payment.plan_id === 'yearly' ? 'yearly' : 'monthly';
+      const planInfo = getPaymentPlanInfo(result.payment.plan_id || 'monthly');
       void sendMailSafe(
         settings,
         buildPaymentApprovedEmail({
           to: customer.email,
           name: customer.name || result.payment.user_name || 'Customer',
-          planName: result.payment.plan_name || PLANS[planKey].name,
+          planName: result.payment.plan_name || planInfo.name,
           amountBdt: Number(result.payment.amount),
           gateway: result.payment.gateway,
           trxId: result.payment.trx_id,
@@ -2558,7 +2593,9 @@ app.post('/api/admin/payments/:id/approve', requireAdmin, async (req: Authentica
 
     res.json({
       success: true,
-      message: `Payment approved! Subscription activated for ${result.payment.user_name || 'user'}.`,
+      message: isDeveloperApiAddon
+        ? `Payment approved! Developer API Key creation unlocked for ${result.payment.user_name || 'user'}.`
+        : `Payment approved! Subscription activated for ${result.payment.user_name || 'user'}.`,
       payment: result.payment,
       subscription: result.subscription,
       pixelFired: capiResult.fired,
@@ -2581,13 +2618,13 @@ app.post('/api/admin/payments/:id/reject', requireAdmin, async (req: Authenticat
     const customer = await db.getUserById(rejected.user_id);
 
     if (customer?.email && !isSyntheticPhoneEmail(customer.email)) {
-      const planKey = rejected.plan_id === 'yearly' ? 'yearly' : 'monthly';
+      const planInfo = getPaymentPlanInfo(rejected.plan_id || 'monthly');
       void sendMailSafe(
         settings,
         buildPaymentRejectedEmail({
           to: customer.email,
           name: customer.name || rejected.user_name || 'Customer',
-          planName: rejected.plan_name || PLANS[planKey].name,
+          planName: rejected.plan_name || planInfo.name,
           amountBdt: Number(rejected.amount),
           gateway: rejected.gateway,
           trxId: rejected.trx_id,
@@ -2664,10 +2701,11 @@ app.post('/api/admin/pixel/test', requireAdmin, async (req: AuthenticatedRequest
 
 app.get('/api/developer/keys', authenticate, async (req: AuthenticatedRequest, res: Response) => {
   try {
-    const [keys, settings, models] = await Promise.all([
+    const [keys, settings, models, billing] = await Promise.all([
       db.listUserDeveloperApiKeys(req.user!.id),
       db.getSettings(),
-      db.listModels(true)
+      db.listModels(true),
+      db.getUserDeveloperApiBillingStatus(req.user!.id)
     ]);
 
     res.json({
@@ -2677,6 +2715,7 @@ app.get('/api/developer/keys', authenticate, async (req: AuthenticatedRequest, r
         dailyLimit: clampNonNegativeInt(settings.api_default_daily_limit, DEFAULT_API_DAILY_LIMIT, 1_000_000),
         initialCredits: clampNonNegativeInt(settings.api_default_credits, DEFAULT_API_INITIAL_CREDITS, 10_000_000)
       },
+      billing,
       keys,
       models: models.slice(0, 20).map((m) => ({
         id: m.model_name,
@@ -2692,14 +2731,26 @@ app.get('/api/developer/keys', authenticate, async (req: AuthenticatedRequest, r
 app.post('/api/developer/keys', authenticate, async (req: AuthenticatedRequest, res: Response) => {
   try {
     const name = typeof req.body?.name === 'string' ? req.body.name : undefined;
-    const created = await db.createDeveloperApiKey(req.user!.id, name);
+    const created = await db.createDeveloperApiKey(req.user!.id, name, {
+      requirePaidAddon: true
+    });
+    const billing = await db.getUserDeveloperApiBillingStatus(req.user!.id);
     res.status(201).json({
       key: created.key,
       plainKey: created.plainKey,
-      baseUrl: DEVELOPER_API_BASE_URL
+      baseUrl: DEVELOPER_API_BASE_URL,
+      billing
     });
   } catch (err: any) {
-    res.status(400).json({ error: err.message || 'Could not create API key.' });
+    const statusCode =
+      typeof err?.statusCode === 'number' && err.statusCode >= 400 && err.statusCode < 600
+        ? err.statusCode
+        : 400;
+    res.status(statusCode).json({
+      error: err.message || 'Could not create API key.',
+      ...(err?.code ? { code: err.code } : {}),
+      ...(err?.code === 'PAYMENT_REQUIRED' ? { priceBdt: DEVELOPER_API_ADDON.priceBDT } : {})
+    });
   }
 });
 

@@ -45,6 +45,30 @@ export const PLANS: Record<'monthly' | 'yearly', PlanConfig> = {
   }
 };
 
+export type PaymentPlanId = 'monthly' | 'yearly' | 'developer_api';
+
+export const DEVELOPER_API_ADDON = {
+  id: 'developer_api' as const,
+  name: 'Developer API Key Access',
+  priceBDT: 399,
+};
+
+export function getPaymentPlanInfo(planId: PaymentPlanId): {
+  id: PaymentPlanId;
+  name: string;
+  priceBDT: number;
+} {
+  if (planId === 'developer_api') {
+    return DEVELOPER_API_ADDON;
+  }
+  const plan = PLANS[planId === 'yearly' ? 'yearly' : 'monthly'];
+  return {
+    id: plan.id,
+    name: plan.name,
+    priceBDT: plan.priceBDT,
+  };
+}
+
 /**
  * Formats an amount in Bangladeshi Taka with standard commas (e.g., "৳699")
  */
@@ -70,6 +94,18 @@ export function isSubscriptionActive(subscription?: {
   const expiryTime = new Date(subscription.expires_at).getTime();
   const now = Date.now();
   return expiryTime > now;
+}
+
+/**
+ * Verifies the user holds an active Monthly or Yearly subscription (required before purchasing or creating Developer API keys)
+ */
+export function hasActivePaidSubscription(subscription?: {
+  plan_id?: string;
+  status?: string;
+  expires_at?: string | number | Date;
+} | null): boolean {
+  if (!isSubscriptionActive(subscription)) return false;
+  return subscription?.plan_id === 'monthly' || subscription?.plan_id === 'yearly';
 }
 
 /**

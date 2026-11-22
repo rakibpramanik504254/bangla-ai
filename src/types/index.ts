@@ -46,7 +46,7 @@ export interface Payment {
   user_name?: string;
   user_email?: string;
   subscription_id?: string;
-  plan_id?: 'monthly' | 'yearly';
+  plan_id?: 'monthly' | 'yearly' | 'developer_api';
   plan_name?: string;
   amount: number;
   currency: 'BDT';
@@ -56,6 +56,7 @@ export interface Payment {
   phone?: string;
   status: 'completed' | 'pending' | 'rejected';
   admin_note?: string;
+  developer_api_key_id?: string | null;
   created_at: string;
   approved_at?: string;
   approved_by?: string;
@@ -220,4 +221,24 @@ export interface DeveloperApiDefaults {
   dailyLimit: number;
   initialCredits: number;
 }
+
+export interface DeveloperApiPendingPaymentSummary {
+  id: string;
+  trx_id: string;
+  gateway: 'bkash' | 'nagad' | 'rocket';
+  sender_number: string;
+  amount: number;
+  created_at: string;
+}
+
+export interface DeveloperApiBillingStatus {
+  priceBdt: number;
+  hasActiveSubscription: boolean;
+  activePlanId: 'monthly' | 'yearly' | null;
+  activePlanName: string | null;
+  subscriptionExpiresAt: string | null;
+  availablePaidSlots: number;
+  pendingPayment: DeveloperApiPendingPaymentSummary | null;
+}
+
 

@@ -1,9 +1,17 @@
 import crypto from 'node:crypto';
 import { Pool, PoolClient } from 'pg';
-import { PLANS, calculateExpiryDate } from '../utils/billing.ts';
+import {
+  DEVELOPER_API_ADDON,
+  PLANS,
+  calculateExpiryDate,
+  getPaymentPlanInfo,
+  hasActivePaidSubscription,
+  type PaymentPlanId,
+} from '../utils/billing.ts';
 import { createSeededFreeModels } from '../server/openrouter-free-models.ts';
 import type {
   ChatAttachment,
+  DeveloperApiBillingStatus,
   UserMemory,
   UserMemoryCategory,
   UserMemorySource,
@@ -94,7 +102,7 @@ export interface Payment {
   user_name?: string;
   user_email?: string;
   subscription_id?: string;
-  plan_id?: 'monthly' | 'yearly';
+  plan_id?: PaymentPlanId;
   plan_name?: string;
   amount: number;
   currency: 'BDT';
@@ -104,6 +112,7 @@ export interface Payment {
   phone?: string;
   status: 'completed' | 'pending' | 'rejected';
   admin_note?: string;
+  developer_api_key_id?: string | null;
   created_at: string;
   approved_at?: string;
   approved_by?: string;
@@ -807,7 +816,14 @@ function mapPaymentRow(row: any): Payment {
     user_name: row.user_name ? String(row.user_name) : undefined,
     user_email: row.user_email ? String(row.user_email) : undefined,
     subscription_id: row.subscription_id ? String(row.subscription_id) : undefined,
-    plan_id: row.plan_id === 'yearly' ? 'yearly' : row.plan_id === 'monthly' ? 'monthly' : undefined,
+    plan_id:
+      row.plan_id === 'yearly'
+        ? 'yearly'
+        : row.plan_id === 'monthly'
+        ? 'monthly'
+        : row.plan_id === 'developer_api'
+        ? 'developer_api'
+        : undefined,
     plan_name: row.plan_name ? String(row.plan_name) : undefined,
     amount: Number(row.amount),
     currency: 'BDT',
@@ -817,6 +833,7 @@ function mapPaymentRow(row: any): Payment {
     phone: row.phone ? String(row.phone) : undefined,
     status: row.status === 'completed' ? 'completed' : row.status === 'rejected' ? 'rejected' : 'pending',
     admin_note: row.admin_note ? String(row.admin_note) : undefined,
+    developer_api_key_id: row.developer_api_key_id ? String(row.developer_api_key_id) : null,
     created_at: toISO(row.created_at),
     approved_at: toOptionalISO(row.approved_at),
     approved_by: row.approved_by ? String(row.approved_by) : undefined,
@@ -1938,7 +1955,7 @@ export class Database {
 
   public async createPendingPayment(params: {
     userId: string;
-    planId: 'monthly' | 'yearly';
+    planId: PaymentPlanId;
     gateway: 'bkash' | 'nagad' | 'rocket';
     trxId: string;
     senderNumber: string;
@@ -1950,7 +1967,7 @@ export class Database {
   }): Promise<Payment> {
     await this.ensureReady();
     const cleanTrx = params.trxId.trim().toUpperCase();
-    const plan = PLANS[params.planId];
+    const plan = getPaymentPlanInfo(params.planId);
     const now = new Date().toISOString();
 
     if (!this.pool) {
@@ -2031,7 +2048,7 @@ export class Database {
     return mapPaymentRow(res.rows[0]);
   }
 
-  public async approvePayment(paymentId: string, adminUserId: string): Promise<{ payment: Payment; subscription: Subscription }> {
+  public async approvePayment(paymentId: string, adminUserId: string): Promise<{ payment: Payment; subscription?: Subscription }> {
     await this.ensureReady();
     const now = new Date().toISOString();
 
@@ -2047,10 +2064,18 @@ export class Database {
       payment.approved_at = now;
       payment.approved_by = adminUserId;
 
-      const plan = PLANS[payment.plan_id || 'monthly'];
       const existingSub = await this.getSubscriptionByUserId(payment.user_id);
+
+      // Developer API ৳399 add-on unlocks an API key creation slot without touching the user's Monthly/Yearly subscription
+      if (payment.plan_id === 'developer_api') {
+        payment.developer_api_key_id = payment.developer_api_key_id || null;
+        return { payment, subscription: existingSub };
+      }
+
+      const subPlanId: 'monthly' | 'yearly' = payment.plan_id === 'yearly' ? 'yearly' : 'monthly';
+      const plan = PLANS[subPlanId];
       const expiresAt = calculateExpiryDate(
-        payment.plan_id || 'monthly',
+        subPlanId,
         existingSub && existingSub.status === 'active' ? existingSub.expires_at : null
       ).toISOString();
 
@@ -2060,7 +2085,7 @@ export class Database {
       const newSub: Subscription = {
         id: subId,
         user_id: payment.user_id,
-        plan_id: payment.plan_id || 'monthly',
+        plan_id: subPlanId,
         plan_name: plan.name,
         amount: payment.amount,
         currency: 'BDT',
@@ -2080,7 +2105,7 @@ export class Database {
       const user = this.memory!.users.find(u => u.id === payment.user_id);
       if (user) {
         user.current_usage = 0;
-        user.usage_limit = payment.plan_id === 'yearly' ? 15000000 : 1000000;
+        user.usage_limit = subPlanId === 'yearly' ? 15000000 : 1000000;
         user.updated_at = now;
       }
 
@@ -2099,14 +2124,37 @@ export class Database {
       if (payment.status === 'completed') {
         throw new Error('This payment has already been approved.');
       }
-      const planKey = payment.plan_id || 'monthly';
-      const plan = PLANS[planKey];
 
       const subRes = await client.query(
         `SELECT * FROM subscriptions WHERE user_id = $1 ORDER BY created_at DESC LIMIT 1`,
         [payment.user_id]
       );
       const existingSub = subRes.rows[0] ? mapSubscriptionRow(subRes.rows[0]) : undefined;
+
+      if (payment.plan_id === 'developer_api') {
+        const updatedPayRes = await client.query(
+          `UPDATE payments
+           SET status = 'completed',
+               approved_at = $1,
+               approved_by = $2
+           WHERE id = $3 AND status <> 'completed'
+           RETURNING *`,
+          [now, adminUserId, paymentId]
+        );
+        if (!updatedPayRes.rows[0]) {
+          throw new Error('This payment has already been approved.');
+        }
+
+        await client.query('COMMIT');
+        return {
+          payment: mapPaymentRow(updatedPayRes.rows[0]),
+          subscription: existingSub
+        };
+      }
+
+      const planKey: 'monthly' | 'yearly' = payment.plan_id === 'yearly' ? 'yearly' : 'monthly';
+      const plan = PLANS[planKey];
+
       const expiresAt = calculateExpiryDate(
         planKey,
         existingSub && existingSub.status === 'active' ? existingSub.expires_at : null
@@ -3558,14 +3606,106 @@ export class Database {
     return res.rows.map(r => serializeDeveloperApiKey(mapDeveloperApiKeyRow(r), todayUtc));
   }
 
+  public async getUserDeveloperApiBillingStatus(userId: string): Promise<DeveloperApiBillingStatus> {
+    await this.ensureReady();
+    const sub = await this.getSubscriptionByUserId(userId);
+    const hasActiveSubscription = hasActivePaidSubscription(sub);
+
+    if (!this.pool) {
+      const apiPayments = this.memory!.payments.filter(
+        p => p.user_id === userId && p.plan_id === 'developer_api'
+      );
+      const availablePaidSlots = apiPayments.filter(
+        p => p.status === 'completed' && !p.developer_api_key_id
+      ).length;
+      const latestPending = apiPayments
+        .filter(p => p.status === 'pending')
+        .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())[0];
+
+      return {
+        priceBdt: DEVELOPER_API_ADDON.priceBDT,
+        hasActiveSubscription,
+        activePlanId: hasActiveSubscription && sub ? sub.plan_id : null,
+        activePlanName: hasActiveSubscription && sub ? sub.plan_name : null,
+        subscriptionExpiresAt: hasActiveSubscription && sub ? sub.expires_at : null,
+        availablePaidSlots,
+        pendingPayment: latestPending
+          ? {
+              id: latestPending.id,
+              trx_id: latestPending.trx_id,
+              gateway: latestPending.gateway,
+              sender_number: latestPending.sender_number,
+              amount: latestPending.amount,
+              created_at: latestPending.created_at,
+            }
+          : null,
+      };
+    }
+
+    const [slotsRes, pendingRes] = await Promise.all([
+      this.pool.query(
+        `SELECT COUNT(*)::int AS cnt
+         FROM payments
+         WHERE user_id = $1
+           AND plan_id = 'developer_api'
+           AND status = 'completed'
+           AND developer_api_key_id IS NULL`,
+        [userId]
+      ),
+      this.pool.query(
+        `SELECT id, trx_id, gateway, sender_number, amount, created_at
+         FROM payments
+         WHERE user_id = $1
+           AND plan_id = 'developer_api'
+           AND status = 'pending'
+         ORDER BY created_at DESC
+         LIMIT 1`,
+        [userId]
+      ),
+    ]);
+
+    const pendingRow = pendingRes.rows[0];
+    return {
+      priceBdt: DEVELOPER_API_ADDON.priceBDT,
+      hasActiveSubscription,
+      activePlanId: hasActiveSubscription && sub ? sub.plan_id : null,
+      activePlanName: hasActiveSubscription && sub ? sub.plan_name : null,
+      subscriptionExpiresAt: hasActiveSubscription && sub ? sub.expires_at : null,
+      availablePaidSlots: Number(slotsRes.rows[0]?.cnt || 0),
+      pendingPayment: pendingRow
+        ? {
+            id: String(pendingRow.id),
+            trx_id: String(pendingRow.trx_id),
+            gateway: (pendingRow.gateway || 'bkash') as 'bkash' | 'nagad' | 'rocket',
+            sender_number: String(pendingRow.sender_number || ''),
+            amount: Number(pendingRow.amount),
+            created_at: toISO(pendingRow.created_at),
+          }
+        : null,
+    };
+  }
+
   public async createDeveloperApiKey(
     userId: string,
-    rawName?: string
+    rawName?: string,
+    options: { requirePaidAddon?: boolean } = {}
   ): Promise<{ key: PublicDeveloperApiKey; plainKey: string }> {
     await this.ensureReady();
     const user = await this.getUserById(userId);
     if (!user) {
       throw new Error('User account not found.');
+    }
+
+    if (options.requirePaidAddon) {
+      const sub = await this.getSubscriptionByUserId(userId);
+      if (!hasActivePaidSubscription(sub)) {
+        const err = new Error(
+          'An active Monthly or Yearly subscription is required before you can purchase or create a Developer API key.'
+        ) as Error & { code?: string; statusCode?: number };
+        err.code = 'SUBSCRIPTION_REQUIRED';
+        err.statusCode = 403;
+        throw err;
+      }
     }
 
     const existingKeys = await this.listUserDeveloperApiKeys(userId);
@@ -3611,6 +3751,25 @@ export class Database {
     };
 
     if (!this.pool) {
+      if (options.requirePaidAddon) {
+        const unredeemedPayment = this.memory!.payments.find(
+          p =>
+            p.user_id === userId &&
+            p.plan_id === 'developer_api' &&
+            p.status === 'completed' &&
+            !p.developer_api_key_id
+        );
+        if (!unredeemedPayment) {
+          const err = new Error(
+            `Developer API Key creation requires a verified ৳${DEVELOPER_API_ADDON.priceBDT} add-on payment.`
+          ) as Error & { code?: string; statusCode?: number };
+          err.code = 'PAYMENT_REQUIRED';
+          err.statusCode = 402;
+          throw err;
+        }
+        unredeemedPayment.developer_api_key_id = record.id;
+      }
+
       this.memory!.developer_api_keys.unshift(record);
       return {
         key: serializeDeveloperApiKey(record, todayUtc),
@@ -3618,34 +3777,106 @@ export class Database {
       };
     }
 
-    const res = await this.pool.query(
-      `INSERT INTO developer_api_keys (
-         id, user_id, name, key_prefix, key_hash, is_enabled,
-         credits, daily_limit, daily_requests_used, daily_usage_date,
-         total_requests, last_used_at, created_at, updated_at
-       ) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14)
-       RETURNING *`,
-      [
-        record.id,
-        record.user_id,
-        record.name,
-        record.key_prefix,
-        record.key_hash,
-        record.is_enabled,
-        record.credits,
-        record.daily_limit,
-        0,
-        todayUtc,
-        0,
-        null,
-        now,
-        now
-      ]
-    );
-    return {
-      key: serializeDeveloperApiKey(mapDeveloperApiKeyRow(res.rows[0]), todayUtc),
-      plainKey
-    };
+    if (!options.requirePaidAddon) {
+      const res = await this.pool.query(
+        `INSERT INTO developer_api_keys (
+           id, user_id, name, key_prefix, key_hash, is_enabled,
+           credits, daily_limit, daily_requests_used, daily_usage_date,
+           total_requests, last_used_at, created_at, updated_at
+         ) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14)
+         RETURNING *`,
+        [
+          record.id,
+          record.user_id,
+          record.name,
+          record.key_prefix,
+          record.key_hash,
+          record.is_enabled,
+          record.credits,
+          record.daily_limit,
+          0,
+          todayUtc,
+          0,
+          null,
+          now,
+          now
+        ]
+      );
+      return {
+        key: serializeDeveloperApiKey(mapDeveloperApiKeyRow(res.rows[0]), todayUtc),
+        plainKey
+      };
+    }
+
+    const client = await this.pool.connect();
+    try {
+      await client.query('BEGIN');
+
+      const slotRes = await client.query(
+        `SELECT id
+         FROM payments
+         WHERE user_id = $1
+           AND plan_id = 'developer_api'
+           AND status = 'completed'
+           AND developer_api_key_id IS NULL
+         ORDER BY approved_at ASC NULLS LAST, created_at ASC
+         LIMIT 1
+         FOR UPDATE`,
+        [userId]
+      );
+
+      if (!slotRes.rows[0]) {
+        const err = new Error(
+          `Developer API Key creation requires a verified ৳${DEVELOPER_API_ADDON.priceBDT} add-on payment.`
+        ) as Error & { code?: string; statusCode?: number };
+        err.code = 'PAYMENT_REQUIRED';
+        err.statusCode = 402;
+        throw err;
+      }
+
+      const paymentId = String(slotRes.rows[0].id);
+
+      const insertedRes = await client.query(
+        `INSERT INTO developer_api_keys (
+           id, user_id, name, key_prefix, key_hash, is_enabled,
+           credits, daily_limit, daily_requests_used, daily_usage_date,
+           total_requests, last_used_at, created_at, updated_at
+         ) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14)
+         RETURNING *`,
+        [
+          record.id,
+          record.user_id,
+          record.name,
+          record.key_prefix,
+          record.key_hash,
+          record.is_enabled,
+          record.credits,
+          record.daily_limit,
+          0,
+          todayUtc,
+          0,
+          null,
+          now,
+          now
+        ]
+      );
+
+      await client.query(
+        `UPDATE payments SET developer_api_key_id = $1 WHERE id = $2`,
+        [record.id, paymentId]
+      );
+
+      await client.query('COMMIT');
+      return {
+        key: serializeDeveloperApiKey(mapDeveloperApiKeyRow(insertedRes.rows[0]), todayUtc),
+        plainKey
+      };
+    } catch (err) {
+      await client.query('ROLLBACK');
+      throw err;
+    } finally {
+      client.release();
+    }
   }
 
   public async deleteUserDeveloperApiKey(id: string, userId: string): Promise<boolean> {

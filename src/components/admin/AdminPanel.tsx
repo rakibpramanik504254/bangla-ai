@@ -236,7 +236,13 @@ export const AdminPanel: React.FC = () => {
       const capiNote = data.pixelFired
         ? ` Meta CAPI Purchase event delivered (${data.pixelEventId || 'deduplicated'}).`
         : ' (Meta CAPI skipped — enable Pixel & Access Token in Meta Pixel settings to send server Purchase events.)';
-      setFeedback(`Payment approved! Subscription activated.${capiNote}`);
+      const baseMsg =
+        typeof data.message === 'string' && data.message.trim()
+          ? data.message.trim()
+          : payment.plan_id === 'developer_api'
+          ? 'Payment approved! Developer API Key creation unlocked.'
+          : 'Payment approved! Subscription activated.';
+      setFeedback(`${baseMsg}${capiNote}`);
       fetchPayments();
       fetchUsers();
       fetchStats();
@@ -1323,7 +1329,11 @@ export const AdminPanel: React.FC = () => {
 
                               <td className="py-3.5 px-4 tabular-nums">
                                 <div className="font-semibold text-[#1f1f1f] dark:text-[#e3e3e3] font-mono">{formatBDT(p.amount)}</div>
-                                <span className="text-[10px] text-[#444746] dark:text-[#9aa0a6] capitalize">{p.plan_id} Plan</span>
+                                <span className="text-[10px] text-[#444746] dark:text-[#9aa0a6]">
+                                  {p.plan_id === 'developer_api'
+                                    ? 'Developer API Add-on'
+                                    : `${p.plan_id === 'yearly' ? 'Yearly' : 'Monthly'} Plan`}
+                                </span>
                               </td>
 
                               <td className="py-3.5 px-4">

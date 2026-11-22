@@ -299,10 +299,19 @@ export function buildMetaCapiPurchasePayload(params: {
 } {
   const { payment, user, testEventCode, eventTimeSec } = params;
   const eventId = buildPurchaseEventId(payment);
-  const planId = payment.plan_id === 'yearly' ? 'yearly' : 'monthly';
+  const planId =
+    payment.plan_id === 'yearly'
+      ? 'yearly'
+      : payment.plan_id === 'developer_api'
+      ? 'developer_api'
+      : 'monthly';
   const planName =
     payment.plan_name ||
-    (planId === 'yearly' ? 'Yearly Plan (৳5,999)' : 'Monthly Plan (৳699)');
+    (planId === 'yearly'
+      ? 'Yearly Plan (৳5,999)'
+      : planId === 'developer_api'
+      ? 'Developer API Key Access (৳399)'
+      : 'Monthly Plan (৳699)');
 
   const userData = buildMetaUserData({
     email: user?.email || payment.user_email,
@@ -365,10 +374,19 @@ export function buildMetaCapiAddPaymentInfoPayload(params: {
   const eventId =
     (params.eventId && params.eventId.trim()) ||
     `add_payment_info_${(payment.id || payment.trx_id || Date.now()).toString().replace(/[^a-zA-Z0-9_-]/g, '_')}`;
-  const planId = payment.plan_id === 'yearly' ? 'yearly' : 'monthly';
+  const planId =
+    payment.plan_id === 'yearly'
+      ? 'yearly'
+      : payment.plan_id === 'developer_api'
+      ? 'developer_api'
+      : 'monthly';
   const planName =
     payment.plan_name ||
-    (planId === 'yearly' ? 'Yearly Plan (৳5,999)' : 'Monthly Plan (৳699)');
+    (planId === 'yearly'
+      ? 'Yearly Plan (৳5,999)'
+      : planId === 'developer_api'
+      ? 'Developer API Key Access (৳399)'
+      : 'Monthly Plan (৳699)');
 
   const userData = buildMetaUserData({
     email: user?.email || payment.user_email,
