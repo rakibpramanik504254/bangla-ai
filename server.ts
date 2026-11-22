@@ -108,6 +108,7 @@ import {
 import {
   META_GRAPH_API_VERSION,
   buildMetaCapiAddPaymentInfoPayload,
+  buildMetaCapiFunnelEventPayload,
   buildMetaCapiPurchasePayload,
   extractClientIpFromRequest,
   sanitizeEventSourceUrl,
@@ -561,6 +562,62 @@ app.get('/api/settings/public', async (_req: Request, res: Response) => {
     });
   } catch (err: any) {
     res.status(500).json({ error: 'Failed to load public settings: ' + err.message });
+  }
+});
+
+// Pure Server-Side Meta CAPI relay for top-of-funnel browser events (PageView & InitiateCheckout ONLY).
+// Purchase events are NEVER accepted here — they are strictly dispatched from /api/admin/payments/:id/approve.
+app.post('/api/meta/track', async (req: Request, res: Response) => {
+  try {
+    const rawEventName = typeof req.body?.eventName === 'string' ? req.body.eventName.trim() : '';
+    if (rawEventName !== 'PageView' && rawEventName !== 'InitiateCheckout') {
+      res.status(400).json({ error: 'Only PageView and InitiateCheckout funnel events are accepted.' });
+      return;
+    }
+
+    const eventSourceUrl = sanitizeEventSourceUrl(req.body?.eventSourceUrl);
+    try {
+      const parsedUrl = new URL(eventSourceUrl);
+      if (parsedUrl.pathname.startsWith('/admin')) {
+        res.status(204).end();
+        return;
+      }
+    } catch {
+      // Fall through with sanitized default URL
+    }
+
+    const settings = await db.getSettings();
+    if (!settings.facebook_pixel_enabled || !settings.facebook_pixel_id || !settings.facebook_pixel_access_token) {
+      res.status(204).end();
+      return;
+    }
+
+    const built = buildMetaCapiFunnelEventPayload({
+      eventName: rawEventName,
+      eventId: typeof req.body?.eventId === 'string' ? req.body.eventId.slice(0, 128) : undefined,
+      eventSourceUrl,
+      fbp: sanitizeMetaCookieValue(req.body?.fbp),
+      fbc: sanitizeMetaCookieValue(req.body?.fbc),
+      clientIpAddress: extractClientIpFromRequest(req.headers, req.ip),
+      clientUserAgent: sanitizeMetaUserAgent(
+        typeof req.headers['user-agent'] === 'string' ? req.headers['user-agent'] : undefined
+      ),
+      planName: typeof req.body?.planName === 'string' ? req.body.planName : undefined,
+      valueBdt: req.body?.valueBdt !== undefined ? Number(req.body.valueBdt) : undefined
+    });
+
+    void dispatchMetaCapiPayload(
+      rawEventName,
+      built.eventId,
+      built.matchedFields,
+      built.payload,
+      settings
+    );
+
+    res.status(202).json({ ok: true, eventId: built.eventId });
+  } catch (err: any) {
+    console.warn('[Meta CAPI Funnel Relay] Ignored error:', err?.message || err);
+    res.status(204).end();
   }
 });
 

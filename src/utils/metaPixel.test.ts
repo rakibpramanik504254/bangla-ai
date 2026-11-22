@@ -1,64 +1,64 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { isBlockedMetaBrowserBeacon } from './metaPixel.ts';
+import fs from 'node:fs';
+import path from 'node:path';
+import {
+  buildFirstPartyFbcFromFbclid,
+  generateFirstPartyFbp
+} from './metaPixel.ts';
+import { buildMetaCapiFunnelEventPayload } from './metaCapi.ts';
 
-test('isBlockedMetaBrowserBeacon blocks browser Purchase and Event Setup Tool (cs_est) beacons', () => {
-  assert.equal(
-    isBlockedMetaBrowserBeacon(
-      'https://www.facebook.com/tr/?id=1117895887871417&ev=Purchase&dl=https%3A%2F%2Fbangla-ai.pro%2F&cd[value]=699&cd[currency]=BDT&cd[cs_est]=true'
-    ),
-    true
-  );
-
-  assert.equal(
-    isBlockedMetaBrowserBeacon(
-      'https://www.facebook.com/tr/?id=1117895887871417&ev=Purchase&cd%5Bvalue%5D=699'
-    ),
-    true
-  );
-
-  assert.equal(
-    isBlockedMetaBrowserBeacon(
-      'https://www.facebook.com/tr/?id=1117895887871417&ev=Lead&cd%5Bcs_est%5D=true'
-    ),
-    true
-  );
-
-  const formBody = new FormData();
-  formBody.append('id', '1117895887871417');
-  formBody.append('ev', 'Purchase');
-  formBody.append('cd[cs_est]', 'true');
-  assert.equal(isBlockedMetaBrowserBeacon('https://www.facebook.com/tr/', formBody), true);
-
-  const paramsBody = new URLSearchParams({ id: '1117895887871417', ev: 'Purchase' });
-  assert.equal(isBlockedMetaBrowserBeacon('https://www.facebook.com/tr/', paramsBody), true);
+test('generateFirstPartyFbp produces Meta-compliant fb.1.<ts>.<10digits> identifier', () => {
+  const fbp = generateFirstPartyFbp(1732250000000);
+  assert.match(fbp, /^fb\.1\.1732250000000\.\d{10}$/);
 });
 
-test('isBlockedMetaBrowserBeacon allows legitimate PageView, InitiateCheckout, and AddPaymentInfo beacons', () => {
+test('buildFirstPartyFbcFromFbclid formats valid fbclid and rejects malformed input', () => {
   assert.equal(
-    isBlockedMetaBrowserBeacon(
-      'https://www.facebook.com/tr/?id=1117895887871417&ev=PageView&dl=https%3A%2F%2Fbangla-ai.pro%2F'
-    ),
-    false
+    buildFirstPartyFbcFromFbclid('IwAR12345abc', 1732250000000),
+    'fb.1.1732250000000.IwAR12345abc'
   );
+  assert.equal(buildFirstPartyFbcFromFbclid('   '), undefined);
+  assert.equal(buildFirstPartyFbcFromFbclid('bad <script>'), undefined);
+});
 
-  assert.equal(
-    isBlockedMetaBrowserBeacon(
-      'https://www.facebook.com/tr/?id=1117895887871417&ev=InitiateCheckout&cd[value]=699&cd[currency]=BDT'
-    ),
-    false
-  );
+test('buildMetaCapiFunnelEventPayload constructs server-side PageView and InitiateCheckout payloads', () => {
+  const pv = buildMetaCapiFunnelEventPayload({
+    eventName: 'PageView',
+    eventId: 'pv_test_1',
+    eventSourceUrl: 'https://bangla-ai.pro/',
+    fbp: 'fb.1.1732250000000.1234567890',
+    fbc: 'fb.1.1732250000000.IwAR123',
+    clientIpAddress: '103.10.20.30',
+    clientUserAgent: 'Mozilla/5.0'
+  });
+  assert.equal(pv.eventId, 'pv_test_1');
+  assert.equal(pv.payload.data[0].event_name, 'PageView');
+  assert.equal(pv.payload.data[0].user_data.fbp, 'fb.1.1732250000000.1234567890');
+  assert.equal(pv.payload.data[0].user_data.fbc, 'fb.1.1732250000000.IwAR123');
+  assert.equal(pv.payload.data[0].custom_data, undefined);
 
-  assert.equal(
-    isBlockedMetaBrowserBeacon(
-      'https://www.facebook.com/tr/?id=1117895887871417&ev=AddPaymentInfo&eid=api_12345'
-    ),
-    false
-  );
+  const ic = buildMetaCapiFunnelEventPayload({
+    eventName: 'InitiateCheckout',
+    eventId: 'ic_test_2',
+    eventSourceUrl: 'https://bangla-ai.pro/checkout',
+    planName: 'Monthly Plan',
+    valueBdt: 699,
+    fbp: 'fb.1.1732250000000.1234567890'
+  });
+  assert.equal(ic.payload.data[0].event_name, 'InitiateCheckout');
+  assert.deepEqual(ic.payload.data[0].custom_data, {
+    currency: 'BDT',
+    value: 699,
+    content_name: 'Monthly Plan',
+    content_category: 'AI Subscription',
+    num_items: 1
+  });
+});
 
-  // Non-Meta URLs are never touched
-  assert.equal(
-    isBlockedMetaBrowserBeacon('https://bangla-ai.pro/api/payments?ev=Purchase'),
-    false
-  );
+test('metaPixel.ts and index.html do NOT load third-party browser fbevents.js', () => {
+  const metaPixelSrc = fs.readFileSync(path.resolve(process.cwd(), 'src/utils/metaPixel.ts'), 'utf-8');
+  const indexHtml = fs.readFileSync(path.resolve(process.cwd(), 'index.html'), 'utf-8');
+  assert.equal(metaPixelSrc.includes('connect.facebook.net'), false);
+  assert.equal(indexHtml.includes('connect.facebook.net'), false);
 });

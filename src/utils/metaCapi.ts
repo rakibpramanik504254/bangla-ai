@@ -413,3 +413,66 @@ export function buildMetaCapiAddPaymentInfoPayload(params: {
     payload,
   };
 }
+
+export type MetaAllowedFunnelEventName = 'PageView' | 'InitiateCheckout';
+
+export function buildMetaCapiFunnelEventPayload(params: {
+  eventName: MetaAllowedFunnelEventName;
+  eventId?: string;
+  eventSourceUrl?: string | null;
+  fbp?: string | null;
+  fbc?: string | null;
+  clientIpAddress?: string | null;
+  clientUserAgent?: string | null;
+  planName?: string;
+  valueBdt?: number;
+  eventTimeSec?: number;
+}): {
+  eventId: string;
+  matchedFields: string[];
+  payload: Record<string, any>;
+} {
+  const prefix = params.eventName === 'InitiateCheckout' ? 'ic' : 'pv';
+  const eventId =
+    (params.eventId && params.eventId.trim()) ||
+    `${prefix}_${Date.now()}_${crypto.randomBytes(6).toString('hex')}`;
+
+  const userData = buildMetaUserData({
+    countryCode: 'bd',
+    clientIpAddress: params.clientIpAddress,
+    clientUserAgent: params.clientUserAgent,
+    fbp: params.fbp,
+    fbc: params.fbc,
+  });
+
+  const eventEntry: Record<string, any> = {
+    event_name: params.eventName,
+    event_time: params.eventTimeSec ?? Math.floor(Date.now() / 1000),
+    event_id: eventId,
+    event_source_url: sanitizeEventSourceUrl(params.eventSourceUrl),
+    action_source: 'website',
+    user_data: userData,
+  };
+
+  if (params.eventName === 'InitiateCheckout') {
+    const safeValue = Number.isFinite(Number(params.valueBdt)) && Number(params.valueBdt) > 0
+      ? Number(params.valueBdt)
+      : undefined;
+    eventEntry.custom_data = {
+      currency: 'BDT',
+      ...(safeValue !== undefined ? { value: safeValue } : {}),
+      ...(params.planName ? { content_name: String(params.planName).slice(0, 120) } : {}),
+      content_category: 'AI Subscription',
+      num_items: 1,
+    };
+  }
+
+  return {
+    eventId,
+    matchedFields: Object.keys(userData),
+    payload: {
+      data: [eventEntry],
+    },
+  };
+}
+

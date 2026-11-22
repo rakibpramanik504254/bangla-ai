@@ -163,10 +163,10 @@ export const MetaPixelTab: React.FC<MetaPixelTabProps> = ({
             <Activity className="w-4 h-4 text-[#1f1f1f] dark:text-[#e3e3e3] shrink-0" />
             <div>
               <h3 className="font-semibold text-sm text-[#1f1f1f] dark:text-[#e3e3e3]">
-                Facebook / Meta Pixel &amp; Conversions API
+                Facebook / Meta Conversions API (100% Server-Side)
               </h3>
               <p className="text-[11px] text-[#444746] dark:text-[#9aa0a6]">
-                Tracks PageView, InitiateCheckout, AddPaymentInfo, and BDT Purchase conversions.
+                Sends PageView, InitiateCheckout, AddPaymentInfo, and BDT Purchase strictly from the backend server (without loading browser fbevents.js) so Meta Event Setup Tool ghost purchases are impossible.
               </p>
             </div>
           </div>
