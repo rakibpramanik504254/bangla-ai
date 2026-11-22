@@ -5,6 +5,7 @@ export type AdminSectionId =
   | 'finance'
   | 'models'
   | 'providers'
+  | 'developer_api'
   | 'users'
   | 'pixel'
   | 'email'
@@ -85,8 +86,16 @@ export const ADMIN_NAV_GROUPS: AdminNavGroup[] = [
       {
         id: 'providers',
         label: 'Providers & API Keys',
-        shortLabel: 'API Keys',
+        shortLabel: 'Provider Keys',
         description: 'Configure your unified OpenRouter API key and optional direct provider keys.',
+        groupId: 'ai',
+        groupLabel: 'AI Engine'
+      },
+      {
+        id: 'developer_api',
+        label: 'Developer API Keys',
+        shortLabel: 'Developer API',
+        description: 'Set default daily request limits, manage user API credits, and enable or disable user keys.',
         groupId: 'ai',
         groupLabel: 'AI Engine'
       }

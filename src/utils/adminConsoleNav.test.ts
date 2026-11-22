@@ -19,6 +19,10 @@ describe('adminConsoleNav', () => {
     const models = getAdminNavItem('models');
     assert.equal(models.groupId, 'ai');
 
+    const devApi = getAdminNavItem('developer_api');
+    assert.equal(devApi.groupId, 'ai');
+    assert.equal(devApi.label, 'Developer API Keys');
+
     const pixel = getAdminNavItem('pixel');
     assert.equal(pixel.groupId, 'integrations');
 

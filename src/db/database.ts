@@ -36,6 +36,21 @@ import {
   type FaqSchemaItem,
   type PageSeoConfig,
 } from '../utils/seoController.ts';
+import {
+  DEFAULT_API_DAILY_LIMIT,
+  DEFAULT_API_INITIAL_CREDITS,
+  MAX_API_KEYS_PER_USER,
+  clampNonNegativeInt,
+  computeEffectiveDailyUsage,
+  evaluateApiKeyQuota,
+  generateDeveloperApiKey,
+  getUtcDateString,
+  hashDeveloperApiKey,
+  sanitizeApiKeyLabel,
+  serializeDeveloperApiKey,
+  type DeveloperApiKeyRecord,
+  type PublicDeveloperApiKey,
+} from '../utils/developerApi.ts';
 
 export interface User {
   id: string;
@@ -195,6 +210,8 @@ export interface SystemSettings {
   ga4_measurement_id?: string;
   ga4_enabled?: boolean;
   robots_txt_extra?: string;
+  api_default_daily_limit?: number;
+  api_default_credits?: number;
 }
 
 interface ProviderKeySettingEntry {
@@ -218,6 +235,7 @@ interface MemoryDatabaseData {
   finance_ledger: FinanceLedgerEntry[];
   page_seo_configs: PageSeoConfig[];
   user_memories: UserMemory[];
+  developer_api_keys: DeveloperApiKeyRecord[];
 }
 
 export interface QueryExecutor {
@@ -289,7 +307,9 @@ function createDefaultSystemSettings(): SystemSettings {
     gsc_verification_code: '',
     ga4_measurement_id: '',
     ga4_enabled: false,
-    robots_txt_extra: ''
+    robots_txt_extra: '',
+    api_default_daily_limit: DEFAULT_API_DAILY_LIMIT,
+    api_default_credits: DEFAULT_API_INITIAL_CREDITS
   };
 }
 
@@ -735,7 +755,8 @@ function createInitialSeedData(env: Record<string, string | undefined> = process
     provider_api_keys,
     finance_ledger: [],
     page_seo_configs,
-    user_memories: []
+    user_memories: [],
+    developer_api_keys: []
   };
 }
 
@@ -943,6 +964,27 @@ function mapUserMemoryRow(row: any): UserMemory {
     content: String(row.content || ''),
     category: normalizeMemoryCategory(row.category),
     source: row.source === 'manual' ? 'manual' : 'auto',
+    created_at: toISO(row.created_at),
+    updated_at: toISO(row.updated_at)
+  };
+}
+
+function mapDeveloperApiKeyRow(row: any): DeveloperApiKeyRecord {
+  return {
+    id: String(row.id),
+    user_id: String(row.user_id),
+    ...(row.user_name !== undefined && row.user_name !== null ? { user_name: String(row.user_name) } : {}),
+    ...(row.user_email !== undefined && row.user_email !== null ? { user_email: String(row.user_email) } : {}),
+    name: String(row.name || 'Default API Key'),
+    key_prefix: String(row.key_prefix || ''),
+    key_hash: String(row.key_hash || ''),
+    is_enabled: Boolean(row.is_enabled),
+    credits: Number(row.credits ?? 0),
+    daily_limit: Number(row.daily_limit ?? DEFAULT_API_DAILY_LIMIT),
+    daily_requests_used: Number(row.daily_requests_used ?? 0),
+    daily_usage_date: String(row.daily_usage_date || ''),
+    total_requests: Number(row.total_requests ?? 0),
+    last_used_at: toNullableISO(row.last_used_at),
     created_at: toISO(row.created_at),
     updated_at: toISO(row.updated_at)
   };
@@ -3496,6 +3538,467 @@ export class Database {
       [userId]
     );
     return res.rowCount ?? 0;
+  }
+
+  // --- Developer API Keys (OpenAI-compatible /api/v1/chat/completions) ---
+  public async listUserDeveloperApiKeys(userId: string): Promise<PublicDeveloperApiKey[]> {
+    await this.ensureReady();
+    const todayUtc = getUtcDateString();
+    if (!this.pool) {
+      return this.memory!.developer_api_keys
+        .filter(k => k.user_id === userId)
+        .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
+        .map(k => serializeDeveloperApiKey(k, todayUtc));
+    }
+
+    const res = await this.pool.query(
+      `SELECT * FROM developer_api_keys WHERE user_id = $1 ORDER BY created_at DESC`,
+      [userId]
+    );
+    return res.rows.map(r => serializeDeveloperApiKey(mapDeveloperApiKeyRow(r), todayUtc));
+  }
+
+  public async createDeveloperApiKey(
+    userId: string,
+    rawName?: string
+  ): Promise<{ key: PublicDeveloperApiKey; plainKey: string }> {
+    await this.ensureReady();
+    const user = await this.getUserById(userId);
+    if (!user) {
+      throw new Error('User account not found.');
+    }
+
+    const existingKeys = await this.listUserDeveloperApiKeys(userId);
+    if (existingKeys.length >= MAX_API_KEYS_PER_USER) {
+      throw new Error(`Maximum of ${MAX_API_KEYS_PER_USER} API keys allowed per account. Delete an unused key first.`);
+    }
+
+    const settings = await this.getSettings();
+    const defaultDailyLimit = clampNonNegativeInt(
+      settings.api_default_daily_limit,
+      DEFAULT_API_DAILY_LIMIT,
+      1_000_000
+    );
+    const defaultCredits = clampNonNegativeInt(
+      settings.api_default_credits,
+      DEFAULT_API_INITIAL_CREDITS,
+      10_000_000
+    );
+
+    const { plainKey, keyHash, keyPrefix } = generateDeveloperApiKey();
+    const name = sanitizeApiKeyLabel(rawName);
+    const id = `dkey_${crypto.randomUUID().slice(0, 12)}`;
+    const now = new Date().toISOString();
+    const todayUtc = getUtcDateString();
+
+    const record: DeveloperApiKeyRecord = {
+      id,
+      user_id: userId,
+      user_name: user.name,
+      user_email: user.email,
+      name,
+      key_prefix: keyPrefix,
+      key_hash: keyHash,
+      is_enabled: true,
+      credits: defaultCredits,
+      daily_limit: defaultDailyLimit,
+      daily_requests_used: 0,
+      daily_usage_date: todayUtc,
+      total_requests: 0,
+      last_used_at: null,
+      created_at: now,
+      updated_at: now
+    };
+
+    if (!this.pool) {
+      this.memory!.developer_api_keys.unshift(record);
+      return {
+        key: serializeDeveloperApiKey(record, todayUtc),
+        plainKey
+      };
+    }
+
+    const res = await this.pool.query(
+      `INSERT INTO developer_api_keys (
+         id, user_id, name, key_prefix, key_hash, is_enabled,
+         credits, daily_limit, daily_requests_used, daily_usage_date,
+         total_requests, last_used_at, created_at, updated_at
+       ) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14)
+       RETURNING *`,
+      [
+        record.id,
+        record.user_id,
+        record.name,
+        record.key_prefix,
+        record.key_hash,
+        record.is_enabled,
+        record.credits,
+        record.daily_limit,
+        0,
+        todayUtc,
+        0,
+        null,
+        now,
+        now
+      ]
+    );
+    return {
+      key: serializeDeveloperApiKey(mapDeveloperApiKeyRow(res.rows[0]), todayUtc),
+      plainKey
+    };
+  }
+
+  public async deleteUserDeveloperApiKey(id: string, userId: string): Promise<boolean> {
+    await this.ensureReady();
+    if (!this.pool) {
+      const prev = this.memory!.developer_api_keys.length;
+      this.memory!.developer_api_keys = this.memory!.developer_api_keys.filter(
+        k => !(k.id === id && k.user_id === userId)
+      );
+      return this.memory!.developer_api_keys.length < prev;
+    }
+
+    const res = await this.pool.query(
+      `DELETE FROM developer_api_keys WHERE id = $1 AND user_id = $2`,
+      [id, userId]
+    );
+    return (res.rowCount ?? 0) > 0;
+  }
+
+  public async listAllDeveloperApiKeys(): Promise<PublicDeveloperApiKey[]> {
+    await this.ensureReady();
+    const todayUtc = getUtcDateString();
+    if (!this.pool) {
+      const userMap = new Map(this.memory!.users.map(u => [u.id, u]));
+      return this.memory!.developer_api_keys
+        .map(k => {
+          const owner = userMap.get(k.user_id);
+          return serializeDeveloperApiKey(
+            {
+              ...k,
+              user_name: owner?.name || k.user_name || 'Unknown User',
+              user_email: owner?.email || k.user_email || ''
+            },
+            todayUtc
+          );
+        })
+        .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+    }
+
+    const res = await this.pool.query(
+      `SELECT k.*, u.name AS user_name, u.email AS user_email
+       FROM developer_api_keys k
+       LEFT JOIN users u ON u.id = k.user_id
+       ORDER BY k.created_at DESC`
+    );
+    return res.rows.map(r => serializeDeveloperApiKey(mapDeveloperApiKeyRow(r), todayUtc));
+  }
+
+  public async validateDeveloperApiKeyReadOnly(
+    rawKey: string
+  ): Promise<
+    | { ok: true; key: PublicDeveloperApiKey }
+    | { ok: false; statusCode: 401 | 403; code: string; message: string }
+  > {
+    await this.ensureReady();
+    const keyHash = hashDeveloperApiKey(rawKey);
+    const todayUtc = getUtcDateString();
+
+    if (!this.pool) {
+      const record = this.memory!.developer_api_keys.find(k => k.key_hash === keyHash);
+      if (!record) {
+        return { ok: false, statusCode: 401, code: 'invalid_api_key', message: 'Invalid API key provided.' };
+      }
+      const owner = this.memory!.users.find(u => u.id === record.user_id);
+      if (!owner || owner.status === 'suspended') {
+        return { ok: false, statusCode: 403, code: 'account_suspended', message: 'The account associated with this API key is suspended.' };
+      }
+      if (!record.is_enabled) {
+        return { ok: false, statusCode: 403, code: 'api_key_disabled', message: 'This API key is currently disabled.' };
+      }
+      return { ok: true, key: serializeDeveloperApiKey(record, todayUtc) };
+    }
+
+    const res = await this.pool.query(
+      `SELECT k.*, u.status AS user_status
+       FROM developer_api_keys k
+       JOIN users u ON u.id = k.user_id
+       WHERE k.key_hash = $1
+       LIMIT 1`,
+      [keyHash]
+    );
+    if (!res.rows[0]) {
+      return { ok: false, statusCode: 401, code: 'invalid_api_key', message: 'Invalid API key provided.' };
+    }
+    const row = res.rows[0];
+    if (row.user_status === 'suspended') {
+      return { ok: false, statusCode: 403, code: 'account_suspended', message: 'The account associated with this API key is suspended.' };
+    }
+    const record = mapDeveloperApiKeyRow(row);
+    if (!record.is_enabled) {
+      return { ok: false, statusCode: 403, code: 'api_key_disabled', message: 'This API key is currently disabled.' };
+    }
+    return { ok: true, key: serializeDeveloperApiKey(record, todayUtc) };
+  }
+
+  public async consumeDeveloperApiKeyCredit(
+    rawKey: string,
+    todayUtc: string = getUtcDateString()
+  ): Promise<
+    | { ok: true; key: PublicDeveloperApiKey; usageDate: string }
+    | { ok: false; statusCode: 401 | 402 | 403 | 429; code: string; message: string }
+  > {
+    await this.ensureReady();
+    const keyHash = hashDeveloperApiKey(rawKey);
+    const now = new Date().toISOString();
+
+    if (!this.pool) {
+      const record = this.memory!.developer_api_keys.find(k => k.key_hash === keyHash);
+      if (!record) {
+        return { ok: false, statusCode: 401, code: 'invalid_api_key', message: 'Invalid API key provided.' };
+      }
+      const owner = this.memory!.users.find(u => u.id === record.user_id);
+      if (!owner) {
+        return { ok: false, statusCode: 401, code: 'invalid_api_key', message: 'API key owner account not found.' };
+      }
+
+      const check = evaluateApiKeyQuota(record, { userStatus: owner.status, todayUtc });
+      if (!check.allowed) {
+        return {
+          ok: false,
+          statusCode: check.statusCode,
+          code: check.code,
+          message: check.message
+        };
+      }
+
+      record.credits = check.creditsAfter;
+      record.daily_requests_used = check.usedToday + 1;
+      record.daily_usage_date = todayUtc;
+      record.total_requests = (Number(record.total_requests) || 0) + 1;
+      record.last_used_at = now;
+      record.updated_at = now;
+
+      return {
+        ok: true,
+        key: serializeDeveloperApiKey(record, todayUtc),
+        usageDate: todayUtc
+      };
+    }
+
+    const client = await this.pool.connect();
+    try {
+      await client.query('BEGIN');
+      const res = await client.query(
+        `SELECT k.*, u.status AS user_status
+         FROM developer_api_keys k
+         JOIN users u ON u.id = k.user_id
+         WHERE k.key_hash = $1
+         LIMIT 1
+         FOR UPDATE OF k`,
+        [keyHash]
+      );
+
+      if (!res.rows[0]) {
+        await client.query('ROLLBACK');
+        return { ok: false, statusCode: 401, code: 'invalid_api_key', message: 'Invalid API key provided.' };
+      }
+
+      const row = res.rows[0];
+      const record = mapDeveloperApiKeyRow(row);
+      const userStatus = row.user_status === 'suspended' ? 'suspended' : 'active';
+      const check = evaluateApiKeyQuota(record, { userStatus, todayUtc });
+
+      if (!check.allowed) {
+        await client.query('ROLLBACK');
+        return {
+          ok: false,
+          statusCode: check.statusCode,
+          code: check.code,
+          message: check.message
+        };
+      }
+
+      const nextDailyUsed = check.usedToday + 1;
+      const updatedRes = await client.query(
+        `UPDATE developer_api_keys
+         SET credits = $1,
+             daily_requests_used = $2,
+             daily_usage_date = $3,
+             total_requests = total_requests + 1,
+             last_used_at = $4,
+             updated_at = $4
+         WHERE id = $5
+         RETURNING *`,
+        [check.creditsAfter, nextDailyUsed, todayUtc, now, record.id]
+      );
+
+      await client.query('COMMIT');
+      return {
+        ok: true,
+        key: serializeDeveloperApiKey(mapDeveloperApiKeyRow(updatedRes.rows[0]), todayUtc),
+        usageDate: todayUtc
+      };
+    } catch (err) {
+      await client.query('ROLLBACK');
+      throw err;
+    } finally {
+      client.release();
+    }
+  }
+
+  public async refundDeveloperApiKeyCredit(id: string, usageDate: string): Promise<void> {
+    await this.ensureReady();
+    const now = new Date().toISOString();
+
+    if (!this.pool) {
+      const record = this.memory!.developer_api_keys.find(k => k.id === id);
+      if (!record) return;
+      record.credits = (Number(record.credits) || 0) + 1;
+      if (record.daily_usage_date === usageDate && record.daily_requests_used > 0) {
+        record.daily_requests_used -= 1;
+      }
+      if (record.total_requests > 0) {
+        record.total_requests -= 1;
+      }
+      record.updated_at = now;
+      return;
+    }
+
+    await this.pool.query(
+      `UPDATE developer_api_keys
+       SET credits = credits + 1,
+           daily_requests_used = CASE
+             WHEN daily_usage_date = $2 AND daily_requests_used > 0 THEN daily_requests_used - 1
+             ELSE daily_requests_used
+           END,
+           total_requests = GREATEST(0, total_requests - 1),
+           updated_at = $3
+       WHERE id = $1`,
+      [id, usageDate, now]
+    );
+  }
+
+  public async adminUpdateDeveloperApiKey(
+    id: string,
+    updates: {
+      name?: string;
+      is_enabled?: boolean;
+      credits?: number;
+      add_credits?: number;
+      daily_limit?: number;
+      reset_daily_usage?: boolean;
+    }
+  ): Promise<PublicDeveloperApiKey | undefined> {
+    await this.ensureReady();
+    const now = new Date().toISOString();
+    const todayUtc = getUtcDateString();
+
+    if (!this.pool) {
+      const record = this.memory!.developer_api_keys.find(k => k.id === id);
+      if (!record) return undefined;
+
+      if (typeof updates.name === 'string' && updates.name.trim()) {
+        record.name = sanitizeApiKeyLabel(updates.name);
+      }
+      if (typeof updates.is_enabled === 'boolean') {
+        record.is_enabled = updates.is_enabled;
+      }
+      if (typeof updates.credits === 'number' && Number.isFinite(updates.credits)) {
+        record.credits = clampNonNegativeInt(updates.credits, record.credits, 10_000_000);
+      }
+      if (typeof updates.add_credits === 'number' && Number.isFinite(updates.add_credits)) {
+        record.credits = clampNonNegativeInt(record.credits + Math.trunc(updates.add_credits), 0, 10_000_000);
+      }
+      if (typeof updates.daily_limit === 'number' && Number.isFinite(updates.daily_limit)) {
+        record.daily_limit = clampNonNegativeInt(updates.daily_limit, record.daily_limit, 1_000_000);
+      }
+      if (updates.reset_daily_usage === true) {
+        record.daily_requests_used = 0;
+        record.daily_usage_date = todayUtc;
+      }
+      record.updated_at = now;
+
+      const owner = this.memory!.users.find(u => u.id === record.user_id);
+      return serializeDeveloperApiKey(
+        {
+          ...record,
+          user_name: owner?.name || record.user_name,
+          user_email: owner?.email || record.user_email
+        },
+        todayUtc
+      );
+    }
+
+    const existingRes = await this.pool.query(
+      `SELECT k.*, u.name AS user_name, u.email AS user_email
+       FROM developer_api_keys k
+       LEFT JOIN users u ON u.id = k.user_id
+       WHERE k.id = $1
+       LIMIT 1`,
+      [id]
+    );
+    if (!existingRes.rows[0]) return undefined;
+    const current = mapDeveloperApiKeyRow(existingRes.rows[0]);
+    const { usedToday } = computeEffectiveDailyUsage(current, todayUtc);
+
+    const nextName =
+      typeof updates.name === 'string' && updates.name.trim()
+        ? sanitizeApiKeyLabel(updates.name)
+        : current.name;
+    const nextEnabled =
+      typeof updates.is_enabled === 'boolean' ? updates.is_enabled : current.is_enabled;
+
+    let nextCredits = current.credits;
+    if (typeof updates.credits === 'number' && Number.isFinite(updates.credits)) {
+      nextCredits = clampNonNegativeInt(updates.credits, current.credits, 10_000_000);
+    }
+    if (typeof updates.add_credits === 'number' && Number.isFinite(updates.add_credits)) {
+      nextCredits = clampNonNegativeInt(nextCredits + Math.trunc(updates.add_credits), 0, 10_000_000);
+    }
+
+    const nextDailyLimit =
+      typeof updates.daily_limit === 'number' && Number.isFinite(updates.daily_limit)
+        ? clampNonNegativeInt(updates.daily_limit, current.daily_limit, 1_000_000)
+        : current.daily_limit;
+
+    const nextDailyUsed = updates.reset_daily_usage === true ? 0 : usedToday;
+    const nextDailyDate = updates.reset_daily_usage === true ? todayUtc : (current.daily_usage_date || todayUtc);
+
+    const updatedRes = await this.pool.query(
+      `UPDATE developer_api_keys
+       SET name = $1,
+           is_enabled = $2,
+           credits = $3,
+           daily_limit = $4,
+           daily_requests_used = $5,
+           daily_usage_date = $6,
+           updated_at = $7
+       WHERE id = $8
+       RETURNING *`,
+      [nextName, nextEnabled, nextCredits, nextDailyLimit, nextDailyUsed, nextDailyDate, now, id]
+    );
+
+    return serializeDeveloperApiKey(
+      {
+        ...mapDeveloperApiKeyRow(updatedRes.rows[0]),
+        user_name: current.user_name,
+        user_email: current.user_email
+      },
+      todayUtc
+    );
+  }
+
+  public async adminDeleteDeveloperApiKey(id: string): Promise<boolean> {
+    await this.ensureReady();
+    if (!this.pool) {
+      const prev = this.memory!.developer_api_keys.length;
+      this.memory!.developer_api_keys = this.memory!.developer_api_keys.filter(k => k.id !== id);
+      return this.memory!.developer_api_keys.length < prev;
+    }
+
+    const res = await this.pool.query(`DELETE FROM developer_api_keys WHERE id = $1`, [id]);
+    return (res.rowCount ?? 0) > 0;
   }
 }
 

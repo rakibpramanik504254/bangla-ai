@@ -6,6 +6,7 @@ export type AccountSectionId =
   | 'overview'
   | 'subscription'
   | 'billing'
+  | 'api_keys'
   | 'security'
   | 'preferences';
 
@@ -52,6 +53,14 @@ export const ACCOUNT_NAV_GROUPS: AccountNavGroup[] = [
         label: 'Billing History',
         shortLabel: 'Billing',
         description: 'Track bKash, Nagad, and Rocket TrxID orders and approval status.',
+        groupId: 'portal',
+        groupLabel: 'Account Portal',
+      },
+      {
+        id: 'api_keys',
+        label: 'API Keys',
+        shortLabel: 'API Keys',
+        description: 'Generate sk-banglaai keys, track credits & daily limits, and copy the OpenAI-compatible Base URL.',
         groupId: 'portal',
         groupLabel: 'Account Portal',
       },

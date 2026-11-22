@@ -259,6 +259,26 @@ export const POSTGRES_SCHEMA_STATEMENTS: readonly string[] = [
     updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
   )`,
   `CREATE INDEX IF NOT EXISTS idx_user_memories_user_id ON user_memories (user_id, updated_at DESC)`,
+
+  // 13. Developer API Keys (OpenAI-compatible /api/v1/chat/completions access)
+  `CREATE TABLE IF NOT EXISTS developer_api_keys (
+    id TEXT PRIMARY KEY,
+    user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    name TEXT NOT NULL DEFAULT 'Default API Key',
+    key_prefix TEXT NOT NULL,
+    key_hash TEXT UNIQUE NOT NULL,
+    is_enabled BOOLEAN NOT NULL DEFAULT TRUE,
+    credits INTEGER NOT NULL DEFAULT 50,
+    daily_limit INTEGER NOT NULL DEFAULT 50,
+    daily_requests_used INTEGER NOT NULL DEFAULT 0,
+    daily_usage_date TEXT NOT NULL DEFAULT '',
+    total_requests INTEGER NOT NULL DEFAULT 0,
+    last_used_at TIMESTAMPTZ,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+  )`,
+  `CREATE INDEX IF NOT EXISTS idx_developer_api_keys_user_id ON developer_api_keys (user_id, created_at DESC)`,
+  `CREATE INDEX IF NOT EXISTS idx_developer_api_keys_hash ON developer_api_keys (key_hash)`,
 ];
 
 export const PROVIDER_ENV_KEY_MAP: Record<string, string> = {

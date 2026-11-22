@@ -115,6 +115,17 @@ import {
   sanitizeMetaCookieValue,
   sanitizeMetaUserAgent
 } from './src/utils/metaCapi.ts';
+import {
+  DEFAULT_API_DAILY_LIMIT,
+  DEFAULT_API_INITIAL_CREDITS,
+  DEVELOPER_API_BASE_URL,
+  MAX_API_KEYS_PER_USER,
+  buildOpenAiErrorResponse,
+  clampNonNegativeInt,
+  extractBearerApiKey,
+  isValidDeveloperApiKeyFormat,
+  sanitizeOpenAiChatCompletionsBody
+} from './src/utils/developerApi.ts';
 
 dotenv.config();
 
@@ -2644,6 +2655,457 @@ app.post('/api/admin/pixel/test', requireAdmin, async (req: AuthenticatedRequest
     });
   } catch (err: any) {
     res.status(500).json({ error: err.message || 'Pixel test failed.' });
+  }
+});
+
+// ==========================================
+// 5B. Developer API (User Dashboard, Admin Controls & OpenAI-Compatible /api/v1)
+// ==========================================
+
+app.get('/api/developer/keys', authenticate, async (req: AuthenticatedRequest, res: Response) => {
+  try {
+    const [keys, settings, models] = await Promise.all([
+      db.listUserDeveloperApiKeys(req.user!.id),
+      db.getSettings(),
+      db.listModels(true)
+    ]);
+
+    res.json({
+      baseUrl: DEVELOPER_API_BASE_URL,
+      maxKeys: MAX_API_KEYS_PER_USER,
+      defaults: {
+        dailyLimit: clampNonNegativeInt(settings.api_default_daily_limit, DEFAULT_API_DAILY_LIMIT, 1_000_000),
+        initialCredits: clampNonNegativeInt(settings.api_default_credits, DEFAULT_API_INITIAL_CREDITS, 10_000_000)
+      },
+      keys,
+      models: models.slice(0, 20).map((m) => ({
+        id: m.model_name,
+        display_name: m.display_name,
+        is_free: Boolean(m.is_free)
+      }))
+    });
+  } catch (err: any) {
+    res.status(500).json({ error: err.message || 'Failed to load Developer API keys.' });
+  }
+});
+
+app.post('/api/developer/keys', authenticate, async (req: AuthenticatedRequest, res: Response) => {
+  try {
+    const name = typeof req.body?.name === 'string' ? req.body.name : undefined;
+    const created = await db.createDeveloperApiKey(req.user!.id, name);
+    res.status(201).json({
+      key: created.key,
+      plainKey: created.plainKey,
+      baseUrl: DEVELOPER_API_BASE_URL
+    });
+  } catch (err: any) {
+    res.status(400).json({ error: err.message || 'Could not create API key.' });
+  }
+});
+
+app.delete('/api/developer/keys/:id', authenticate, async (req: AuthenticatedRequest, res: Response) => {
+  try {
+    const deleted = await db.deleteUserDeveloperApiKey(req.params.id, req.user!.id);
+    if (!deleted) {
+      res.status(404).json({ error: 'API key not found.' });
+      return;
+    }
+    res.json({ success: true });
+  } catch (err: any) {
+    res.status(500).json({ error: err.message || 'Failed to delete API key.' });
+  }
+});
+
+app.get('/api/admin/developer-keys', requireAdmin, async (_req: AuthenticatedRequest, res: Response) => {
+  try {
+    const [keys, settings] = await Promise.all([
+      db.listAllDeveloperApiKeys(),
+      db.getSettings()
+    ]);
+
+    const summary = {
+      totalKeys: keys.length,
+      activeKeys: keys.filter((k) => k.is_enabled).length,
+      totalCreditsRemaining: keys.reduce((sum, k) => sum + k.credits, 0),
+      requestsToday: keys.reduce((sum, k) => sum + k.daily_requests_used, 0),
+      totalRequestsAllTime: keys.reduce((sum, k) => sum + k.total_requests, 0)
+    };
+
+    res.json({
+      baseUrl: DEVELOPER_API_BASE_URL,
+      settings: {
+        api_default_daily_limit: clampNonNegativeInt(
+          settings.api_default_daily_limit,
+          DEFAULT_API_DAILY_LIMIT,
+          1_000_000
+        ),
+        api_default_credits: clampNonNegativeInt(
+          settings.api_default_credits,
+          DEFAULT_API_INITIAL_CREDITS,
+          10_000_000
+        )
+      },
+      summary,
+      keys
+    });
+  } catch (err: any) {
+    res.status(500).json({ error: err.message || 'Failed to load Developer API keys.' });
+  }
+});
+
+app.put('/api/admin/developer-keys/settings', requireAdmin, async (req: AuthenticatedRequest, res: Response) => {
+  try {
+    const rawDailyLimit = Number(req.body?.api_default_daily_limit);
+    const rawDefaultCredits =
+      req.body?.api_default_credits !== undefined
+        ? Number(req.body.api_default_credits)
+        : undefined;
+
+    if (!Number.isFinite(rawDailyLimit) || rawDailyLimit < 1 || rawDailyLimit > 1_000_000) {
+      res.status(400).json({ error: 'Default daily request limit must be between 1 and 1,000,000.' });
+      return;
+    }
+
+    if (
+      rawDefaultCredits !== undefined &&
+      (!Number.isFinite(rawDefaultCredits) || rawDefaultCredits < 0 || rawDefaultCredits > 10_000_000)
+    ) {
+      res.status(400).json({ error: 'Default starting credits must be between 0 and 10,000,000.' });
+      return;
+    }
+
+    const updated = await db.updateSettings({
+      api_default_daily_limit: Math.floor(rawDailyLimit),
+      ...(rawDefaultCredits !== undefined ? { api_default_credits: Math.floor(rawDefaultCredits) } : {})
+    });
+
+    res.json({
+      success: true,
+      settings: {
+        api_default_daily_limit: updated.api_default_daily_limit ?? Math.floor(rawDailyLimit),
+        api_default_credits: updated.api_default_credits ?? DEFAULT_API_INITIAL_CREDITS
+      }
+    });
+  } catch (err: any) {
+    res.status(500).json({ error: err.message || 'Failed to update Developer API default limits.' });
+  }
+});
+
+app.patch('/api/admin/developer-keys/:id', requireAdmin, async (req: AuthenticatedRequest, res: Response) => {
+  try {
+    const updates: {
+      name?: string;
+      is_enabled?: boolean;
+      credits?: number;
+      add_credits?: number;
+      daily_limit?: number;
+      reset_daily_usage?: boolean;
+    } = {};
+
+    if (typeof req.body?.name === 'string') {
+      updates.name = req.body.name;
+    }
+    if (typeof req.body?.is_enabled === 'boolean') {
+      updates.is_enabled = req.body.is_enabled;
+    }
+    if (req.body?.credits !== undefined) {
+      const val = Number(req.body.credits);
+      if (!Number.isFinite(val) || val < 0 || val > 10_000_000) {
+        res.status(400).json({ error: 'Credits must be a non-negative integer up to 10,000,000.' });
+        return;
+      }
+      updates.credits = Math.floor(val);
+    }
+    if (req.body?.add_credits !== undefined) {
+      const delta = Number(req.body.add_credits);
+      if (!Number.isFinite(delta) || Math.abs(delta) > 10_000_000) {
+        res.status(400).json({ error: 'Credit adjustment must be a valid integer.' });
+        return;
+      }
+      updates.add_credits = Math.trunc(delta);
+    }
+    if (req.body?.daily_limit !== undefined) {
+      const val = Number(req.body.daily_limit);
+      if (!Number.isFinite(val) || val < 0 || val > 1_000_000) {
+        res.status(400).json({ error: 'Daily limit must be a non-negative integer up to 1,000,000.' });
+        return;
+      }
+      updates.daily_limit = Math.floor(val);
+    }
+    if (req.body?.reset_daily_usage === true) {
+      updates.reset_daily_usage = true;
+    }
+
+    const updated = await db.adminUpdateDeveloperApiKey(req.params.id, updates);
+    if (!updated) {
+      res.status(404).json({ error: 'Developer API key not found.' });
+      return;
+    }
+
+    res.json({ success: true, key: updated });
+  } catch (err: any) {
+    res.status(500).json({ error: err.message || 'Failed to update Developer API key.' });
+  }
+});
+
+app.delete('/api/admin/developer-keys/:id', requireAdmin, async (req: AuthenticatedRequest, res: Response) => {
+  try {
+    const deleted = await db.adminDeleteDeveloperApiKey(req.params.id);
+    if (!deleted) {
+      res.status(404).json({ error: 'Developer API key not found.' });
+      return;
+    }
+    res.json({ success: true });
+  } catch (err: any) {
+    res.status(500).json({ error: err.message || 'Failed to delete Developer API key.' });
+  }
+});
+
+// OpenAI-compatible Developer API endpoints (Bearer sk-banglaai-...)
+app.get('/api/v1/models', async (req: Request, res: Response) => {
+  try {
+    const rawKey = extractBearerApiKey(req.headers.authorization);
+    if (!rawKey || !isValidDeveloperApiKeyFormat(rawKey)) {
+      res.status(401).json(
+        buildOpenAiErrorResponse(
+          'Missing or malformed API key. Pass `Authorization: Bearer sk-banglaai-...`.',
+          'authentication_error',
+          'invalid_api_key'
+        )
+      );
+      return;
+    }
+
+    const validation = await db.validateDeveloperApiKeyReadOnly(rawKey);
+    if (!validation.ok) {
+      res.status(validation.statusCode).json(
+        buildOpenAiErrorResponse(validation.message, 'authentication_error', validation.code)
+      );
+      return;
+    }
+
+    const enabledModels = await db.listModels(true);
+    res.json({
+      object: 'list',
+      data: enabledModels.map((m) => ({
+        id: m.model_name,
+        object: 'model',
+        created: Math.floor(new Date(m.created_at || Date.now()).getTime() / 1000),
+        owned_by: 'bangla-ai'
+      }))
+    });
+  } catch (err: any) {
+    res.status(500).json(
+      buildOpenAiErrorResponse(err?.message || 'Failed to list models.', 'server_error', 'internal_error')
+    );
+  }
+});
+
+app.post('/api/v1/chat/completions', async (req: Request, res: Response) => {
+  let consumedKeyId: string | null = null;
+  let consumedUsageDate = '';
+
+  const refundIfConsumed = async () => {
+    if (!consumedKeyId) return;
+    const keyId = consumedKeyId;
+    const usageDate = consumedUsageDate;
+    consumedKeyId = null;
+    try {
+      await db.refundDeveloperApiKeyCredit(keyId, usageDate);
+    } catch (refundErr) {
+      console.error('[Developer API] Failed to refund credit:', refundErr);
+    }
+  };
+
+  try {
+    // 1. Validate Bearer API key format & verify key exists before exposing payload/provider errors
+    const rawKey = extractBearerApiKey(req.headers.authorization);
+    if (!rawKey || !isValidDeveloperApiKeyFormat(rawKey)) {
+      res.status(401).json(
+        buildOpenAiErrorResponse(
+          'Missing or invalid API key. Provide `Authorization: Bearer sk-banglaai-...`.',
+          'authentication_error',
+          'invalid_api_key'
+        )
+      );
+      return;
+    }
+
+    const preAuth = await db.validateDeveloperApiKeyReadOnly(rawKey);
+    if (!preAuth.ok) {
+      res.status(preAuth.statusCode).json(
+        buildOpenAiErrorResponse(preAuth.message, 'authentication_error', preAuth.code)
+      );
+      return;
+    }
+
+    // 2. Validate & sanitize OpenAI request body before consuming credits
+    const enabledModels = await db.listModels(true);
+    const sanitized = sanitizeOpenAiChatCompletionsBody(req.body, enabledModels);
+    if (!sanitized.ok) {
+      res.status(400).json(buildOpenAiErrorResponse(sanitized.error, 'invalid_request_error', 'invalid_payload'));
+      return;
+    }
+
+    // 3. Resolve master OpenRouter API key (kept strictly server-side)
+    const openrouterProvider = await db.getProviderBySlug('openrouter');
+    const masterApiKey = normalizeApiKey(openrouterProvider?.api_key || process.env.OPENROUTER_API_KEY);
+    if (!masterApiKey || !isValidApiKey(masterApiKey) || (openrouterProvider && !openrouterProvider.is_active)) {
+      res.status(503).json(
+        buildOpenAiErrorResponse(
+          'Upstream AI provider is not configured yet. Please ask the administrator to configure OpenRouter in the Admin Panel.',
+          'server_error',
+          'provider_not_configured'
+        )
+      );
+      return;
+    }
+
+    // 4. Atomically validate key, enforce daily limit & credits, and deduct 1 credit
+    const consumption = await db.consumeDeveloperApiKeyCredit(rawKey);
+    if (!consumption.ok) {
+      const errType =
+        consumption.statusCode === 401
+          ? 'authentication_error'
+          : consumption.statusCode === 429
+            ? 'rate_limit_error'
+            : consumption.statusCode === 402
+              ? 'insufficient_quota'
+              : 'permission_error';
+      res.status(consumption.statusCode).json(
+        buildOpenAiErrorResponse(consumption.message, errType, consumption.code)
+      );
+      return;
+    }
+
+    consumedKeyId = consumption.key.id;
+    consumedUsageDate = consumption.usageDate;
+
+    const openrouterBase = (openrouterProvider?.base_url || OPENROUTER_DEFAULT_BASE_URL).replace(/\/+$/, '');
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 60_000);
+
+    req.on('close', () => {
+      if (!res.writableEnded) {
+        controller.abort();
+      }
+    });
+
+    let upstreamRes: globalThis.Response;
+    try {
+      upstreamRes = await fetch(`${openrouterBase}/chat/completions`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${masterApiKey}`,
+          'HTTP-Referer': 'https://bangla-ai.pro',
+          'X-Title': 'Bangla AI Developer API'
+        },
+        body: JSON.stringify(sanitized.data.payload),
+        signal: controller.signal
+      });
+    } finally {
+      clearTimeout(timeout);
+    }
+
+    if (!upstreamRes.ok) {
+      await refundIfConsumed();
+      const rawErrText = await upstreamRes.text().catch(() => '');
+      let upstreamMsg = `Upstream AI provider returned HTTP ${upstreamRes.status}.`;
+      try {
+        const parsedErr = JSON.parse(rawErrText);
+        upstreamMsg = parsedErr?.error?.message || parsedErr?.message || upstreamMsg;
+      } catch {
+        if (rawErrText.trim()) {
+          upstreamMsg = rawErrText.trim().slice(0, 300);
+        }
+      }
+      // Never leak master key in error payloads
+      const safeMsg = upstreamMsg.split(masterApiKey).join('[redacted]');
+      const statusOut = upstreamRes.status >= 400 && upstreamRes.status < 600 ? upstreamRes.status : 502;
+      res.status(statusOut).json(
+        buildOpenAiErrorResponse(safeMsg, 'upstream_error', 'upstream_provider_error')
+      );
+      return;
+    }
+
+    // Attach quota headers for developer visibility
+    res.setHeader('X-BanglaAI-Credits-Remaining', String(consumption.key.credits));
+    res.setHeader('X-BanglaAI-Daily-Limit', String(consumption.key.daily_limit));
+    res.setHeader('X-BanglaAI-Daily-Remaining', String(consumption.key.daily_remaining));
+
+    if (sanitized.data.stream && upstreamRes.body) {
+      // Stream OpenAI-compatible SSE directly
+      consumedKeyId = null; // Streaming started; request is now billed
+      res.status(200);
+      res.setHeader('Content-Type', 'text/event-stream; charset=utf-8');
+      res.setHeader('Cache-Control', 'no-cache, no-transform');
+      res.setHeader('Connection', 'keep-alive');
+      res.flushHeaders?.();
+
+      const reader = upstreamRes.body.getReader();
+      try {
+        while (true) {
+          const { done, value } = await reader.read();
+          if (done) break;
+          if (value && value.length > 0 && !res.writableEnded) {
+            res.write(Buffer.from(value));
+          }
+        }
+      } catch (streamErr) {
+        console.error('[Developer API] Stream relay interrupted:', streamErr);
+      } finally {
+        if (!res.writableEnded) {
+          res.end();
+        }
+      }
+      return;
+    }
+
+    const upstreamJson: any = await upstreamRes.json().catch(() => null);
+    if (!upstreamJson || typeof upstreamJson !== 'object') {
+      await refundIfConsumed();
+      res.status(502).json(
+        buildOpenAiErrorResponse(
+          'Received an invalid response from upstream AI provider.',
+          'upstream_error',
+          'invalid_upstream_response'
+        )
+      );
+      return;
+    }
+
+    // Mark credit consumption finalized and log token usage (best-effort)
+    consumedKeyId = null;
+    const promptTokens = Number(upstreamJson?.usage?.prompt_tokens) || 0;
+    const completionTokens = Number(upstreamJson?.usage?.completion_tokens) || 0;
+    if (promptTokens > 0 || completionTokens > 0) {
+      void db
+        .recordUsage(
+          consumption.key.user_id,
+          undefined,
+          sanitized.data.catalogModelId,
+          promptTokens,
+          completionTokens
+        )
+        .catch(() => {});
+    }
+
+    res.status(200).json(upstreamJson);
+  } catch (err: any) {
+    await refundIfConsumed();
+    if (res.headersSent) {
+      if (!res.writableEnded) res.end();
+      return;
+    }
+    const isTimeout = err?.name === 'AbortError';
+    res.status(isTimeout ? 504 : 500).json(
+      buildOpenAiErrorResponse(
+        isTimeout ? 'Upstream AI request timed out.' : err?.message || 'Internal server error.',
+        'server_error',
+        isTimeout ? 'timeout' : 'internal_error'
+      )
+    );
   }
 });
 

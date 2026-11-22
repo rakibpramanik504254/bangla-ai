@@ -24,7 +24,8 @@ import {
   Menu,
   X,
   ArrowRight,
-  ChevronRight
+  ChevronRight,
+  Terminal
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext.tsx';
 import { formatBDT } from '../../utils/billing.ts';
@@ -44,6 +45,7 @@ import {
   SeoAndSupportTab
 } from './AdminSettingsTabs.tsx';
 import { OpenRouterUsageCard } from './OpenRouterUsageCard.tsx';
+import { DeveloperApiAdminTab } from './DeveloperApiAdminTab.tsx';
 import {
   validateGa4MeasurementId,
   validateGscVerificationCode
@@ -74,6 +76,7 @@ const SECTION_ICONS: Record<AdminSectionId, React.ComponentType<{ className?: st
   finance: Wallet,
   models: Cpu,
   providers: Key,
+  developer_api: Terminal,
   users: Users,
   pixel: Activity,
   email: Mail,
@@ -1598,6 +1601,11 @@ export const AdminPanel: React.FC = () => {
                   })}
               </div>
             </div>
+          )}
+
+          {/* Section: Developer API Keys */}
+          {activeTab === 'developer_api' && (
+            <DeveloperApiAdminTab token={token} setFeedback={setFeedback} />
           )}
 
           {/* Section: Users & Quotas */}

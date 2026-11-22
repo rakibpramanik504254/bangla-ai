@@ -10,6 +10,7 @@ import {
   CreditCard,
   ExternalLink,
   Home,
+  Key,
   Lock,
   LogOut,
   Mail,
@@ -52,6 +53,7 @@ import {
   getAccountSecurityChecklist,
 } from '../../utils/accountConsoleNav.ts';
 import { copyTextSafely } from '../../utils/clipboard.ts';
+import { DeveloperApiKeysTab } from './DeveloperApiKeysTab.tsx';
 
 interface AccountBillingPanelProps {
   compact?: boolean;
@@ -65,6 +67,7 @@ const SECTION_ICONS: Record<AccountSectionId, React.ComponentType<{ className?: 
   overview: TrendingUp,
   subscription: Zap,
   billing: Receipt,
+  api_keys: Key,
   security: ShieldCheck,
   preferences: SlidersHorizontal,
 };
@@ -1077,6 +1080,9 @@ export const AccountBillingPanel: React.FC<AccountBillingPanelProps> = ({
               </div>
             </div>
           )}
+
+          {/* TAB 3B: DEVELOPER API KEYS */}
+          {activeTab === 'api_keys' && <DeveloperApiKeysTab token={token} />}
 
           {/* TAB 4: ACCOUNT & SECURITY */}
           {activeTab === 'security' && (

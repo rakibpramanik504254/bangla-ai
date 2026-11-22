@@ -196,3 +196,28 @@ export interface UserMemory {
   created_at: string;
   updated_at: string;
 }
+
+export interface DeveloperApiKey {
+  id: string;
+  user_id: string;
+  user_name?: string;
+  user_email?: string;
+  name: string;
+  key_prefix: string;
+  is_enabled: boolean;
+  credits: number;
+  daily_limit: number;
+  daily_requests_used: number;
+  daily_remaining: number;
+  daily_usage_date: string;
+  total_requests: number;
+  last_used_at: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface DeveloperApiDefaults {
+  dailyLimit: number;
+  initialCredits: number;
+}
+

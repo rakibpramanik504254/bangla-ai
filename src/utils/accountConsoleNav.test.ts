@@ -12,8 +12,10 @@ import { Payment } from '../types/index.ts';
 
 test('ACCOUNT_NAV_GROUPS defines structured Account Portal & Settings sections', () => {
   assert.equal(ACCOUNT_NAV_GROUPS.length, 2);
-  assert.equal(ALL_ACCOUNT_NAV_ITEMS.length, 5);
+  assert.equal(ALL_ACCOUNT_NAV_ITEMS.length, 6);
   assert.equal(getAccountNavItem('overview').groupLabel, 'Account Portal');
+  assert.equal(getAccountNavItem('api_keys').groupLabel, 'Account Portal');
+  assert.equal(getAccountNavItem('api_keys').label, 'API Keys');
   assert.equal(getAccountNavItem('security').groupLabel, 'Settings & Access');
   assert.equal(getAccountNavItem('billing').label, 'Billing History');
 });
