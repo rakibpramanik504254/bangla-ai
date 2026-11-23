@@ -25,7 +25,8 @@ import {
   X,
   ArrowRight,
   ChevronRight,
-  Terminal
+  Terminal,
+  UserPlus
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext.tsx';
 import { formatBDT } from '../../utils/billing.ts';
@@ -97,6 +98,15 @@ export const AdminPanel: React.FC = () => {
   const [selectedUserForSub, setSelectedUserForSub] = useState<AdminUser | null>(null);
   const [grantPlanId, setGrantPlanId] = useState<'monthly' | 'yearly'>('monthly');
   const [grantDays, setGrantDays] = useState(30);
+
+  // Direct Admin User Creation state (does not fire Facebook Pixel)
+  const [isCreateUserOpen, setIsCreateUserOpen] = useState(false);
+  const [newUserName, setNewUserName] = useState('');
+  const [newUserEmail, setNewUserEmail] = useState('');
+  const [newUserPassword, setNewUserPassword] = useState('123456');
+  const [newUserPlan, setNewUserPlan] = useState<'monthly' | 'yearly' | 'none'>('monthly');
+  const [creatingUser, setCreatingUser] = useState(false);
+  const [createUserError, setCreateUserError] = useState<string | null>(null);
 
   // Payments verification state
   const [payments, setPayments] = useState<Payment[]>([]);
@@ -380,6 +390,74 @@ export const AdminPanel: React.FC = () => {
       }
     } catch (err) {
       console.error(err);
+    }
+  };
+
+  const openCreateUserModal = () => {
+    setNewUserName('');
+    setNewUserEmail('');
+    setNewUserPassword('123456');
+    setNewUserPlan('monthly');
+    setCreateUserError(null);
+    setIsCreateUserOpen(true);
+  };
+
+  const handleCreateAdminUser = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!token || creatingUser) return;
+    setCreateUserError(null);
+
+    const cleanName = newUserName.trim();
+    const cleanEmail = newUserEmail.trim().toLowerCase();
+    const cleanPassword = newUserPassword.trim() || '123456';
+
+    if (!cleanName) {
+      setCreateUserError('Please enter the user name.');
+      return;
+    }
+    if (!cleanEmail || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(cleanEmail)) {
+      setCreateUserError('Please enter a valid Gmail / email address.');
+      return;
+    }
+    if (cleanPassword.length < 6) {
+      setCreateUserError('Password must be at least 6 characters.');
+      return;
+    }
+
+    setCreatingUser(true);
+    try {
+      const res = await fetch('/api/admin/users', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`
+        },
+        body: JSON.stringify({
+          name: cleanName,
+          email: cleanEmail,
+          password: cleanPassword,
+          planId: newUserPlan
+        })
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        throw new Error(data.error || 'Failed to create user.');
+      }
+
+      setIsCreateUserOpen(false);
+      const planLabel =
+        newUserPlan === 'yearly'
+          ? 'Yearly Plan'
+          : newUserPlan === 'monthly'
+          ? 'Monthly Plan'
+          : 'Free Account';
+      setFeedback(`User ${cleanEmail} created with ${planLabel} (Facebook Pixel not fired).`);
+      fetchUsers();
+      fetchStats();
+    } catch (err: any) {
+      setCreateUserError(err?.message || 'Could not create user.');
+    } finally {
+      setCreatingUser(false);
     }
   };
 
@@ -1675,9 +1753,20 @@ export const AdminPanel: React.FC = () => {
                     className="w-full pl-9 pr-3 py-2 text-xs rounded-xl border border-black/[0.08] dark:border-white/[0.08] bg-white dark:bg-[#1e1f20] text-[#1f1f1f] dark:text-[#e3e3e3] focus:outline-none focus:border-[#1f1f1f] dark:focus:border-[#e3e3e3] transition-colors"
                   />
                 </div>
-                <span className="text-xs text-[#444746] dark:text-[#9aa0a6] font-mono tabular-nums self-end sm:self-auto">
-                  Total Accounts: {users.length}
-                </span>
+                <div className="flex items-center justify-between sm:justify-end gap-3">
+                  <span className="text-xs text-[#444746] dark:text-[#9aa0a6] font-mono tabular-nums">
+                    Total Accounts: {users.length}
+                  </span>
+                  <button
+                    type="button"
+                    data-testid="open-create-user-modal-btn"
+                    onClick={openCreateUserModal}
+                    className="h-9 px-4 rounded-full bg-[#1f1f1f] hover:bg-[#1f1f1f]/90 dark:bg-[#e3e3e3] dark:hover:bg-[#e3e3e3]/90 text-white dark:text-[#131314] font-semibold text-xs inline-flex items-center gap-1.5 cursor-pointer transition-colors whitespace-nowrap"
+                  >
+                    <UserPlus className="w-3.5 h-3.5" />
+                    <span>Create User</span>
+                  </button>
+                </div>
               </div>
 
               <div className="bg-white dark:bg-[#1e1f20] rounded-2xl border border-black/[0.08] dark:border-white/[0.08] overflow-hidden">
@@ -1907,6 +1996,176 @@ export const AdminPanel: React.FC = () => {
                           className="h-9 px-4 rounded-full bg-[#1f1f1f] hover:bg-[#1f1f1f]/90 dark:bg-[#e3e3e3] dark:hover:bg-[#e3e3e3]/90 text-white dark:text-[#131314] font-semibold text-xs cursor-pointer"
                         >
                           Confirm &amp; Grant
+                        </button>
+                      </div>
+                    </form>
+                  </div>
+                </div>
+              )}
+
+              {/* Direct Create User Modal (Does NOT fire Facebook Pixel) */}
+              {isCreateUserOpen && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-xs">
+                  <div
+                    role="dialog"
+                    aria-modal="true"
+                    data-testid="admin-create-user-modal"
+                    className="relative bg-white dark:bg-[#1e1f20] rounded-3xl p-6 max-w-md w-full border border-black/[0.08] dark:border-white/[0.08] shadow-xl space-y-4"
+                  >
+                    <button
+                      type="button"
+                      onClick={() => setIsCreateUserOpen(false)}
+                      aria-label="Close"
+                      className="absolute top-4 right-4 w-8 h-8 rounded-full flex items-center justify-center text-[#444746] dark:text-[#9aa0a6] hover:bg-[#f0f4f9] dark:hover:bg-[#282a2c] cursor-pointer"
+                    >
+                      <X className="w-4 h-4" />
+                    </button>
+
+                    <div>
+                      <h3 className="font-semibold text-base text-[#1f1f1f] dark:text-[#e3e3e3] flex items-center gap-2">
+                        <UserPlus className="w-4 h-4" />
+                        <span>Create New User</span>
+                      </h3>
+                      <p className="text-xs text-[#444746] dark:text-[#9aa0a6] mt-0.5">
+                        Create an account directly with a Monthly or Yearly plan. No Facebook Pixel event will fire.
+                      </p>
+                    </div>
+
+                    {createUserError && (
+                      <div className="p-2.5 text-xs bg-red-50 dark:bg-red-950/40 border border-red-200 dark:border-red-900 text-red-600 dark:text-red-300 rounded-xl flex items-start gap-2">
+                        <AlertCircle className="w-4 h-4 shrink-0 mt-0.5" />
+                        <span>{createUserError}</span>
+                      </div>
+                    )}
+
+                    <form onSubmit={handleCreateAdminUser} className="space-y-3.5 text-xs">
+                      <div>
+                        <label
+                          htmlFor="admin-create-user-name"
+                          className="block font-medium mb-1 text-[#1f1f1f] dark:text-[#e3e3e3]"
+                        >
+                          Full Name *
+                        </label>
+                        <input
+                          id="admin-create-user-name"
+                          type="text"
+                          required
+                          maxLength={100}
+                          value={newUserName}
+                          onChange={e => setNewUserName(e.target.value)}
+                          placeholder="e.g. Rakib Hasan"
+                          className="w-full px-3 py-2.5 rounded-xl border border-black/[0.08] dark:border-white/[0.08] bg-[#f0f4f9] dark:bg-[#131314] text-[#1f1f1f] dark:text-[#e3e3e3] focus:outline-none focus:border-[#1f1f1f] dark:focus:border-[#e3e3e3]"
+                        />
+                      </div>
+
+                      <div>
+                        <label
+                          htmlFor="admin-create-user-email"
+                          className="block font-medium mb-1 text-[#1f1f1f] dark:text-[#e3e3e3]"
+                        >
+                          Gmail / Email *
+                        </label>
+                        <input
+                          id="admin-create-user-email"
+                          type="email"
+                          required
+                          value={newUserEmail}
+                          onChange={e => setNewUserEmail(e.target.value)}
+                          placeholder="user@gmail.com"
+                          className="w-full px-3 py-2.5 rounded-xl border border-black/[0.08] dark:border-white/[0.08] bg-[#f0f4f9] dark:bg-[#131314] text-[#1f1f1f] dark:text-[#e3e3e3] focus:outline-none focus:border-[#1f1f1f] dark:focus:border-[#e3e3e3]"
+                        />
+                      </div>
+
+                      <div>
+                        <div className="flex items-center justify-between mb-1">
+                          <label
+                            htmlFor="admin-create-user-password"
+                            className="font-medium text-[#1f1f1f] dark:text-[#e3e3e3]"
+                          >
+                            Password *
+                          </label>
+                          <span className="text-[10px] font-mono text-[#444746] dark:text-[#9aa0a6]">
+                            Default: 123456
+                          </span>
+                        </div>
+                        <input
+                          id="admin-create-user-password"
+                          type="text"
+                          required
+                          minLength={6}
+                          value={newUserPassword}
+                          onChange={e => setNewUserPassword(e.target.value)}
+                          placeholder="123456"
+                          className="w-full px-3 py-2.5 rounded-xl border border-black/[0.08] dark:border-white/[0.08] bg-[#f0f4f9] dark:bg-[#131314] text-[#1f1f1f] dark:text-[#e3e3e3] font-mono focus:outline-none focus:border-[#1f1f1f] dark:focus:border-[#e3e3e3]"
+                        />
+                      </div>
+
+                      <div>
+                        <label className="block font-medium mb-1.5 text-[#1f1f1f] dark:text-[#e3e3e3]">
+                          Subscription Plan
+                        </label>
+                        <div className="grid grid-cols-2 gap-2">
+                          <button
+                            type="button"
+                            data-testid="admin-create-user-plan-monthly"
+                            onClick={() => setNewUserPlan('monthly')}
+                            className={`p-3 rounded-2xl border text-left transition-colors cursor-pointer ${
+                              newUserPlan === 'monthly'
+                                ? 'border-[#1f1f1f] dark:border-[#e3e3e3] bg-[#e9eef6] dark:bg-[#282a2c] ring-1 ring-[#1f1f1f] dark:ring-[#e3e3e3]'
+                                : 'border-black/[0.08] dark:border-white/[0.08] bg-[#f0f4f9]/60 dark:bg-[#131314]/60'
+                            }`}
+                          >
+                            <div className="font-semibold text-[#1f1f1f] dark:text-[#e3e3e3]">Monthly Plan</div>
+                            <div className="text-[10px] font-mono text-[#444746] dark:text-[#9aa0a6] mt-0.5">
+                              30 days · 1M tokens
+                            </div>
+                          </button>
+
+                          <button
+                            type="button"
+                            data-testid="admin-create-user-plan-yearly"
+                            onClick={() => setNewUserPlan('yearly')}
+                            className={`p-3 rounded-2xl border text-left transition-colors cursor-pointer ${
+                              newUserPlan === 'yearly'
+                                ? 'border-[#1f1f1f] dark:border-[#e3e3e3] bg-[#e9eef6] dark:bg-[#282a2c] ring-1 ring-[#1f1f1f] dark:ring-[#e3e3e3]'
+                                : 'border-black/[0.08] dark:border-white/[0.08] bg-[#f0f4f9]/60 dark:bg-[#131314]/60'
+                            }`}
+                          >
+                            <div className="font-semibold text-[#1f1f1f] dark:text-[#e3e3e3]">Yearly Plan</div>
+                            <div className="text-[10px] font-mono text-[#444746] dark:text-[#9aa0a6] mt-0.5">
+                              365 days · 15M tokens
+                            </div>
+                          </button>
+                        </div>
+
+                        <button
+                          type="button"
+                          onClick={() => setNewUserPlan('none')}
+                          className={`mt-2 w-full py-2 px-3 rounded-xl border text-[11px] font-medium text-center transition-colors cursor-pointer ${
+                            newUserPlan === 'none'
+                              ? 'border-[#1f1f1f] dark:border-[#e3e3e3] bg-[#e9eef6] dark:bg-[#282a2c] text-[#1f1f1f] dark:text-[#e3e3e3] font-semibold'
+                              : 'border-black/[0.08] dark:border-white/[0.08] text-[#444746] dark:text-[#9aa0a6] hover:bg-[#f0f4f9] dark:hover:bg-[#282a2c]'
+                          }`}
+                        >
+                          Free Account (No Paid Plan)
+                        </button>
+                      </div>
+
+                      <div className="flex items-center justify-end gap-2 pt-2">
+                        <button
+                          type="button"
+                          onClick={() => setIsCreateUserOpen(false)}
+                          className="h-9 px-4 rounded-full border border-black/[0.1] dark:border-white/[0.12] hover:bg-[#f0f4f9] dark:hover:bg-[#282a2c] text-xs font-semibold cursor-pointer"
+                        >
+                          Cancel
+                        </button>
+                        <button
+                          type="submit"
+                          disabled={creatingUser}
+                          data-testid="admin-create-user-submit-btn"
+                          className="h-9 px-5 rounded-full bg-[#1f1f1f] hover:bg-[#1f1f1f]/90 dark:bg-[#e3e3e3] dark:hover:bg-[#e3e3e3]/90 text-white dark:text-[#131314] font-semibold text-xs cursor-pointer disabled:opacity-50"
+                        >
+                          {creatingUser ? 'Creating...' : 'Create User'}
                         </button>
                       </div>
                     </form>

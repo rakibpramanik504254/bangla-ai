@@ -1637,6 +1637,137 @@ export class Database {
     return mapUserRow(res.rows[0]);
   }
 
+  public async adminCreateUserWithPlan(params: {
+    name: string;
+    email: string;
+    password: string;
+    planId: 'monthly' | 'yearly' | 'none';
+  }): Promise<{ user: User; subscription: Subscription | null }> {
+    await this.ensureReady();
+    const cleanEmail = params.email.toLowerCase().trim();
+    const cleanName = params.name.trim();
+    const now = new Date().toISOString();
+    const passwordHash = hashPassword(params.password);
+    const hasPaidPlan = params.planId === 'monthly' || params.planId === 'yearly';
+    const usageLimit =
+      params.planId === 'yearly'
+        ? 15000000
+        : params.planId === 'monthly'
+        ? 1000000
+        : 0;
+
+    const userId = `usr_${crypto.randomUUID().slice(0, 8)}`;
+    const newUser: User = {
+      id: userId,
+      email: cleanEmail,
+      password_hash: passwordHash,
+      name: cleanName,
+      phone: '',
+      role: 'user',
+      status: 'active',
+      usage_limit: usageLimit,
+      current_usage: 0,
+      created_at: now,
+      updated_at: now
+    };
+
+    const newSubscription: Subscription | null = hasPaidPlan
+      ? {
+          id: `sub_${crypto.randomUUID().slice(0, 8)}`,
+          user_id: userId,
+          plan_id: params.planId as 'monthly' | 'yearly',
+          plan_name: PLANS[params.planId as 'monthly' | 'yearly'].name,
+          amount: PLANS[params.planId as 'monthly' | 'yearly'].priceBDT,
+          currency: 'BDT',
+          status: 'active',
+          started_at: now,
+          expires_at: calculateExpiryDate(params.planId as 'monthly' | 'yearly').toISOString(),
+          auto_renew: false,
+          payment_method: 'admin_created',
+          trx_id: `ADMIN_DIRECT_${Date.now()}`,
+          created_at: now,
+          updated_at: now
+        }
+      : null;
+
+    if (!this.pool) {
+      const existing = this.memory!.users.find(u => u.email.toLowerCase() === cleanEmail);
+      if (existing) {
+        const err = new Error('An account with this email already exists.') as Error & {
+          statusCode?: number;
+          code?: string;
+        };
+        err.statusCode = 409;
+        err.code = 'EMAIL_EXISTS';
+        throw err;
+      }
+
+      this.memory!.users.push(newUser);
+      if (newSubscription) {
+        this.memory!.subscriptions.push(newSubscription);
+      }
+      return { user: newUser, subscription: newSubscription };
+    }
+
+    const client = await this.pool.connect();
+    try {
+      await client.query('BEGIN');
+
+      const dup = await client.query(
+        `SELECT id FROM users WHERE LOWER(email) = LOWER($1) LIMIT 1`,
+        [cleanEmail]
+      );
+      if (dup.rows[0]) {
+        const err = new Error('An account with this email already exists.') as Error & {
+          statusCode?: number;
+          code?: string;
+        };
+        err.statusCode = 409;
+        err.code = 'EMAIL_EXISTS';
+        throw err;
+      }
+
+      const userRes = await client.query(
+        `INSERT INTO users (
+          id, email, password_hash, name, phone, role, status, usage_limit, current_usage, avatar_url, created_at, updated_at
+        ) VALUES ($1,$2,$3,$4,'','user','active',$5,0,'',$6,$6)
+        RETURNING *`,
+        [newUser.id, newUser.email, newUser.password_hash, newUser.name, newUser.usage_limit, now]
+      );
+
+      let createdSub: Subscription | null = null;
+      if (newSubscription) {
+        const subRes = await client.query(
+          `INSERT INTO subscriptions (
+            id, user_id, plan_id, plan_name, amount, currency, status, started_at, expires_at,
+            auto_renew, payment_method, trx_id, created_at, updated_at
+          ) VALUES ($1,$2,$3,$4,$5,'BDT','active',$6,$7,false,$8,$9,$6,$6)
+          RETURNING *`,
+          [
+            newSubscription.id,
+            newSubscription.user_id,
+            newSubscription.plan_id,
+            newSubscription.plan_name,
+            newSubscription.amount,
+            now,
+            newSubscription.expires_at,
+            newSubscription.payment_method,
+            newSubscription.trx_id
+          ]
+        );
+        createdSub = mapSubscriptionRow(subRes.rows[0]);
+      }
+
+      await client.query('COMMIT');
+      return { user: mapUserRow(userRes.rows[0]), subscription: createdSub };
+    } catch (err) {
+      await client.query('ROLLBACK');
+      throw err;
+    } finally {
+      client.release();
+    }
+  }
+
   public async updateUser(id: string, updates: Partial<User>): Promise<User | undefined> {
     await this.ensureReady();
     const now = new Date().toISOString();

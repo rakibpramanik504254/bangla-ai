@@ -1716,6 +1716,64 @@ app.get('/api/admin/users', requireAdmin, async (req: AuthenticatedRequest, res:
   }
 });
 
+app.post('/api/admin/users', requireAdmin, async (req: AuthenticatedRequest, res: Response) => {
+  try {
+    const rawName = typeof req.body?.name === 'string' ? req.body.name.trim() : '';
+    const rawEmail = typeof req.body?.email === 'string' ? req.body.email.trim().toLowerCase() : '';
+    const rawPassword = typeof req.body?.password === 'string' && req.body.password.trim().length > 0
+      ? req.body.password.trim()
+      : '123456';
+    const rawPlan = typeof req.body?.planId === 'string' ? req.body.planId.trim().toLowerCase() : 'monthly';
+    const planId: 'monthly' | 'yearly' | 'none' =
+      rawPlan === 'yearly' ? 'yearly' : rawPlan === 'none' ? 'none' : 'monthly';
+
+    if (!rawName || rawName.length > 100) {
+      res.status(400).json({ error: 'Valid user name (1–100 characters) is required.' });
+      return;
+    }
+    if (!rawEmail || !isValidEmailAddress(rawEmail)) {
+      res.status(400).json({ error: 'Please enter a valid Gmail / email address.' });
+      return;
+    }
+    if (rawPassword.length < 6 || rawPassword.length > 128) {
+      res.status(400).json({ error: 'Password must be between 6 and 128 characters.' });
+      return;
+    }
+
+    // Direct admin creation intentionally skips payment creation and NEVER fires Facebook Pixel / Meta CAPI events
+    const { user: createdUser, subscription } = await db.adminCreateUserWithPlan({
+      name: rawName,
+      email: rawEmail,
+      password: rawPassword,
+      planId
+    });
+
+    res.status(201).json({
+      success: true,
+      pixelFired: false,
+      user: {
+        id: createdUser.id,
+        email: createdUser.email,
+        name: createdUser.name,
+        phone: createdUser.phone,
+        role: createdUser.role,
+        status: createdUser.status,
+        usage_limit: createdUser.usage_limit,
+        current_usage: createdUser.current_usage,
+        created_at: createdUser.created_at,
+        subscription
+      },
+      subscription
+    });
+  } catch (err: any) {
+    const statusCode =
+      typeof err?.statusCode === 'number' && err.statusCode >= 400 && err.statusCode < 600
+        ? err.statusCode
+        : 500;
+    res.status(statusCode).json({ error: err.message || 'Failed to create user.' });
+  }
+});
+
 app.put('/api/admin/users/:id', requireAdmin, async (req: AuthenticatedRequest, res: Response) => {
   try {
     const { status, role, usage_limit } = req.body;
