@@ -1,5 +1,16 @@
 import React, { useMemo, useState } from 'react';
-import { AlertTriangle, Check } from 'lucide-react';
+import {
+  Check,
+  Code2,
+  Cpu,
+  FileText,
+  Image as ImageIcon,
+  Layers,
+  MessageSquare,
+  Search,
+  Wallet,
+  Zap,
+} from 'lucide-react';
 import { useAuth } from '../../context/AuthContext.tsx';
 import { formatBDT } from '../../utils/billing.ts';
 import { WatchTutorialButton } from '../common/WatchTutorialButton.tsx';
@@ -11,7 +22,32 @@ import {
   getComparisonPlanInfo,
   getPlanFeatures,
   toggleToolSelection,
+  type ComparisonToolIconKey,
 } from '../../utils/pricingCalculator.ts';
+
+const ToolCategoryIcon: React.FC<{ iconKey: ComparisonToolIconKey; className?: string }> = ({
+  iconKey,
+  className = 'w-5 h-5',
+}) => {
+  switch (iconKey) {
+    case 'message':
+      return <MessageSquare className={className} aria-hidden="true" />;
+    case 'code':
+      return <Code2 className={className} aria-hidden="true" />;
+    case 'layers':
+      return <Layers className={className} aria-hidden="true" />;
+    case 'zap':
+      return <Zap className={className} aria-hidden="true" />;
+    case 'search':
+      return <Search className={className} aria-hidden="true" />;
+    case 'cpu':
+      return <Cpu className={className} aria-hidden="true" />;
+    case 'file':
+      return <FileText className={className} aria-hidden="true" />;
+    case 'image':
+      return <ImageIcon className={className} aria-hidden="true" />;
+  }
+};
 
 export const PricingComparisonSection: React.FC = () => {
   const { user, loading, token, openCheckout } = useAuth();
@@ -62,23 +98,23 @@ export const PricingComparisonSection: React.FC = () => {
           </div>
 
           <h2 className="text-3xl sm:text-4xl lg:text-[40px] font-bold tracking-tight leading-[1.15] text-[#1f1f1f] dark:text-[#e3e3e3] text-balance">
-            The best value in AI
+            Simple, transparent pricing
           </h2>
           <p className="text-sm sm:text-base text-[#444746] dark:text-[#9aa0a6] leading-[1.7]">
-            One subscription replaces every model and app for less than you already spend.
+            Access multiple leading AI models in one independent workspace — without juggling separate international subscriptions.
           </p>
         </div>
 
         {/* Two-Column Comparison Cards + Center VS Badge */}
         <div className="grid grid-cols-1 lg:grid-cols-[minmax(0,0.92fr)_auto_minmax(0,1.18fr)] gap-4 lg:gap-4 items-stretch">
-          {/* Left Card: WHAT YOU PAY TODAY */}
+          {/* Left Card: SEPARATE AI PLANS */}
           <div className="rounded-2xl bg-white dark:bg-[#131314] border border-black/[0.08] dark:border-white/[0.08] p-5 sm:p-6 flex flex-col justify-between">
             <div>
               {/* Card Header */}
               <div className="flex items-center justify-between gap-2 mb-3">
-                <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-red-500/[0.08] dark:bg-red-500/[0.12] border border-red-500/20 text-red-700 dark:text-red-400 text-[10px] sm:text-[11px] font-semibold uppercase tracking-wider">
-                  <AlertTriangle className="w-3 h-3 shrink-0" aria-hidden="true" />
-                  <span>WHAT YOU PAY TODAY</span>
+                <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-[#f0f4f9] dark:bg-[#1e1f20] border border-black/[0.08] dark:border-white/[0.1] text-[#1f1f1f] dark:text-[#e3e3e3] text-[10px] sm:text-[11px] font-semibold uppercase tracking-wider">
+                  <Wallet className="w-3 h-3 shrink-0" aria-hidden="true" />
+                  <span>SEPARATE AI PLANS</span>
                 </span>
                 <span
                   data-testid="selected-tools-count"
@@ -89,11 +125,11 @@ export const PricingComparisonSection: React.FC = () => {
               </div>
 
               <p className="text-xs sm:text-[13px] font-medium text-[#444746] dark:text-[#9aa0a6] mb-3.5">
-                Which AI models do you use?
+                Which AI workflows do you need each month?
               </p>
 
-              {/* Interactive Model Icon Grid */}
-              <div className="grid grid-cols-4 gap-2.5">
+              {/* Interactive Neutral Workflow Grid */}
+              <div className="grid grid-cols-4 gap-2">
                 {COMPARISON_AI_TOOLS.map((tool) => {
                   const isSelected = selectedToolIds.includes(tool.id);
                   return (
@@ -104,10 +140,10 @@ export const PricingComparisonSection: React.FC = () => {
                       aria-pressed={isSelected}
                       aria-label={`Toggle ${tool.name} (${formatBDT(tool.monthlyBDT)}/month)`}
                       title={`${tool.name} • ${formatBDT(tool.monthlyBDT)}/mo`}
-                      className={`relative aspect-square rounded-xl flex items-center justify-center p-2.5 transition-all duration-150 cursor-pointer focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#1f1f1f] dark:focus-visible:outline-[#e3e3e3] ${
+                      className={`relative rounded-xl flex flex-col items-center justify-center gap-1.5 py-3 px-1.5 transition-all duration-150 cursor-pointer focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#1f1f1f] dark:focus-visible:outline-[#e3e3e3] ${
                         isSelected
-                          ? 'bg-[#e9eef6] dark:bg-[#282a2c] border-2 border-[#1f1f1f] dark:border-[#e3e3e3] opacity-100'
-                          : 'bg-[#f0f4f9]/70 dark:bg-[#1e1f20] border border-black/[0.08] dark:border-white/[0.08] opacity-60 hover:opacity-90 hover:border-black/20 dark:hover:border-white/20'
+                          ? 'bg-[#e9eef6] dark:bg-[#282a2c] border-2 border-[#1f1f1f] dark:border-[#e3e3e3] text-[#1f1f1f] dark:text-[#e3e3e3] opacity-100'
+                          : 'bg-[#f0f4f9]/70 dark:bg-[#1e1f20] border border-black/[0.08] dark:border-white/[0.08] text-[#444746] dark:text-[#9aa0a6] opacity-70 hover:opacity-100 hover:border-black/20 dark:hover:border-white/20'
                       }`}
                     >
                       {isSelected && (
@@ -118,17 +154,16 @@ export const PricingComparisonSection: React.FC = () => {
                           <Check className="w-2.5 h-2.5 stroke-[3]" />
                         </span>
                       )}
-                      <img
-                        src={tool.iconSrc}
-                        alt={tool.iconAlt}
-                        className={`w-7 h-7 object-contain select-none ${tool.invertDark ? 'dark:invert' : ''}`}
-                      />
+                      <ToolCategoryIcon iconKey={tool.iconKey} className="w-4.5 h-4.5 shrink-0" />
+                      <span className="text-[10px] font-medium leading-tight text-center truncate w-full">
+                        {tool.shortLabel}
+                      </span>
                     </button>
                   );
                 })}
               </div>
 
-              {/* Dynamic Selected Models Breakdown */}
+              {/* Dynamic Selected Workflows Breakdown */}
               <div className="mt-5 divide-y divide-black/[0.06] dark:divide-white/[0.06]">
                 {summary.selectedTools.length > 0 ? (
                   summary.selectedTools.map((tool) => (
@@ -137,13 +172,8 @@ export const PricingComparisonSection: React.FC = () => {
                       className="py-2.5 flex items-center justify-between gap-3 text-xs sm:text-[13px]"
                     >
                       <div className="flex items-center gap-2.5 min-w-0">
-                        <span className="w-6 h-6 rounded-lg bg-[#f0f4f9] dark:bg-[#1e1f20] border border-black/[0.06] dark:border-white/[0.08] flex items-center justify-center shrink-0">
-                          <img
-                            src={tool.iconSrc}
-                            alt=""
-                            aria-hidden="true"
-                            className={`w-4 h-4 object-contain ${tool.invertDark ? 'dark:invert' : ''}`}
-                          />
+                        <span className="w-6 h-6 rounded-lg bg-[#f0f4f9] dark:bg-[#1e1f20] border border-black/[0.06] dark:border-white/[0.08] text-[#1f1f1f] dark:text-[#e3e3e3] flex items-center justify-center shrink-0">
+                          <ToolCategoryIcon iconKey={tool.iconKey} className="w-3.5 h-3.5" />
                         </span>
                         <span className="font-medium text-[#1f1f1f] dark:text-[#e3e3e3] truncate">
                           {tool.name}
@@ -156,16 +186,16 @@ export const PricingComparisonSection: React.FC = () => {
                   ))
                 ) : (
                   <p className="py-6 text-center text-xs text-[#444746] dark:text-[#9aa0a6]">
-                    Select one or more AI tools above to calculate your current monthly cost.
+                    Select one or more AI workflows above to estimate typical standalone costs.
                   </p>
                 )}
               </div>
             </div>
 
             {/* Left Card Summary Footer */}
-            <div className="mt-5 pt-4 px-4 py-3.5 rounded-xl bg-red-500/[0.05] dark:bg-red-500/[0.09] border border-red-500/20 flex items-center justify-between gap-3">
+            <div className="mt-5 pt-4 px-4 py-3.5 rounded-xl bg-[#f0f4f9] dark:bg-[#1e1f20] border border-black/[0.08] dark:border-white/[0.08] flex items-center justify-between gap-3">
               <div className="min-w-0">
-                <p className="text-sm font-bold text-[#1f1f1f] dark:text-[#e3e3e3]">Total</p>
+                <p className="text-sm font-bold text-[#1f1f1f] dark:text-[#e3e3e3]">Estimated Total</p>
                 <p className="text-[11px] leading-snug text-[#444746] dark:text-[#9aa0a6]">
                   {summary.loginsLabel}
                 </p>
@@ -173,11 +203,11 @@ export const PricingComparisonSection: React.FC = () => {
               <div className="text-right shrink-0 whitespace-nowrap">
                 <span
                   data-testid="today-total-cost"
-                  className="text-xl sm:text-[22px] font-bold font-mono text-red-600 dark:text-red-400 tabular-nums"
+                  className="text-xl sm:text-[22px] font-bold font-mono text-[#1f1f1f] dark:text-[#e3e3e3] tabular-nums"
                 >
                   {summary.formattedTotalBDT}
                 </span>
-                <span className="text-xs font-medium text-red-600/80 dark:text-red-400/90 ml-0.5">
+                <span className="text-xs font-medium text-[#444746] dark:text-[#9aa0a6] ml-0.5">
                   /month
                 </span>
               </div>

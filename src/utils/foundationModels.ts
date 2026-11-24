@@ -1,86 +1,78 @@
+export type FoundationModelIconKey =
+  | 'code'
+  | 'sparkles'
+  | 'cpu'
+  | 'zap'
+  | 'layers'
+  | 'book';
+
 export interface CuratedFoundationModel {
   id: string;
   name: string;
-  provider: string;
-  iconSrc: string;
-  iconAlt: string;
-  invertDark?: boolean;
+  category: string;
+  iconKey: FoundationModelIconKey;
 }
 
 export const CURATED_FOUNDATION_MODELS: readonly CuratedFoundationModel[] = [
   {
     id: 'claude-fable-5-2',
     name: 'Claude Fable 5.2 (max)',
-    provider: 'Anthropic',
-    iconSrc: '/assets/aistudio/calc-claude_2a15ea2f.svg',
-    iconAlt: 'Anthropic Claude logo',
+    category: 'Coding & Prose',
+    iconKey: 'code',
   },
   {
     id: 'gemini-4-carbon',
     name: 'Gemini 4 Carbon (high)',
-    provider: 'Google',
-    iconSrc: '/assets/aistudio/calc-gemini_221ee978.svg',
-    iconAlt: 'Google Gemini logo',
+    category: 'Multimodal 2M',
+    iconKey: 'sparkles',
   },
   {
     id: 'gpt-6-astra',
     name: 'GPT-6 Astra (max)',
-    provider: 'OpenAI',
-    iconSrc: '/assets/aistudio/calc-openai_c4f23f92.svg',
-    iconAlt: 'OpenAI logo',
-    invertDark: true,
+    category: 'General Reasoning',
+    iconKey: 'cpu',
   },
   {
     id: 'grok-4-7',
     name: 'Grok 4.7 (xhigh)',
-    provider: 'xAI',
-    iconSrc: '/assets/aistudio/calc-grok_901d52d2.svg',
-    iconAlt: 'xAI Grok logo',
-    invertDark: true,
+    category: 'Real-Time Inference',
+    iconKey: 'zap',
   },
   {
     id: 'deepseek-v4-1-flash',
     name: 'DeepSeek V4.1 Flash',
-    provider: 'DeepSeek',
-    iconSrc: '/assets/aistudio/calc-deepseek_729ceac7.svg',
-    iconAlt: 'DeepSeek logo',
+    category: 'Math & Logic',
+    iconKey: 'layers',
   },
   {
     id: 'kimi-k3-1-pro',
     name: 'Kimi K3.1 Pro',
-    provider: 'Moonshot AI',
-    iconSrc: '/assets/aistudio/calc-moonshot_e685cc14.svg',
-    iconAlt: 'Moonshot Kimi logo',
-    invertDark: true,
+    category: 'Document Synthesis',
+    iconKey: 'book',
   },
   {
     id: 'gemini-2-5-flash',
     name: 'Gemini 2.5 Flash',
-    provider: 'Google',
-    iconSrc: '/assets/aistudio/calc-gemini_221ee978.svg',
-    iconAlt: 'Google Gemini logo',
+    category: 'Fast Multimodal',
+    iconKey: 'sparkles',
   },
   {
     id: 'gemini-2-5-pro',
     name: 'Gemini 2.5 Pro',
-    provider: 'Google',
-    iconSrc: '/assets/aistudio/calc-gemini_221ee978.svg',
-    iconAlt: 'Google Gemini logo',
+    category: 'Advanced Analysis',
+    iconKey: 'sparkles',
   },
   {
-    id: 'openai-gpt-4o',
-    name: 'OpenAI GPT-4o',
-    provider: 'OpenAI',
-    iconSrc: '/assets/aistudio/calc-openai_c4f23f92.svg',
-    iconAlt: 'OpenAI logo',
-    invertDark: true,
+    id: 'gpt-4o',
+    name: 'GPT-4o',
+    category: 'Conversational AI',
+    iconKey: 'cpu',
   },
   {
     id: 'claude-3-5-sonnet',
     name: 'Claude 3.5 Sonnet',
-    provider: 'Anthropic',
-    iconSrc: '/assets/aistudio/calc-claude_2a15ea2f.svg',
-    iconAlt: 'Anthropic Claude logo',
+    category: 'Software Engineering',
+    iconKey: 'code',
   },
 ] as const;
 
@@ -98,11 +90,11 @@ export interface MarqueeRowConfig {
 }
 
 const ROW_MODEL_INDEX_GROUPS: readonly (readonly number[])[] = [
-  // Row 1 (moves RIGHT): Anthropic, xAI, Google, DeepSeek + Moonshot mix (no adjacent provider repeats)
+  // Row 1 (moves RIGHT)
   [0, 3, 6, 4, 9, 2],
-  // Row 2 (moves LEFT): Google, OpenAI, Moonshot, Anthropic, Google
+  // Row 2 (moves LEFT)
   [1, 8, 5, 0, 7, 3],
-  // Row 3 (moves RIGHT): OpenAI, DeepSeek, Google, Anthropic, Moonshot, OpenAI
+  // Row 3 (moves RIGHT)
   [2, 4, 7, 9, 5, 1],
 ];
 

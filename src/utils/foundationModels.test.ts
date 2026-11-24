@@ -1,21 +1,25 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import fs from 'node:fs';
-import path from 'node:path';
 import {
   CURATED_FOUNDATION_MODELS,
   CURATED_MODEL_MAP,
   buildMarqueeRows,
 } from './foundationModels.ts';
 
-test('CURATED_FOUNDATION_MODELS has all 10 models with existing public logo assets', () => {
+const FORBIDDEN_COMPANY_OR_BRAND_RE = /\b(openai|anthropic|google|xai|moonshot|chatgpt)\b/i;
+
+test('CURATED_FOUNDATION_MODELS has all 10 models with neutral icons and zero company names', () => {
   assert.equal(CURATED_FOUNDATION_MODELS.length, 10);
 
   for (const model of CURATED_FOUNDATION_MODELS) {
     assert.ok(model.name.length > 0);
-    assert.ok(model.iconSrc.startsWith('/assets/aistudio/'));
-    const diskPath = path.resolve(process.cwd(), 'public', model.iconSrc.replace(/^\//, ''));
-    assert.equal(fs.existsSync(diskPath), true, `Missing asset on disk: ${diskPath}`);
+    assert.ok(model.category.length > 0);
+    assert.ok(model.iconKey.length > 0);
+    assert.equal(
+      FORBIDDEN_COMPANY_OR_BRAND_RE.test(`${model.name} ${model.category}`),
+      false,
+      `Found forbidden company/brand name in curated model: ${model.name} (${model.category})`
+    );
     assert.equal(CURATED_MODEL_MAP[model.id]?.name, model.name);
   }
 });

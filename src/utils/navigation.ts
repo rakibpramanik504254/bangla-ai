@@ -12,7 +12,6 @@ export type AppView =
   | 'refund'
   | 'contact'
   | 'security'
-  | 'offer'
   | 'checkout';
 
 export type CheckoutPlanId = 'monthly' | 'yearly';
@@ -28,7 +27,6 @@ const VIEW_PATH_MAP: Record<AppView, string> = {
   refund: '/refund-policy',
   contact: '/contact',
   security: '/security',
-  offer: '/offer',
   checkout: '/checkout',
 };
 
@@ -51,9 +49,6 @@ export function resolveViewFromPathname(pathname: string): AppView {
       return 'about';
     case '/security':
       return 'security';
-    case '/offer':
-    case '/promo':
-      return 'offer';
     case '/checkout':
       return 'checkout';
     default:

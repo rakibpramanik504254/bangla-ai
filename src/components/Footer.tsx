@@ -224,7 +224,18 @@ export const Footer: React.FC<FooterProps> = ({
           </div>
         </div>
 
-        <div className="mt-12 pt-6 border-t border-black/[0.08] dark:border-white/[0.08] flex flex-col sm:flex-row items-center justify-between gap-4 text-[11px] text-[#444746] dark:text-[#9aa0a6] text-center sm:text-left">
+        {/* Independent Platform & Trademark Disclaimer */}
+        <div
+          data-testid="footer-ip-disclaimer"
+          className="mt-10 pt-5 border-t border-black/[0.08] dark:border-white/[0.08] text-[11px] leading-[1.65] text-[#444746] dark:text-[#9aa0a6]"
+        >
+          <p>
+            <strong className="font-semibold text-[#1f1f1f] dark:text-[#e3e3e3]">Disclaimer:</strong>{' '}
+            Bangla AI (bangla-ai.pro) is an independent multi-model AI workspace providing unified access to third-party AI models via cloud APIs. Bangla AI is not affiliated with, endorsed by, sponsored by, or officially connected to any third-party AI company or model creator. All AI model names mentioned on this website are used solely for descriptive identification and remain the property of their respective owners.
+          </p>
+        </div>
+
+        <div className="mt-5 pt-5 border-t border-black/[0.06] dark:border-white/[0.06] flex flex-col sm:flex-row items-center justify-between gap-4 text-[11px] text-[#444746] dark:text-[#9aa0a6] text-center sm:text-left">
           <p>© 2026 Bangla AI (<a href="https://bangla-ai.pro" className="hover:underline">bangla-ai.pro</a>). All rights reserved.</p>
           <div className="flex flex-wrap items-center justify-center gap-3.5">
             {!isInstalled && (
@@ -239,7 +250,7 @@ export const Footer: React.FC<FooterProps> = ({
               </button>
             )}
             <span className="font-mono text-[10px]">
-              Unified AI Workspace
+              Independent AI Workspace
             </span>
           </div>
         </div>

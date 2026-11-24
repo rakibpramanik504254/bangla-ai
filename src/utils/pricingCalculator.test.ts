@@ -1,7 +1,5 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import fs from 'node:fs';
-import path from 'node:path';
 import {
   COMPARISON_AI_TOOLS,
   COMPARISON_FEATURES,
@@ -12,18 +10,30 @@ import {
   toggleToolSelection,
 } from './pricingCalculator.ts';
 
-test('all comparison AI tools reference valid asset files on disk', () => {
+const FORBIDDEN_TRADEMARK_RE =
+  /\b(openai|anthropic|google|xai|moonshot|chatgpt|claude|gemini|grok|perplexity|deepseek|kimi|kling)\b/i;
+
+test('all comparison workflow categories use neutral icons and zero third-party brand names', () => {
   assert.equal(COMPARISON_AI_TOOLS.length, 8);
   for (const tool of COMPARISON_AI_TOOLS) {
     assert.ok(tool.monthlyBDT > 0);
-    assert.ok(tool.iconSrc.startsWith('/assets/aistudio/'));
-    const diskPath = path.resolve(process.cwd(), 'public', tool.iconSrc.replace(/^\//, ''));
-    assert.equal(fs.existsSync(diskPath), true, `Missing comparison icon on disk: ${diskPath}`);
+    assert.ok(tool.iconKey.length > 0);
+    assert.ok(tool.shortLabel.length > 0);
+    assert.equal(
+      FORBIDDEN_TRADEMARK_RE.test(`${tool.id} ${tool.name} ${tool.shortLabel}`),
+      false,
+      `Found third-party brand name in comparison tool: ${tool.name}`
+    );
   }
 });
 
 test('default 4 selected tools sum to ৳11,000/month with exact breakdown labels', () => {
-  assert.deepEqual(DEFAULT_SELECTED_TOOL_IDS, ['chatgpt', 'claude', 'gemini', 'grok']);
+  assert.deepEqual(DEFAULT_SELECTED_TOOL_IDS, [
+    'general-chat',
+    'coding-assistant',
+    'long-context',
+    'deep-reasoning',
+  ]);
   const summary = calculateTodayCostSummary(DEFAULT_SELECTED_TOOL_IDS);
 
   assert.equal(summary.count, 4);
@@ -34,14 +44,14 @@ test('default 4 selected tools sum to ৳11,000/month with exact breakdown label
 });
 
 test('toggleToolSelection updates count, total, and singular/empty states cleanly', () => {
-  let active = toggleToolSelection(DEFAULT_SELECTED_TOOL_IDS, 'perplexity');
+  let active = toggleToolSelection(DEFAULT_SELECTED_TOOL_IDS, 'web-research');
   let summary = calculateTodayCostSummary(active);
   assert.equal(summary.count, 5);
   assert.equal(summary.totalMonthlyBDT, 13500);
   assert.equal(summary.toolsBadgeLabel, '5 TOOLS');
 
-  active = toggleToolSelection(['chatgpt'], 'perplexity');
-  active = toggleToolSelection(active, 'perplexity');
+  active = toggleToolSelection(['general-chat'], 'web-research');
+  active = toggleToolSelection(active, 'web-research');
   summary = calculateTodayCostSummary(active);
   assert.equal(summary.count, 1);
   assert.equal(summary.toolsBadgeLabel, '1 TOOL');
@@ -90,4 +100,3 @@ test('getComparisonPlanInfo and getPlanFeatures return exact Monthly vs Yearly s
   assert.equal(combinedText.includes('2x of everything'), false);
   assert.equal(combinedText.includes('free custom domain'), false);
 });
-

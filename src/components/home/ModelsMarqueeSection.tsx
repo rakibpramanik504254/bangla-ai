@@ -1,14 +1,32 @@
 import React, { useMemo } from 'react';
-import { buildMarqueeRows, type CuratedFoundationModel } from '../../utils/foundationModels.ts';
+import { BookOpen, Code2, Cpu, Layers, Sparkles, Zap } from 'lucide-react';
+import {
+  buildMarqueeRows,
+  type CuratedFoundationModel,
+  type FoundationModelIconKey,
+} from '../../utils/foundationModels.ts';
+
+const ModelIcon: React.FC<{ iconKey: FoundationModelIconKey }> = ({ iconKey }) => {
+  const iconClass = 'w-4 h-4 text-[#444746] dark:text-[#c4c7c5] shrink-0';
+  switch (iconKey) {
+    case 'code':
+      return <Code2 className={iconClass} aria-hidden="true" />;
+    case 'sparkles':
+      return <Sparkles className={iconClass} aria-hidden="true" />;
+    case 'cpu':
+      return <Cpu className={iconClass} aria-hidden="true" />;
+    case 'zap':
+      return <Zap className={iconClass} aria-hidden="true" />;
+    case 'layers':
+      return <Layers className={iconClass} aria-hidden="true" />;
+    case 'book':
+      return <BookOpen className={iconClass} aria-hidden="true" />;
+  }
+};
 
 const ModelPill: React.FC<{ model: CuratedFoundationModel }> = ({ model }) => (
   <div className="inline-flex items-center gap-2.5 px-5 py-2.5 rounded-full whitespace-nowrap bg-white dark:bg-[#282a2c] border border-black/[0.08] dark:border-white/[0.08] text-sm font-medium text-[#1f1f1f] dark:text-[#e3e3e3] select-none shrink-0 transition-colors hover:border-black/20 dark:hover:border-white/20">
-    <img
-      src={model.iconSrc}
-      alt=""
-      aria-hidden="true"
-      className={`w-5 h-5 object-contain shrink-0 ${model.invertDark ? 'dark:invert' : ''}`}
-    />
+    <ModelIcon iconKey={model.iconKey} />
     <span>{model.name}</span>
   </div>
 );
@@ -25,7 +43,7 @@ export const ModelsMarqueeSection: React.FC = () => {
             <span className="whitespace-nowrap">All right here.</span>
           </h2>
           <p className="text-sm sm:text-base text-[#444746] dark:text-[#9aa0a6] leading-[1.7] max-w-xl mx-auto">
-            Access top models for chat, coding, reasoning, research, and Bengali workflows, with one unified account.
+            Access top models for chat, coding, reasoning, research, and Bengali workflows, with one unified workspace.
           </p>
         </div>
 

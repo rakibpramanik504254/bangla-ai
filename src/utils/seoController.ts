@@ -150,7 +150,7 @@ export const RECOMMENDED_BANGLA_AI_FAQS: FaqSchemaItem[] = [
     id: 'faq-1',
     question: 'What is Bangla AI (bangla-ai.pro)?',
     answer:
-      'Bangla AI is Bangladesh’s unified all-in-one AI platform providing access to GPT, Claude, Gemini, Grok, DeepSeek, and Kimi under a single BDT subscription.',
+      'Bangla AI is an independent unified AI workspace in Bangladesh providing access to GPT-6 Astra, Claude Fable 5.2, Gemini 4 Carbon, Grok 4.7, DeepSeek V4.1, and Kimi K3.1 under a single BDT subscription.',
   },
   {
     id: 'faq-2',

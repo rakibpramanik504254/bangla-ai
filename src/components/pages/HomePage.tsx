@@ -21,7 +21,6 @@ import { CodeIdeHighlight } from '../home/CodeIdeHighlight.tsx';
 import { ModelsMarqueeSection } from '../home/ModelsMarqueeSection.tsx';
 import { PricingComparisonSection } from '../home/PricingComparisonSection.tsx';
 import { FaqSection } from '../home/FaqSection.tsx';
-import { CURATED_MODEL_MAP } from '../../utils/foundationModels.ts';
 import { WatchTutorialButton } from '../common/WatchTutorialButton.tsx';
 import { shouldShowTutorialCta } from '../../utils/tutorial.ts';
 
@@ -48,17 +47,17 @@ const SAMPLE_BENCHMARKS: PromptSample[] = [
     models: [
       {
         modelName: 'Claude Fable 5.2 (max)',
-        badge: 'Anthropic Flagship',
+        badge: 'Coding & Prose',
         output: `export function useDebouncedSearch<T>(query: string, searcher: (q: string, signal: AbortSignal) => Promise<T[]>, delay = 300) {\n  const [data, setData] = useState<T[]>([]);\n  const [loading, setLoading] = useState(false);\n  useEffect(() => {\n    if (!query.trim()) { setData([]); return; }\n    const controller = new AbortController();\n    const timer = setTimeout(async () => {\n      setLoading(true);\n      try {\n        const results = await searcher(query, controller.signal);\n        setData(results);\n      } catch (err: any) {\n        if (err.name !== 'AbortError') console.error(err);\n      } finally { setLoading(false); }\n    }, delay);\n    return () => { clearTimeout(timer); controller.abort(); };\n  }, [query, delay]);\n  return { data, loading };\n}`
       },
       {
         modelName: 'GPT-6 Astra (max)',
-        badge: 'OpenAI Frontier',
+        badge: 'Generalist Max',
         output: `// Production-hardened with stale response cancellation & retry buffer\nimport { useState, useEffect, useRef } from 'react';\n\nexport const useDebouncedSearch = <T>(query: string, delay: number = 300) => {\n  const [results, setResults] = useState<T[]>([]);\n  const [isPending, setIsPending] = useState(false);\n  const activeController = useRef<AbortController | null>(null);\n  // Handles race conditions & zero-flicker UI updates cleanly...\n};`
       },
       {
         modelName: 'Gemini 4 Carbon (high)',
-        badge: 'Google Carbon',
+        badge: '2M Context',
         output: `// High throughput streaming debounce hook with 2M token context memory\nconst useFastSearch = (term: string) => {\n  // Optimized for sub-millisecond AST parsing and instant UI hydration\n};`
       }
     ]
@@ -66,16 +65,16 @@ const SAMPLE_BENCHMARKS: PromptSample[] = [
   {
     id: 'bangla',
     category: 'Bangla Copywriting & Marketing',
-    prompt: 'বাংলাদেশের তরুণ উদ্যোক্তা ও ফ্রিল্যান্সারদের জন্য একটি উচ্চ রূপান্তরকারী (high-converting) ফেসবুক অ্যাড কপি লিখুন।',
+    prompt: 'বাংলাদেশের তরুণ উদ্যোক্তা ও ফ্রিল্যান্সারদের জন্য একটি প্রফেশনাল মার্কেটিং কপি লিখুন।',
     models: [
       {
         modelName: 'GPT-6 Astra (max)',
-        badge: 'OpenAI Frontier',
-        output: `🎯 ডুয়েল কারেন্সি কার্ডের ঝামেলা ছাড়াই ব্যবহার করুন বিশ্বের সেরা AI মডেল!\n\nআপনি কি আপওয়ার্ক বা ফাইভারের ফ্রিল্যান্সার? প্রতিদিন কোডিং, ক্লায়েন্ট কমিউনিকেশন বা কনটেন্ট তৈরিতে ঘণ্টার পর ঘণ্টা সময় নষ্ট করছেন?\n\nএখন বিকাশ, নগদ ও রকেটে সাবস্ক্রিপশন নিয়ে একসাথে পান:\n✨ Claude Fable 5.2 • GPT-6 Astra • Gemini 4 Carbon • DeepSeek\n\n👉 আজই শুরু করুন Bangla AI দিয়ে। আপনার প্রোডাক্টিভিটি বাড়ান ১০ গুণ!`
+        badge: 'Generalist Max',
+        output: `🎯 ডুয়েল কারেন্সি কার্ডের ঝামেলা ছাড়াই ব্যবহার করুন বিশ্বের সেরা AI মডেল!\n\nআপনি কি ফ্রিল্যান্সার বা ডিজিটাল উদ্যোক্তা? প্রতিদিন কোডিং, ক্লায়েন্ট কমিউনিকেশন বা কনটেন্ট তৈরিতে ঘণ্টার পর ঘণ্টা সময় নষ্ট করছেন?\n\nএখন বিকাশ, নগদ ও রকেটে সাবস্ক্রিপশন নিয়ে একসাথে পান:\n✨ Claude Fable 5.2 • GPT-6 Astra • Gemini 4 Carbon • DeepSeek V4.1\n\n👉 আজই শুরু করুন Bangla AI দিয়ে। আপনার প্রোডাক্টিভিটি বাড়ান বহুগুণ!`
       },
       {
         modelName: 'Claude Fable 5.2 (max)',
-        badge: 'Anthropic Flagship',
+        badge: 'Coding & Prose',
         output: `দক্ষতাই আপনার মূলধন—প্রযুক্তির অভাব যেন আপনার অগ্রযাত্রাকে আটকে না রাখে।\n\nআন্তর্জাতিক পেমেন্ট গেটওয়ের জটিলতা ভুলে বাংলাদেশের নিজস্ব লোকাল পেমেন্ট (bKash/Nagad/Rocket) সিস্টেমে সরাসরি অ্যাক্সেস নিন বিশ্বের সবচেয়ে শক্তিশালী ১০টি কৃত্রিম বুদ্ধিমত্তা মডেলে।\n\nএক ক্লিকে কোডিং সমাধান, নির্ভুল বাংলা-ইংরেজি অনুবাদ ও ব্যবসায়িক পরিকল্পনা তৈরি করুন।`
       }
     ]
@@ -87,12 +86,12 @@ const SAMPLE_BENCHMARKS: PromptSample[] = [
     models: [
       {
         modelName: 'DeepSeek V4.1 Flash 1017 (max)',
-        badge: 'DeepSeek MoE',
+        badge: 'Math & Logic MoE',
         output: `Analysis:\n1. Dijkstra: O(|E| + |V| log |V|) with Fibonacci heap. Explores equidistant spherical wavefronts.\n2. A* with consistent Euclidean heuristic h(n) <= c(n, p) + h(p):\n   Strictly dominates Dijkstra in visited node set S(A*) ⊆ S(Dijkstra).\n3. Dense Graph (|E| ≈ |V|^2): Reduces to O(|V|^2). Directed ellipsoid search cone yields ~78% fewer state expansions.`
       },
       {
         modelName: 'Kimi K3.1 Pro',
-        badge: 'Moonshot 2M',
+        badge: 'Long-Context 2M',
         output: `Rigorous mathematical comparison:\nLet G=(V,E) be a finite directed graph. Under Euclidean distance metric spaces d(u,v) = ||u - v||_2, the triangle inequality guarantees monotonic consistency. Consequently, A* expands the absolute minimal number of vertices among all search algorithms with access to h.`
       }
     ]
@@ -209,7 +208,7 @@ export const HomePage: React.FC<HomePageProps> = ({ onStartChat }) => {
             Why Bangla AI vs Buying Individual Plans
           </h2>
           <p className="text-sm text-[#444746] dark:text-[#9aa0a6] max-w-xl mx-auto leading-[1.7]">
-            Purchasing ChatGPT Plus, Claude Pro, and Grok separately costs over $80/month (~৳10,000 BDT) and requires an endorsed international credit card. Bangla AI unites them into a single subscription.
+            Subscribing to multiple standalone international AI tools separately can cost over $80/month (~৳10,000 BDT) and requires an endorsed international credit card. Bangla AI brings leading models together in one independent workspace.
           </p>
         </div>
 
@@ -332,7 +331,7 @@ export const HomePage: React.FC<HomePageProps> = ({ onStartChat }) => {
             6 Curated Foundation Models
           </h2>
           <p className="text-sm text-[#444746] dark:text-[#9aa0a6] max-w-lg mx-auto leading-[1.7]">
-            State-of-the-art weights from Anthropic, Google, OpenAI, xAI, DeepSeek, and Moonshot ready for production tasks.
+            Six specialized AI models available through one independent workspace for coding, writing, analysis, and research.
           </p>
         </div>
 
@@ -342,7 +341,7 @@ export const HomePage: React.FC<HomePageProps> = ({ onStartChat }) => {
             <div className="space-y-3">
               <div className="flex items-center justify-between text-xs text-[#444746] dark:text-[#9aa0a6]">
                 <div className="flex items-center gap-1.5 font-medium">
-                  <span>Anthropic</span>
+                  <span>Coding &amp; Prose</span>
                   <span>·</span>
                   <span>500k Context</span>
                 </div>
@@ -351,19 +350,15 @@ export const HomePage: React.FC<HomePageProps> = ({ onStartChat }) => {
                 </span>
               </div>
               <div className="flex items-center gap-2.5">
-                <div className="w-9 h-9 rounded-xl bg-[#f0f4f9] dark:bg-[#282a2c] border border-black/[0.06] dark:border-white/[0.08] flex items-center justify-center shrink-0">
-                  <img
-                    src={CURATED_MODEL_MAP['claude-fable-5-2'].iconSrc}
-                    alt={CURATED_MODEL_MAP['claude-fable-5-2'].iconAlt}
-                    className="w-[18px] h-[18px] object-contain"
-                  />
+                <div className="w-9 h-9 rounded-xl bg-[#f0f4f9] dark:bg-[#282a2c] border border-black/[0.06] dark:border-white/[0.08] text-[#1f1f1f] dark:text-[#e3e3e3] flex items-center justify-center shrink-0">
+                  <Code2 className="w-[18px] h-[18px]" aria-hidden="true" />
                 </div>
                 <h3 className="text-base font-semibold text-[#1f1f1f] dark:text-[#e3e3e3] leading-snug">
                   Claude Fable 5.2 (max)
                 </h3>
               </div>
               <p className="text-xs text-[#444746] dark:text-[#9aa0a6] leading-[1.7]">
-                Anthropic's pinnacle intelligence. Exceptional software engineering, complex system architecture design, and nuanced prose refinement.
+                High-precision reasoning model built for software engineering, complex system architecture design, and nuanced prose refinement.
               </p>
             </div>
             <div className="mt-4 pt-3 border-t border-black/[0.06] dark:border-white/[0.06] text-[11px] text-[#444746] dark:text-[#9aa0a6] font-mono">
@@ -376,7 +371,7 @@ export const HomePage: React.FC<HomePageProps> = ({ onStartChat }) => {
             <div className="space-y-3">
               <div className="flex items-center justify-between text-xs text-[#444746] dark:text-[#9aa0a6]">
                 <div className="flex items-center gap-1.5 font-medium">
-                  <span>Google</span>
+                  <span>Multimodal Engine</span>
                   <span>·</span>
                   <span>2M Context</span>
                 </div>
@@ -385,19 +380,15 @@ export const HomePage: React.FC<HomePageProps> = ({ onStartChat }) => {
                 </span>
               </div>
               <div className="flex items-center gap-2.5">
-                <div className="w-9 h-9 rounded-xl bg-[#f0f4f9] dark:bg-[#282a2c] border border-black/[0.06] dark:border-white/[0.08] flex items-center justify-center shrink-0">
-                  <img
-                    src={CURATED_MODEL_MAP['gemini-4-carbon'].iconSrc}
-                    alt={CURATED_MODEL_MAP['gemini-4-carbon'].iconAlt}
-                    className="w-[18px] h-[18px] object-contain"
-                  />
+                <div className="w-9 h-9 rounded-xl bg-[#f0f4f9] dark:bg-[#282a2c] border border-black/[0.06] dark:border-white/[0.08] text-[#1f1f1f] dark:text-[#e3e3e3] flex items-center justify-center shrink-0">
+                  <Sparkles className="w-[18px] h-[18px]" aria-hidden="true" />
                 </div>
                 <h3 className="text-base font-semibold text-[#1f1f1f] dark:text-[#e3e3e3] leading-snug">
                   Gemini 4 Carbon (high)
                 </h3>
               </div>
               <p className="text-xs text-[#444746] dark:text-[#9aa0a6] leading-[1.7]">
-                Next-generation Google Carbon architecture with massive 2M token context, high-throughput multimodal intelligence, and instantaneous response streaming.
+                Next-generation multimodal architecture with massive 2M token context, high-throughput comprehension, and fast response streaming.
               </p>
             </div>
             <div className="mt-4 pt-3 border-t border-black/[0.06] dark:border-white/[0.06] text-[11px] text-[#444746] dark:text-[#9aa0a6] font-mono">
@@ -410,7 +401,7 @@ export const HomePage: React.FC<HomePageProps> = ({ onStartChat }) => {
             <div className="space-y-3">
               <div className="flex items-center justify-between text-xs text-[#444746] dark:text-[#9aa0a6]">
                 <div className="flex items-center gap-1.5 font-medium">
-                  <span>OpenAI</span>
+                  <span>General Intelligence</span>
                   <span>·</span>
                   <span>1M Context</span>
                 </div>
@@ -419,19 +410,15 @@ export const HomePage: React.FC<HomePageProps> = ({ onStartChat }) => {
                 </span>
               </div>
               <div className="flex items-center gap-2.5">
-                <div className="w-9 h-9 rounded-xl bg-[#f0f4f9] dark:bg-[#282a2c] border border-black/[0.06] dark:border-white/[0.08] flex items-center justify-center shrink-0">
-                  <img
-                    src={CURATED_MODEL_MAP['gpt-6-astra'].iconSrc}
-                    alt={CURATED_MODEL_MAP['gpt-6-astra'].iconAlt}
-                    className="w-[18px] h-[18px] object-contain dark:invert"
-                  />
+                <div className="w-9 h-9 rounded-xl bg-[#f0f4f9] dark:bg-[#282a2c] border border-black/[0.06] dark:border-white/[0.08] text-[#1f1f1f] dark:text-[#e3e3e3] flex items-center justify-center shrink-0">
+                  <Cpu className="w-[18px] h-[18px]" aria-hidden="true" />
                 </div>
                 <h3 className="text-base font-semibold text-[#1f1f1f] dark:text-[#e3e3e3] leading-snug">
                   GPT-6 Astra (max)
                 </h3>
               </div>
               <p className="text-xs text-[#444746] dark:text-[#9aa0a6] leading-[1.7]">
-                OpenAI frontier flagship. Maximum general intelligence, autonomous systems design, and multi-step cross-domain problem solving.
+                All-purpose frontier model engineered for versatile reasoning, autonomous workflow planning, and multi-step cross-domain problem solving.
               </p>
             </div>
             <div className="mt-4 pt-3 border-t border-black/[0.06] dark:border-white/[0.06] text-[11px] text-[#444746] dark:text-[#9aa0a6] font-mono">
@@ -444,7 +431,7 @@ export const HomePage: React.FC<HomePageProps> = ({ onStartChat }) => {
             <div className="space-y-3">
               <div className="flex items-center justify-between text-xs text-[#444746] dark:text-[#9aa0a6]">
                 <div className="flex items-center gap-1.5 font-medium">
-                  <span>xAI</span>
+                  <span>Real-Time Inference</span>
                   <span>·</span>
                   <span>256k Context</span>
                 </div>
@@ -453,19 +440,15 @@ export const HomePage: React.FC<HomePageProps> = ({ onStartChat }) => {
                 </span>
               </div>
               <div className="flex items-center gap-2.5">
-                <div className="w-9 h-9 rounded-xl bg-[#f0f4f9] dark:bg-[#282a2c] border border-black/[0.06] dark:border-white/[0.08] flex items-center justify-center shrink-0">
-                  <img
-                    src={CURATED_MODEL_MAP['grok-4-7'].iconSrc}
-                    alt={CURATED_MODEL_MAP['grok-4-7'].iconAlt}
-                    className="w-[18px] h-[18px] object-contain dark:invert"
-                  />
+                <div className="w-9 h-9 rounded-xl bg-[#f0f4f9] dark:bg-[#282a2c] border border-black/[0.06] dark:border-white/[0.08] text-[#1f1f1f] dark:text-[#e3e3e3] flex items-center justify-center shrink-0">
+                  <Zap className="w-[18px] h-[18px]" aria-hidden="true" />
                 </div>
                 <h3 className="text-base font-semibold text-[#1f1f1f] dark:text-[#e3e3e3] leading-snug">
                   Grok 4.7 (xhigh)
                 </h3>
               </div>
               <p className="text-xs text-[#444746] dark:text-[#9aa0a6] leading-[1.7]">
-                xAI's extreme inference engine. Direct real-time insight synthesis, high-throughput multi-agent orchestration, and uncompromising technical clarity.
+                High-velocity inference model built for direct insight synthesis, structured orchestration, and clear technical explanations.
               </p>
             </div>
             <div className="mt-4 pt-3 border-t border-black/[0.06] dark:border-white/[0.06] text-[11px] text-[#444746] dark:text-[#9aa0a6] font-mono">
@@ -478,7 +461,7 @@ export const HomePage: React.FC<HomePageProps> = ({ onStartChat }) => {
             <div className="space-y-3">
               <div className="flex items-center justify-between text-xs text-[#444746] dark:text-[#9aa0a6]">
                 <div className="flex items-center gap-1.5 font-medium">
-                  <span>DeepSeek</span>
+                  <span>Math &amp; Logic</span>
                   <span>·</span>
                   <span>128k Context</span>
                 </div>
@@ -487,12 +470,8 @@ export const HomePage: React.FC<HomePageProps> = ({ onStartChat }) => {
                 </span>
               </div>
               <div className="flex items-center gap-2.5">
-                <div className="w-9 h-9 rounded-xl bg-[#f0f4f9] dark:bg-[#282a2c] border border-black/[0.06] dark:border-white/[0.08] flex items-center justify-center shrink-0">
-                  <img
-                    src={CURATED_MODEL_MAP['deepseek-v4-1-flash'].iconSrc}
-                    alt={CURATED_MODEL_MAP['deepseek-v4-1-flash'].iconAlt}
-                    className="w-[18px] h-[18px] object-contain"
-                  />
+                <div className="w-9 h-9 rounded-xl bg-[#f0f4f9] dark:bg-[#282a2c] border border-black/[0.06] dark:border-white/[0.08] text-[#1f1f1f] dark:text-[#e3e3e3] flex items-center justify-center shrink-0">
+                  <Layers className="w-[18px] h-[18px]" aria-hidden="true" />
                 </div>
                 <h3 className="text-base font-semibold text-[#1f1f1f] dark:text-[#e3e3e3] leading-snug">
                   DeepSeek V4.1 Flash
@@ -503,37 +482,33 @@ export const HomePage: React.FC<HomePageProps> = ({ onStartChat }) => {
               </p>
             </div>
             <div className="mt-4 pt-3 border-t border-black/[0.06] dark:border-white/[0.06] text-[11px] text-[#444746] dark:text-[#9aa0a6] font-mono">
-              Ultra Dense MoE • Math & Logic
+              Ultra Dense MoE • Math &amp; Logic
             </div>
           </div>
 
           {/* 6. Kimi K3.1 Pro */}
           <div className="card-minimal flex flex-col justify-between p-5 group">
             <div className="space-y-3">
-              <div className="flex items-center justify-between text-xs text-[#444746] dark:text-[#9aa0a6]">
-                <div className="flex items-center gap-1.5 font-medium">
-                  <span>Moonshot AI</span>
+              <div className="flex items-center justify-between gap-2 text-xs text-[#444746] dark:text-[#9aa0a6]">
+                <div className="flex items-center gap-1.5 font-medium whitespace-nowrap">
+                  <span>Long Context</span>
                   <span>·</span>
                   <span>2M Context</span>
                 </div>
-                <span className="font-mono text-[10px] uppercase font-semibold text-[#444746] dark:text-[#9aa0a6] px-2 py-0.5 rounded-full bg-[#f0f4f9] dark:bg-[#282a2c] border border-black/[0.06] dark:border-white/[0.08]">
+                <span className="font-mono text-[10px] uppercase font-semibold text-[#444746] dark:text-[#9aa0a6] px-2 py-0.5 rounded-full bg-[#f0f4f9] dark:bg-[#282a2c] border border-black/[0.06] dark:border-white/[0.08] shrink-0">
                   REASONING
                 </span>
               </div>
               <div className="flex items-center gap-2.5">
-                <div className="w-9 h-9 rounded-xl bg-[#f0f4f9] dark:bg-[#282a2c] border border-black/[0.06] dark:border-white/[0.08] flex items-center justify-center shrink-0">
-                  <img
-                    src={CURATED_MODEL_MAP['kimi-k3-1-pro'].iconSrc}
-                    alt={CURATED_MODEL_MAP['kimi-k3-1-pro'].iconAlt}
-                    className="w-[18px] h-[18px] object-contain dark:invert"
-                  />
+                <div className="w-9 h-9 rounded-xl bg-[#f0f4f9] dark:bg-[#282a2c] border border-black/[0.06] dark:border-white/[0.08] text-[#1f1f1f] dark:text-[#e3e3e3] flex items-center justify-center shrink-0">
+                  <FileCheck2 className="w-[18px] h-[18px]" aria-hidden="true" />
                 </div>
                 <h3 className="text-base font-semibold text-[#1f1f1f] dark:text-[#e3e3e3] leading-snug">
                   Kimi K3.1 Pro
                 </h3>
               </div>
               <p className="text-xs text-[#444746] dark:text-[#9aa0a6] leading-[1.7]">
-                Moonshot flagship with native 2M context handling. Specialized in massive document digests, legal contracts, and academic synthesis.
+                Long-context model with native 2M token handling. Specialized in massive document digests, structured contracts, and academic synthesis.
               </p>
             </div>
             <div className="mt-4 pt-3 border-t border-black/[0.06] dark:border-white/[0.06] text-[11px] text-[#444746] dark:text-[#9aa0a6] font-mono">
@@ -674,7 +649,7 @@ export const HomePage: React.FC<HomePageProps> = ({ onStartChat }) => {
             </div>
             <h3 className="font-bold text-sm text-[#1f1f1f] dark:text-[#e3e3e3]">Digital Marketers</h3>
             <p className="text-xs text-[#444746] dark:text-[#9aa0a6] leading-[1.7]">
-              Produce high-converting Facebook & TikTok ad copy in fluent conversational Bengali and English, hook scripts, and SEO blogs.
+              Produce high-converting social &amp; digital campaign copy in fluent conversational Bengali and English, hook scripts, and SEO blogs.
             </p>
           </div>
 
@@ -682,9 +657,9 @@ export const HomePage: React.FC<HomePageProps> = ({ onStartChat }) => {
             <div className="w-9 h-9 rounded-full bg-[#f0f4f9] dark:bg-[#282a2c] flex items-center justify-center text-[#1f1f1f] dark:text-[#e3e3e3]">
               <Briefcase className="w-4 h-4" />
             </div>
-            <h3 className="font-bold text-sm text-[#1f1f1f] dark:text-[#e3e3e3]">Freelancers & Agencies</h3>
+            <h3 className="font-bold text-sm text-[#1f1f1f] dark:text-[#e3e3e3]">Freelancers &amp; Agencies</h3>
             <p className="text-xs text-[#444746] dark:text-[#9aa0a6] leading-[1.7]">
-              Deliver client deliverables on Upwork and Fiverr 5x faster. Create proposals, analyze RFPs, and draft technical documentation.
+              Deliver international client projects 5x faster. Create proposals, analyze RFPs, and draft technical documentation.
             </p>
           </div>
 
@@ -692,9 +667,9 @@ export const HomePage: React.FC<HomePageProps> = ({ onStartChat }) => {
             <div className="w-9 h-9 rounded-full bg-[#f0f4f9] dark:bg-[#282a2c] flex items-center justify-center text-[#1f1f1f] dark:text-[#e3e3e3]">
               <GraduationCap className="w-4 h-4" />
             </div>
-            <h3 className="font-bold text-sm text-[#1f1f1f] dark:text-[#e3e3e3]">Students & Researchers</h3>
+            <h3 className="font-bold text-sm text-[#1f1f1f] dark:text-[#e3e3e3]">Students &amp; Researchers</h3>
             <p className="text-xs text-[#444746] dark:text-[#9aa0a6] leading-[1.7]">
-              Summarize extensive academic papers, format LaTeX equations, and verify mathematical theorems with Kimi K3.1 and DeepSeek.
+              Summarize extensive academic papers, format LaTeX equations, and verify mathematical theorems with Kimi K3.1 and DeepSeek V4.1.
             </p>
           </div>
         </div>

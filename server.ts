@@ -2735,7 +2735,7 @@ app.post('/api/admin/pixel/test', requireAdmin, async (req: AuthenticatedRequest
       meta_client_user_agent: sanitizeMetaUserAgent(
         typeof req.headers['user-agent'] === 'string' ? req.headers['user-agent'] : undefined
       ),
-      meta_event_source_url: 'https://bangla-ai.pro/offer'
+      meta_event_source_url: 'https://bangla-ai.pro/'
     };
 
     const capiResult = await sendMetaConversionsPurchase(testPayment, settings, { testEventCode });

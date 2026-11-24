@@ -116,9 +116,9 @@ test('resolveViewFromPathname and getPathnameForView handle compliance URLs clea
   assert.equal(resolveViewFromPathname('/contact'), 'contact');
   assert.equal(resolveViewFromPathname('/about'), 'about');
   assert.equal(resolveViewFromPathname('/security'), 'security');
-  assert.equal(resolveViewFromPathname('/offer'), 'offer');
-  assert.equal(resolveViewFromPathname('/offer/'), 'offer');
-  assert.equal(resolveViewFromPathname('/promo'), 'offer');
+  assert.equal(resolveViewFromPathname('/offer'), 'home');
+  assert.equal(resolveViewFromPathname('/offer/'), 'home');
+  assert.equal(resolveViewFromPathname('/promo'), 'home');
   assert.equal(resolveViewFromPathname('/checkout'), 'checkout');
   assert.equal(resolveViewFromPathname('/checkout/'), 'checkout');
   assert.equal(resolveViewFromPathname('/'), 'home');
@@ -128,7 +128,6 @@ test('resolveViewFromPathname and getPathnameForView handle compliance URLs clea
   assert.equal(getPathnameForView('terms'), '/terms');
   assert.equal(getPathnameForView('refund'), '/refund-policy');
   assert.equal(getPathnameForView('contact'), '/contact');
-  assert.equal(getPathnameForView('offer'), '/offer');
   assert.equal(getPathnameForView('checkout'), '/checkout');
   assert.equal(getPathnameForView('home'), '/');
 });

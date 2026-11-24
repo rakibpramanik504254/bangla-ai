@@ -18,8 +18,6 @@ export const NON_INDEXABLE_APP_SLUGS = new Set([
   '/workspace',
   '/account',
   '/admin',
-  '/offer',
-  '/promo',
   '/checkout',
 ]);
 
@@ -37,8 +35,6 @@ export function resolveActiveSeoSlug(view: AppView, pathname: string = '/'): str
       return '/refund-policy';
     case 'security':
       return '/security';
-    case 'offer':
-      return '/offer';
     case 'checkout':
       return '/checkout';
     case 'chat':
@@ -66,23 +62,6 @@ export function applyAppViewFallbackOverrides(
     const title = 'নিরাপদ চেকআউট — Bangla-AI.pro';
     const description =
       'বিকাশ, নগদ বা রকেটের মাধ্যমে নিরাপদে আপনার Bangla AI প্রো সাবস্ক্রিপশন সক্রিয় করুন।';
-    return {
-      ...resolved,
-      title,
-      description,
-      ogTitle: title,
-      ogDescription: description,
-      twitterTitle: title,
-      twitterDescription: description,
-      robots: 'noindex, nofollow',
-      noIndex: true,
-      noFollow: true,
-    };
-  }
-  if (view === 'offer') {
-    const title = 'মাত্র ৬৯৯৳/মাসে ১০+ প্রিমিয়াম AI — Bangla-AI.pro স্পেশাল অফার';
-    const description =
-      'ডলার কার্ড বা শেয়ার্ড অ্যাকাউন্ট ছাড়াই বিকাশ ও নগদে ব্যবহার করুন ChatGPT, Claude, Gemini, Grok ও DeepSeek। ১০০% পার্সোনাল ওয়ার্কস্পেস।';
     return {
       ...resolved,
       title,

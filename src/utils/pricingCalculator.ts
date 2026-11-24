@@ -1,79 +1,84 @@
 import { PLANS, formatBDT } from './billing.ts';
 
+export type ComparisonToolIconKey =
+  | 'message'
+  | 'code'
+  | 'layers'
+  | 'zap'
+  | 'search'
+  | 'cpu'
+  | 'file'
+  | 'image';
+
 export interface ComparisonAiTool {
   id: string;
   name: string;
+  shortLabel: string;
   monthlyBDT: number;
-  iconSrc: string;
-  iconAlt: string;
-  invertDark?: boolean;
+  iconKey: ComparisonToolIconKey;
   defaultSelected?: boolean;
 }
 
 export const COMPARISON_AI_TOOLS: readonly ComparisonAiTool[] = [
   {
-    id: 'chatgpt',
-    name: 'ChatGPT',
+    id: 'general-chat',
+    name: 'General AI Chat',
+    shortLabel: 'Chat AI',
     monthlyBDT: 2500,
-    iconSrc: '/assets/aistudio/calc-openai_c4f23f92.svg',
-    iconAlt: 'ChatGPT (OpenAI) logo',
-    invertDark: true,
+    iconKey: 'message',
     defaultSelected: true,
   },
   {
-    id: 'claude',
-    name: 'Claude',
+    id: 'coding-assistant',
+    name: 'Pro Coding AI',
+    shortLabel: 'Coding',
     monthlyBDT: 2500,
-    iconSrc: '/assets/aistudio/calc-claude_2a15ea2f.svg',
-    iconAlt: 'Claude (Anthropic) logo',
+    iconKey: 'code',
     defaultSelected: true,
   },
   {
-    id: 'gemini',
-    name: 'Gemini',
+    id: 'long-context',
+    name: 'Long-Context AI',
+    shortLabel: '2M Docs',
     monthlyBDT: 2500,
-    iconSrc: '/assets/aistudio/calc-gemini_221ee978.svg',
-    iconAlt: 'Google Gemini logo',
+    iconKey: 'layers',
     defaultSelected: true,
   },
   {
-    id: 'grok',
-    name: 'Grok',
+    id: 'deep-reasoning',
+    name: 'Deep Reasoning AI',
+    shortLabel: 'Reasoning',
     monthlyBDT: 3500,
-    iconSrc: '/assets/aistudio/calc-grok_901d52d2.svg',
-    iconAlt: 'xAI Grok logo',
-    invertDark: true,
+    iconKey: 'zap',
     defaultSelected: true,
   },
   {
-    id: 'perplexity',
-    name: 'Perplexity',
+    id: 'web-research',
+    name: 'Research Synthesis',
+    shortLabel: 'Research',
     monthlyBDT: 2500,
-    iconSrc: '/assets/aistudio/calc-perplexity_9920b037.svg',
-    iconAlt: 'Perplexity AI logo',
+    iconKey: 'search',
   },
   {
-    id: 'deepseek',
-    name: 'DeepSeek',
+    id: 'math-logic',
+    name: 'Math & Logic Engine',
+    shortLabel: 'Math AI',
     monthlyBDT: 1200,
-    iconSrc: '/assets/aistudio/calc-deepseek_729ceac7.svg',
-    iconAlt: 'DeepSeek logo',
+    iconKey: 'cpu',
   },
   {
-    id: 'kimi',
-    name: 'Kimi K3',
+    id: 'document-digest',
+    name: 'Document Analysis',
+    shortLabel: 'Files AI',
     monthlyBDT: 1500,
-    iconSrc: '/assets/aistudio/calc-moonshot_e685cc14.svg',
-    iconAlt: 'Moonshot Kimi logo',
-    invertDark: true,
+    iconKey: 'file',
   },
   {
-    id: 'kling',
-    name: 'Kling AI',
+    id: 'visual-studio',
+    name: 'AI Image Studio',
+    shortLabel: 'Images',
     monthlyBDT: 1800,
-    iconSrc: '/assets/aistudio/calc-kling_c93eff5c.png',
-    iconAlt: 'Kling AI logo',
-    invertDark: true,
+    iconKey: 'image',
   },
 ] as const;
 
@@ -151,4 +156,3 @@ export function getPlanFeatures(planId: 'monthly' | 'yearly'): readonly string[]
 }
 
 export const COMPARISON_FEATURES: readonly string[] = PLANS.monthly.features;
-

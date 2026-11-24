@@ -3,7 +3,7 @@ export const DEFAULT_SEO_SITE_NAME = 'Bangla-AI.pro';
 export const DEFAULT_SEO_TITLE =
   'Bangla-AI.pro — বাংলাদেশের সেরা অল-ইন-ওয়ান AI প্ল্যাটফর্ম';
 export const DEFAULT_SEO_DESCRIPTION =
-  'একই সাবস্ক্রিপশনে ব্যবহার করুন ChatGPT, Claude, Gemini, Grok ও DeepSeek। বিকাশ ও নগদে সহজ পেমেন্টে শুরু করুন আজই।';
+  'একই ওয়ার্কস্পেসে ব্যবহার করুন GPT-6 Astra, Claude Fable 5.2, Gemini 4 Carbon, Grok 4.7 ও DeepSeek V4.1। বিকাশ ও নগদে সহজ পেমেন্টে শুরু করুন আজই।';
 export const DEFAULT_OG_IMAGE_PATH = '/og-banner.png';
 export const CUSTOM_OG_IMAGE_PATH = '/api/seo/og-banner';
 

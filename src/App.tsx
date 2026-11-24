@@ -10,7 +10,6 @@ import { RefundPolicyPage } from './components/pages/RefundPolicyPage.tsx';
 import { ContactPage } from './components/pages/ContactPage.tsx';
 import { SecurityPage } from './components/pages/SecurityPage.tsx';
 import { AccountPage } from './components/pages/AccountPage.tsx';
-import { OfferLandingPage } from './components/pages/OfferLandingPage.tsx';
 import { CheckoutPage } from './components/pages/CheckoutPage.tsx';
 import { ChatInterface } from './components/chat/ChatInterface.tsx';
 import { AdminPanel } from './components/admin/AdminPanel.tsx';
@@ -192,9 +191,8 @@ function MainApp() {
   }, [loading, user, currentView, closeAccountModal, navigateToView]);
 
   const isChatView = currentView === 'chat';
-  const isOfferView = currentView === 'offer';
   const isCheckoutView = currentView === 'checkout';
-  const hideStandardChrome = isChatView || isOfferView || isCheckoutView;
+  const hideStandardChrome = isChatView || isCheckoutView;
 
   return (
     <div
@@ -206,7 +204,6 @@ function MainApp() {
 
       <div className={`flex-1 min-w-0 ${isChatView ? 'min-h-0 flex flex-col overflow-hidden' : ''}`}>
         {currentView === 'home' && <HomePage onStartChat={() => navigateToView('chat')} />}
-        {currentView === 'offer' && <OfferLandingPage onStartChat={() => navigateToView('chat')} />}
         {currentView === 'checkout' && (
           <CheckoutPage
             initialPlan={checkoutPlan}
@@ -245,7 +242,7 @@ function MainApp() {
       {!hideStandardChrome && <Footer setCurrentView={navigateToView} />}
 
       {/* Floating WhatsApp Live Chat (Non-subscribers only) */}
-      <WhatsAppSupportWidget liftForMobileBar={isOfferView} compactOnMobile={isCheckoutView} />
+      <WhatsAppSupportWidget compactOnMobile={isCheckoutView} />
 
       {/* Global Modals */}
       <AuthModal

@@ -88,7 +88,7 @@ export const SmarterWorkflowsSection: React.FC = () => {
               All AI-Models in One Platform
             </h3>
             <p className="text-sm text-[#444746] dark:text-[#9aa0a6] mt-2 leading-[1.7]">
-              Access supported models like ChatGPT, Gemini, Claude, Grok, and more from one simple workspace.
+              Access supported models including GPT-6 Astra, GPT-4o, Claude Fable 5.2, Gemini 4 Carbon, Grok 4.7, and DeepSeek V4.1 from one simple workspace.
             </p>
           </div>
         </div>
@@ -244,7 +244,7 @@ export const SmarterWorkflowsSection: React.FC = () => {
                   <div className="text-gray-500">1 &lt;!-- Checkout integration --&gt;</div>
                   <div>
                     <span className="text-gray-500">2 </span>
-                    <span className="text-pink-300">&lt;script</span> <span className="text-amber-300">src</span>=<span className="text-emerald-300">"https://js.stripe.com/v3/"</span><span className="text-pink-300">&gt;&lt;/script&gt;</span>
+                    <span className="text-pink-300">&lt;script</span> <span className="text-amber-300">src</span>=<span className="text-emerald-300">"https://cdn.example.com/checkout.js"</span><span className="text-pink-300">&gt;&lt;/script&gt;</span>
                   </div>
                   <div className="text-gray-500">3 </div>
                   <div className="text-gray-500">4 &lt;!-- Checkout button --&gt;</div>
