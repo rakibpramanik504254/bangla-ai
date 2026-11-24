@@ -15,7 +15,7 @@ import {
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext.tsx';
 import { useAppInstall } from '../context/AppInstallContext.tsx';
-import { BrandLogo } from './common/BrandLogo.tsx';
+import { BrandWordmark } from './common/BrandLogo.tsx';
 import { UserAvatar } from './common/UserAvatar.tsx';
 import { WatchTutorialButton } from './common/WatchTutorialButton.tsx';
 import {
@@ -158,12 +158,10 @@ export const Navbar: React.FC<NavbarProps> = ({ currentView, setCurrentView }) =
           <button
             type="button"
             onClick={() => navigateTo('home')}
-            className="flex items-center gap-2 text-left focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#1f1f1f] dark:focus-visible:outline-[#e3e3e3] rounded-lg whitespace-nowrap shrink-0 cursor-pointer"
+            aria-label="Bangla AI Home"
+            className="flex items-center text-left focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#1f1f1f] dark:focus-visible:outline-[#e3e3e3] rounded-lg whitespace-nowrap shrink-0 cursor-pointer"
           >
-            <BrandLogo className="w-7 h-7 shrink-0" />
-            <span className="text-[15px] sm:text-base font-bold tracking-tight text-[#1f1f1f] dark:text-[#e3e3e3]">
-              Bangla AI
-            </span>
+            <BrandWordmark className="h-12 w-[96px]" />
           </button>
 
           {/* Zone 2: Desktop Navigation Links */}
@@ -382,11 +380,8 @@ export const Navbar: React.FC<NavbarProps> = ({ currentView, setCurrentView }) =
           {/* Slide-over Drawer Panel */}
           <div className="relative z-10 w-[300px] max-w-[88vw] h-full bg-white dark:bg-[#1e1f20] border-l border-black/[0.08] dark:border-white/[0.08] shadow-2xl flex flex-col overflow-y-auto animate-in slide-in-from-right">
             <div className="px-4 h-16 border-b border-black/[0.08] dark:border-white/[0.08] flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <BrandLogo className="w-6 h-6" />
-                <span className="text-sm font-bold text-[#1f1f1f] dark:text-[#e3e3e3]">
-                  Bangla AI
-                </span>
+              <div className="flex items-center">
+                <BrandWordmark className="h-11 w-[88px]" />
               </div>
               <button
                 type="button"

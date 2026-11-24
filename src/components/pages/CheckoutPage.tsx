@@ -11,7 +11,7 @@ import {
   Sparkles,
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext.tsx';
-import { BrandLogo } from '../common/BrandLogo.tsx';
+import { BrandWordmark } from '../common/BrandLogo.tsx';
 import { WatchTutorialButton } from '../common/WatchTutorialButton.tsx';
 import { PLANS, formatBDT } from '../../utils/billing.ts';
 import {
@@ -404,11 +404,8 @@ export const CheckoutPage: React.FC<CheckoutPageProps> = ({
             <span>Back</span>
           </button>
 
-          <div className="flex items-center gap-2 whitespace-nowrap shrink-0">
-            <BrandLogo className="w-7 h-7 shrink-0" />
-            <span className="text-[15px] sm:text-base font-bold tracking-tight text-[#1f1f1f] dark:text-[#e3e3e3] [font-family:'Plus_Jakarta_Sans','Hind_Siliguri',sans-serif]">
-              Bangla AI
-            </span>
+          <div className="flex items-center whitespace-nowrap shrink-0">
+            <BrandWordmark className="h-11 w-[88px]" />
           </div>
 
           <div className="hidden sm:flex items-center gap-1.5 text-xs text-[#444746] dark:text-[#9aa0a6] whitespace-nowrap shrink-0">

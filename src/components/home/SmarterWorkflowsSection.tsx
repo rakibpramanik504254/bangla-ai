@@ -11,6 +11,7 @@ import {
   Eye,
   Check
 } from 'lucide-react';
+import { BrandLogo } from '../common/BrandLogo.tsx';
 
 export const SmarterWorkflowsSection: React.FC = () => {
   return (
@@ -100,9 +101,7 @@ export const SmarterWorkflowsSection: React.FC = () => {
             <div className="w-full max-w-sm bg-white dark:bg-[#1e1f20] rounded-2xl border border-black/[0.08] dark:border-white/[0.08] p-3.5 space-y-3">
               {/* Header */}
               <div className="flex items-center gap-2 border-b border-black/[0.06] dark:border-white/[0.06] pb-2">
-                <div className="w-4 h-4 rounded-full bg-[#1f1f1f] dark:bg-[#e3e3e3] flex items-center justify-center text-[9px] text-white dark:text-[#131314] font-bold">
-                  ✦
-                </div>
+                <BrandLogo className="w-4 h-4 shrink-0" />
                 <span className="text-[11px] font-semibold text-[#1f1f1f] dark:text-[#e3e3e3]">Bangla AI</span>
                 <span className="text-[10px] text-[#444746] dark:text-[#9aa0a6]">· 1 min</span>
               </div>
@@ -213,9 +212,7 @@ export const SmarterWorkflowsSection: React.FC = () => {
             <div className="w-full max-w-sm min-w-0 bg-white dark:bg-[#1e1f20] rounded-2xl border border-black/[0.08] dark:border-white/[0.08] p-3 sm:p-3.5 space-y-2.5">
               {/* Header */}
               <div className="flex items-center gap-2 border-b border-black/[0.06] dark:border-white/[0.06] pb-2">
-                <div className="w-4 h-4 rounded-full bg-[#1f1f1f] dark:bg-[#e3e3e3] flex items-center justify-center text-[9px] text-white dark:text-[#131314] font-bold shrink-0">
-                  ✦
-                </div>
+                <BrandLogo className="w-4 h-4 shrink-0" />
                 <span className="text-[11px] font-semibold text-[#1f1f1f] dark:text-[#e3e3e3]">Bangla AI</span>
                 <span className="text-[10px] text-[#444746] dark:text-[#9aa0a6]">· 1 min</span>
               </div>

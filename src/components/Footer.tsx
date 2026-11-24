@@ -1,6 +1,6 @@
 import React from 'react';
 import { ShieldCheck, Download, Mail, Phone, Globe } from 'lucide-react';
-import { BrandLogo } from './common/BrandLogo.tsx';
+import { BrandWordmark } from './common/BrandLogo.tsx';
 import { useAuth } from '../context/AuthContext.tsx';
 import { useAppInstall } from '../context/AppInstallContext.tsx';
 import { AppView } from '../utils/navigation.ts';
@@ -31,9 +31,8 @@ export const Footer: React.FC<FooterProps> = ({
         <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
           {/* Brand */}
           <div className="space-y-3 md:col-span-1">
-            <div className="flex items-center gap-2">
-              <BrandLogo className="w-6 h-6" />
-              <span className="text-sm font-bold tracking-tight text-[#1f1f1f] dark:text-[#e3e3e3]">Bangla AI</span>
+            <div className="flex items-center">
+              <BrandWordmark className="h-11 w-[88px]" />
             </div>
             <p className="text-xs leading-[1.7] text-[#444746] dark:text-[#9aa0a6] max-w-xs">
               Unified multi-model AI infrastructure platform. Bringing world-class foundation models to Bangladesh with frictionless local billing.
