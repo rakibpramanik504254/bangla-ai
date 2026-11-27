@@ -114,6 +114,18 @@ import {
   synthesizeGuestEmailFromPhone
 } from './src/utils/expressCheckout.ts';
 import {
+  answerTelegramCallbackQuery,
+  appendTelegramStatusLine,
+  editTelegramMessageText,
+  forwardMotionStudioCallbackAction,
+  getTelegramConfig,
+  parseTelegramCallbackData,
+  registerTelegramWebhook,
+  sendTelegramOrderNotification,
+  timingSafeSecretMatch,
+  verifyTelegramWebhookAuthorization
+} from './src/utils/telegram.ts';
+import {
   META_GRAPH_API_VERSION,
   buildMetaCapiAddPaymentInfoPayload,
   buildMetaCapiFunnelEventPayload,
@@ -865,6 +877,17 @@ const handlePaymentSubmission = async (req: AuthenticatedRequest, res: Response)
 
     void sendMetaConversionsAddPaymentInfo(payment, activeSettings, checkoutMeta.addPaymentInfoEventId);
 
+    void sendTelegramOrderNotification({
+      orderId: payment.id,
+      customerName: req.user?.name || payment.user_name || 'Customer',
+      customerEmail: req.user?.email || payment.user_email,
+      planName: payment.plan_name || getPaymentPlanInfo(selectedPlan).name,
+      amount: payment.amount,
+      gateway: selectedGateway,
+      senderNumber: cleanSender,
+      trxId: payment.trx_id
+    });
+
     await dispatchPaymentSubmittedEmails({
       customerEmail: req.user?.email,
       customerName: req.user?.name || 'Customer',
@@ -992,6 +1015,17 @@ app.post('/api/payments/express', async (req: Request, res: Response) => {
     });
 
     void sendMetaConversionsAddPaymentInfo(payment, activeSettings, checkoutMeta.addPaymentInfoEventId);
+
+    void sendTelegramOrderNotification({
+      orderId: payment.id,
+      customerName: targetUser.name || payment.user_name || 'Customer',
+      customerEmail: targetUser.email || payment.user_email,
+      planName: payment.plan_name || getPaymentPlanInfo(selectedPlan).name,
+      amount: payment.amount,
+      gateway: selectedGateway,
+      senderNumber: cleanSender,
+      trxId: payment.trx_id
+    });
 
     await dispatchPaymentSubmittedEmails({
       customerEmail: targetUser.email,
@@ -2613,16 +2647,17 @@ async function sendMetaConversionsPurchase(
   return { fired, eventId: built.eventId, matchedFields: built.matchedFields };
 }
 
-app.post('/api/admin/payments/:id/approve', requireAdmin, async (req: AuthenticatedRequest, res: Response) => {
-  const { id } = req.params;
-  if (inFlightPaymentApprovals.has(id)) {
-    res.status(409).json({ error: 'This payment is already being approved. Please wait.' });
-    return;
+// Shared approval workflow used by both Admin Panel and Telegram one-click Approve
+async function executeAdminPaymentApproval(paymentId: string, adminActorId: string) {
+  if (inFlightPaymentApprovals.has(paymentId)) {
+    const err = new Error('This payment is already being approved. Please wait.') as Error & { statusCode?: number };
+    err.statusCode = 409;
+    throw err;
   }
 
-  inFlightPaymentApprovals.add(id);
+  inFlightPaymentApprovals.add(paymentId);
   try {
-    const result = await db.approvePayment(id, req.user!.id);
+    const result = await db.approvePayment(paymentId, adminActorId);
     const settings = await db.getSettings();
 
     // Trigger Meta Conversions API Purchase Event (server-side only, live without test_event_code, deduplicated by payment.id)
@@ -2649,6 +2684,49 @@ app.post('/api/admin/payments/:id/approve', requireAdmin, async (req: Authentica
       );
     }
 
+    return {
+      result,
+      capiResult,
+      isDeveloperApiAddon
+    };
+  } finally {
+    inFlightPaymentApprovals.delete(paymentId);
+  }
+}
+
+// Shared rejection workflow used by both Admin Panel and Telegram one-click Reject
+async function executeAdminPaymentRejection(paymentId: string, adminActorId: string, note?: string) {
+  const rejected = await db.rejectPayment(paymentId, adminActorId, note);
+  const settings = await db.getSettings();
+  const customer = await db.getUserById(rejected.user_id);
+
+  if (customer?.email && !isSyntheticPhoneEmail(customer.email)) {
+    const planInfo = getPaymentPlanInfo(rejected.plan_id || 'monthly');
+    void sendMailSafe(
+      settings,
+      buildPaymentRejectedEmail({
+        to: customer.email,
+        name: customer.name || rejected.user_name || 'Customer',
+        planName: rejected.plan_name || planInfo.name,
+        amountBdt: Number(rejected.amount),
+        gateway: rejected.gateway,
+        trxId: rejected.trx_id,
+        note: typeof note === 'string' ? note : undefined,
+        supportEmail: settings.support_email || DEFAULT_SUPPORT_EMAIL
+      })
+    );
+  }
+
+  return rejected;
+}
+
+app.post('/api/admin/payments/:id/approve', requireAdmin, async (req: AuthenticatedRequest, res: Response) => {
+  try {
+    const { result, capiResult, isDeveloperApiAddon } = await executeAdminPaymentApproval(
+      req.params.id,
+      req.user!.id
+    );
+
     res.json({
       success: true,
       message: isDeveloperApiAddon
@@ -2661,36 +2739,16 @@ app.post('/api/admin/payments/:id/approve', requireAdmin, async (req: Authentica
       pixelMatchedFields: capiResult.matchedFields || []
     });
   } catch (err: any) {
-    res.status(400).json({ error: err.message || 'Payment approval failed.' });
-  } finally {
-    inFlightPaymentApprovals.delete(id);
+    const statusCode = err?.statusCode === 409 ? 409 : 400;
+    res.status(statusCode).json({ error: err.message || 'Payment approval failed.' });
   }
 });
 
 app.post('/api/admin/payments/:id/reject', requireAdmin, async (req: AuthenticatedRequest, res: Response) => {
   try {
     const { id } = req.params;
-    const { note } = req.body;
-    const rejected = await db.rejectPayment(id, req.user!.id, note);
-    const settings = await db.getSettings();
-    const customer = await db.getUserById(rejected.user_id);
-
-    if (customer?.email && !isSyntheticPhoneEmail(customer.email)) {
-      const planInfo = getPaymentPlanInfo(rejected.plan_id || 'monthly');
-      void sendMailSafe(
-        settings,
-        buildPaymentRejectedEmail({
-          to: customer.email,
-          name: customer.name || rejected.user_name || 'Customer',
-          planName: rejected.plan_name || planInfo.name,
-          amountBdt: Number(rejected.amount),
-          gateway: rejected.gateway,
-          trxId: rejected.trx_id,
-          note: typeof note === 'string' ? note : undefined,
-          supportEmail: settings.support_email || DEFAULT_SUPPORT_EMAIL
-        })
-      );
-    }
+    const { note } = req.body || {};
+    const rejected = await executeAdminPaymentRejection(id, req.user!.id, note);
 
     res.json({
       success: true,
@@ -2699,6 +2757,147 @@ app.post('/api/admin/payments/:id/reject', requireAdmin, async (req: Authenticat
     });
   } catch (err: any) {
     res.status(400).json({ error: err.message || 'Payment rejection failed.' });
+  }
+});
+
+// ==========================================
+// 5A. Telegram Order Webhook & Setup Endpoints
+// ==========================================
+
+const handleTelegramSetup = async (req: Request, res: Response) => {
+  try {
+    const tgConfig = getTelegramConfig();
+    if (!tgConfig.botToken || !tgConfig.webhookSecret) {
+      res.status(503).json({
+        ok: false,
+        error: 'TELEGRAM_BOT_TOKEN and TELEGRAM_WEBHOOK_SECRET must be set in server environment variables.'
+      });
+      return;
+    }
+
+    const providedSecret =
+      typeof req.query?.secret === 'string'
+        ? req.query.secret
+        : req.header('x-webhook-secret') || undefined;
+
+    if (!timingSafeSecretMatch(providedSecret, tgConfig.webhookSecret)) {
+      res.status(403).json({ ok: false, error: 'Forbidden: invalid webhook secret.' });
+      return;
+    }
+
+    const result = await registerTelegramWebhook(tgConfig);
+    res.status(result.ok ? 200 : 502).json(result.data);
+  } catch (err: any) {
+    res.status(500).json({ ok: false, error: err?.message || 'Telegram webhook setup failed.' });
+  }
+};
+
+app.get('/api/telegram/setup', handleTelegramSetup);
+app.post('/api/telegram/setup', handleTelegramSetup);
+
+app.post('/api/telegram/webhook', async (req: Request, res: Response) => {
+  try {
+    const tgConfig = getTelegramConfig();
+    const secretHeader = req.header('x-telegram-bot-api-secret-token');
+
+    if (!tgConfig.webhookSecret || !timingSafeSecretMatch(secretHeader, tgConfig.webhookSecret)) {
+      res.status(403).json({ ok: false, error: 'Unauthorized webhook request.' });
+      return;
+    }
+
+    const callbackQuery = req.body?.callback_query;
+    if (!callbackQuery || typeof callbackQuery !== 'object') {
+      res.status(200).json({ ok: true, ignored: true });
+      return;
+    }
+
+    const chatId = callbackQuery.message?.chat?.id;
+    const messageId = callbackQuery.message?.message_id;
+    const fromId = callbackQuery.from?.id;
+
+    const authCheck = verifyTelegramWebhookAuthorization({
+      chatId,
+      fromId,
+      secretTokenHeader: secretHeader,
+      config: tgConfig
+    });
+
+    if (!authCheck.authorized) {
+      res.status(403).json({ ok: false, error: authCheck.reason || 'Unauthorized chat.' });
+      return;
+    }
+
+    // Immediately acknowledge callback query so Telegram clears the button loading state
+    await answerTelegramCallbackQuery(String(callbackQuery.id || ''), 'Processing...', tgConfig);
+
+    const parsed = parseTelegramCallbackData(callbackQuery.data);
+    const originalText = typeof callbackQuery.message?.text === 'string' ? callbackQuery.message.text : '';
+
+    if (parsed.target === 'bangla_ai') {
+      let statusLine = '';
+
+      if (parsed.action === 'approve') {
+        try {
+          await executeAdminPaymentApproval(parsed.orderId, 'telegram_admin');
+          statusLine = '✅ Approved';
+        } catch (err: any) {
+          const msg = String(err?.message || 'Approval failed');
+          if (msg.toLowerCase().includes('already been approved')) {
+            statusLine = '✅ Approved';
+          } else {
+            statusLine = `⚠️ ${msg}`;
+          }
+        }
+      } else {
+        try {
+          const existing = await db.getPaymentById(parsed.orderId);
+          if (!existing) {
+            statusLine = '⚠️ Order not found';
+          } else if (existing.status === 'completed') {
+            statusLine = '✅ Already Approved';
+          } else if (existing.status === 'rejected') {
+            statusLine = '❌ Rejected';
+          } else {
+            await executeAdminPaymentRejection(parsed.orderId, 'telegram_admin');
+            statusLine = '❌ Rejected';
+          }
+        } catch (err: any) {
+          statusLine = `⚠️ ${err?.message || 'Rejection failed'}`;
+        }
+      }
+
+      if (chatId !== undefined && typeof messageId === 'number') {
+        await editTelegramMessageText({
+          chatId,
+          messageId,
+          text: appendTelegramStatusLine(originalText, statusLine),
+          config: tgConfig
+        });
+      }
+
+      res.status(200).json({ ok: true, target: 'bangla_ai', statusText: statusLine });
+      return;
+    }
+
+    if (parsed.target === 'motion_studio') {
+      const forwarded = await forwardMotionStudioCallbackAction(parsed.callbackData, tgConfig);
+      if (chatId !== undefined && typeof messageId === 'number') {
+        await editTelegramMessageText({
+          chatId,
+          messageId,
+          text: appendTelegramStatusLine(originalText, forwarded.statusText),
+          config: tgConfig
+        });
+      }
+
+      res.status(200).json({ ok: true, target: 'motion_studio', statusText: forwarded.statusText });
+      return;
+    }
+
+    res.status(200).json({ ok: true, ignored: true });
+  } catch (err: any) {
+    console.error('[Telegram Webhook] Error:', err?.message || err);
+    res.status(200).json({ ok: false });
   }
 });
 
